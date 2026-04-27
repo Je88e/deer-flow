@@ -158,9 +158,9 @@ export default function ChatPage() {
                           : "ready"
                     }
                     context={settings.context}
-                    extraHeader={
-                      isNewThread && <Welcome mode={settings.context.mode} />
-                    }
+                    // extraHeader={
+                    //   isNewThread && <Welcome mode={settings.context.mode} />
+                    // }
                     disabled={
                       env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true" ||
                       isUploading
