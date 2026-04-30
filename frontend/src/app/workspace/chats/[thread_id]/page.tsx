@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { ListChecks } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { type PromptInputMessage } from "@/components/ai-elements/prompt-input";
+import { Button } from "@/components/ui/button";
 import { ArtifactTrigger } from "@/components/workspace/artifacts";
 import {
   ChatBox,
@@ -20,12 +23,13 @@ import { ThreadContext } from "@/components/workspace/messages/context";
 import { ThreadTitle } from "@/components/workspace/thread-title";
 import { TodoList } from "@/components/workspace/todo-list";
 import { TokenUsageIndicator } from "@/components/workspace/token-usage-indicator";
+import { Tooltip } from "@/components/workspace/tooltip";
 import { redeemHandoff } from "@/core/handoff/api";
 import { useI18n } from "@/core/i18n/hooks";
 import { useModels } from "@/core/models/hooks";
 import { useNotification } from "@/core/notification/hooks";
 import { useThreadSettings } from "@/core/settings";
-import { useThreadStream } from "@/core/threads/hooks";
+import { useThreads, useThreadStream } from "@/core/threads/hooks";
 import { textOfMessage } from "@/core/threads/utils";
 import { env } from "@/env";
 import { cn } from "@/lib/utils";
@@ -55,12 +59,14 @@ function normalizeUrlParam(value: string | null): string | null {
 
 function ChatPageInner() {
   const { t } = useI18n();
+  const router = useRouter();
   const [showFollowups, setShowFollowups] = useState(false);
   const { threadId, setThreadId, isNewThread, setIsNewThread, isMock } =
     useThreadChat();
   const [settings, setSettings] = useThreadSettings(threadId);
   const [mounted, setMounted] = useState(false);
   const { tokenUsageEnabled } = useModels();
+  const { data: threads = [] } = useThreads();
   useSpecificChatMode();
 
   useEffect(() => {
@@ -112,6 +118,36 @@ function ChatPageInner() {
       MESSAGE_LIST_FOLLOWUPS_EXTRA_PADDING_BOTTOM
     : undefined;
 
+  const persistedThread = useMemo(() => {
+    return threads.find((item) => item.thread_id === threadId);
+  }, [threadId, threads]);
+  const source = useMemo(() => {
+    const streamMetadata = (
+      thread as unknown as { metadata?: Record<string, unknown> }
+    ).metadata;
+    const persistedMetadata = persistedThread?.metadata ?? undefined;
+    const valuesMetadata = (
+      thread.values as unknown as { metadata?: Record<string, unknown> }
+    )?.metadata;
+
+    const streamSource = streamMetadata?.source;
+    if (typeof streamSource === "string") {
+      return streamSource;
+    }
+    const persistedSource = (
+      persistedMetadata as Record<string, unknown> | null
+    )?.source;
+    if (typeof persistedSource === "string") {
+      return persistedSource;
+    }
+    const valuesSource = valuesMetadata?.source;
+    if (typeof valuesSource === "string") {
+      return valuesSource;
+    }
+    return null;
+  }, [persistedThread?.metadata, thread]);
+  const showAuditButton = source === "starlims";
+
   return (
     <ThreadContext.Provider value={{ thread, isMock }}>
       <ChatBox threadId={threadId}>
@@ -128,6 +164,23 @@ function ChatPageInner() {
               <ThreadTitle threadId={threadId} thread={thread} />
             </div>
             <div className="flex items-center gap-2">
+              {showAuditButton && (
+                <Tooltip content={t.pages.audits}>
+                  <Button
+                    className="text-muted-foreground hover:text-foreground"
+                    variant="ghost"
+                    disabled={thread.isLoading}
+                    onClick={() =>
+                      router.push(
+                        `/workspace/audits/${encodeURIComponent(threadId)}`,
+                      )
+                    }
+                  >
+                    <ListChecks />
+                    {t.pages.audits}
+                  </Button>
+                </Tooltip>
+              )}
               <TokenUsageIndicator
                 enabled={tokenUsageEnabled}
                 messages={thread.messages}

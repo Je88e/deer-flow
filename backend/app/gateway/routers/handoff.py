@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import secrets
 import time
 from dataclasses import dataclass
@@ -9,6 +10,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from app.gateway.deps import get_run_manager
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -57,6 +60,7 @@ def _prune_handoff(now_s: float) -> None:
 
 @router.post("", response_model=CreateHandoffResponse)
 async def create_handoff(body: CreateHandoffRequest, request: Request) -> JSONResponse:
+    t0 = time.monotonic()
     run_mgr = get_run_manager(request)
     record = run_mgr.get(body.run_id)
     if record is None or record.thread_id != body.thread_id:
@@ -74,6 +78,8 @@ async def create_handoff(body: CreateHandoffRequest, request: Request) -> JSONRe
             expires_at_epoch_s=expires_at,
         )
 
+    elapsed_ms = (time.monotonic() - t0) * 1000
+    logger.info("handoff create: thread=%s run=%s total=%.1fms", body.thread_id, body.run_id, elapsed_ms)
     return JSONResponse(
         content=CreateHandoffResponse(token=token, expires_at=_iso_utc(expires_at)).model_dump(),
         headers={"Cache-Control": "no-store"},
@@ -82,6 +88,7 @@ async def create_handoff(body: CreateHandoffRequest, request: Request) -> JSONRe
 
 @router.post("/redeem", response_model=RedeemHandoffResponse)
 async def redeem_handoff(body: RedeemHandoffRequest) -> JSONResponse:
+    t0 = time.monotonic()
     now_s = time.time()
     async with _handoff_lock:
         _prune_handoff(now_s)
@@ -92,6 +99,8 @@ async def redeem_handoff(body: RedeemHandoffRequest) -> JSONResponse:
     if record.expires_at_epoch_s <= now_s:
         raise HTTPException(status_code=410, detail="Handoff expired")
 
+    elapsed_ms = (time.monotonic() - t0) * 1000
+    logger.info("handoff redeem: thread=%s run=%s total=%.1fms", record.thread_id, record.run_id, elapsed_ms)
     return JSONResponse(
         content=RedeemHandoffResponse(
             thread_id=record.thread_id,

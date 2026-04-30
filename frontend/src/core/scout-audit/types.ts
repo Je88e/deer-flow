@@ -31,7 +31,7 @@ export interface ScoutAuditSummary {
 }
 
 export interface ScoutAuditMetadata {
-  generatedBy?: string;
+  generatedBy?: string; //Scout Auditor
   generatedAt?: string;
   limsAvailable?: boolean;
   ruleEngineAvailable?: boolean;

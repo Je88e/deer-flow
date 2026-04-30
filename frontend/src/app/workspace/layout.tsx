@@ -18,9 +18,8 @@ export default async function WorkspaceLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const cookieStore = await cookies();
-  const initialSidebarOpen = parseSidebarOpenCookie(
-    cookieStore.get("sidebar_state")?.value,
-  );
+  const initialSidebarOpen =
+    parseSidebarOpenCookie(cookieStore.get("sidebar_state")?.value) ?? false;
 
   return (
     <QueryClientProvider>

@@ -247,9 +247,7 @@ export function AuditDashboard({
               <Card>
                 <CardHeader>
                   <CardTitle>报告信息</CardTitle>
-                  <CardDescription>
-                    从 results.json 提取的核心字段
-                  </CardDescription>
+                  <CardDescription>从报告信息提取的核心字段</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-1">
@@ -311,7 +309,9 @@ export function AuditDashboard({
                       </div>
                     </div>
                     <div>
-                      <div className="text-muted-foreground text-xs">LIMS</div>
+                      <div className="text-muted-foreground text-xs">
+                        LIMS数据
+                      </div>
                       <div className="font-medium">
                         {audit.results.metadata?.limsAvailable
                           ? "可用"

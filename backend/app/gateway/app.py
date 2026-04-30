@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.gateway.config import get_gateway_config
 from app.gateway.deps import langgraph_runtime
@@ -38,6 +40,29 @@ logger = logging.getLogger(__name__)
 # Bounds worker exit time so uvicorn's reload supervisor does not keep
 # firing signals into a worker that is stuck waiting for shutdown cleanup.
 _SHUTDOWN_HOOK_TIMEOUT_SECONDS = 5.0
+
+
+class EventLoopLagMiddleware(BaseHTTPMiddleware):
+    """Log slow requests to surface event-loop blocking.
+
+    When the agent runtime shares the same asyncio loop as the HTTP server,
+    synchronous operations in the agent can block request handling.  If
+    ``total_ms`` is high for lightweight endpoints (e.g. /api/handoff), the
+    event loop was blocked during that window.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        t0 = time.monotonic()
+        response = await call_next(request)
+        total_ms = (time.monotonic() - t0) * 1000
+        if total_ms > 500:  # only log slow requests
+            logger.warning(
+                "slow request: %s %s total=%.0fms",
+                request.method,
+                request.url.path,
+                total_ms,
+            )
+        return response
 
 
 @asynccontextmanager
@@ -183,6 +208,8 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
     )
 
     # CORS is handled by nginx - no need for FastAPI middleware
+
+    app.add_middleware(EventLoopLagMiddleware)
 
     # Include routers
     # Models API is mounted at /api/models
