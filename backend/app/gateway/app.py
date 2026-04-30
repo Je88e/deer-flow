@@ -12,6 +12,7 @@ from app.gateway.routers import (
     artifacts,
     assistants_compat,
     channels,
+    handoff,
     mcp,
     memory,
     models,
@@ -174,6 +175,10 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
                 "name": "health",
                 "description": "Health check and system status endpoints",
             },
+            {
+                "name": "handoff",
+                "description": "One-time run handoff tokens for cross-origin navigation",
+            },
         ],
     )
 
@@ -218,6 +223,8 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
 
     # Stateless Runs API (stream/wait without a pre-existing thread)
     app.include_router(runs.router)
+
+    app.include_router(handoff.router)
 
     @app.get("/health", tags=["health"])
     async def health_check() -> dict:

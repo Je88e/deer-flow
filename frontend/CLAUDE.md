@@ -38,7 +38,7 @@ The frontend is a stateful chat application. Users create **threads** (conversat
 
 ### Source Layout (`src/`)
 
-- **`app/`** — Next.js App Router. Routes: `/` (landing), `/workspace/chats/[thread_id]` (chat).
+- **`app/`** — Next.js App Router. Routes: `/` (landing), `/workspace/chats/[thread_id]` (chat), `/workspace/audits/[thread_id]` (standalone scout-audit workspace).
 - **`components/`** — React components split into:
   - `ui/` — Shadcn UI primitives (auto-generated, ESLint-ignored)
   - `ai-elements/` — Vercel AI SDK elements (auto-generated, ESLint-ignored)
@@ -48,6 +48,7 @@ The frontend is a stateful chat application. Users create **threads** (conversat
   - `threads/` — Thread creation, streaming, state management (hooks + types)
   - `api/` — LangGraph client singleton
   - `artifacts/` — Artifact loading and caching
+  - `scout-audit/` — Scout-audit artifact parsing, route helpers, and result loading
   - `i18n/` — Internationalization (en-US, zh-CN)
   - `settings/` — User preferences in localStorage
   - `memory/` — Persistent user memory system

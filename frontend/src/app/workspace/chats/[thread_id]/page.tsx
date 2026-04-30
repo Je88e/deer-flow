@@ -20,7 +20,7 @@ import { ThreadContext } from "@/components/workspace/messages/context";
 import { ThreadTitle } from "@/components/workspace/thread-title";
 import { TodoList } from "@/components/workspace/todo-list";
 import { TokenUsageIndicator } from "@/components/workspace/token-usage-indicator";
-import { Welcome } from "@/components/workspace/welcome";
+import { redeemHandoff } from "@/core/handoff/api";
 import { useI18n } from "@/core/i18n/hooks";
 import { useModels } from "@/core/models/hooks";
 import { useNotification } from "@/core/notification/hooks";
@@ -30,7 +30,30 @@ import { textOfMessage } from "@/core/threads/utils";
 import { env } from "@/env";
 import { cn } from "@/lib/utils";
 
-export default function ChatPage() {
+function getHashParams(hash: string): URLSearchParams {
+  const trimmed = hash.startsWith("#") ? hash.slice(1) : hash;
+  const query = trimmed.startsWith("?") ? trimmed.slice(1) : trimmed;
+  return new URLSearchParams(query);
+}
+
+function getThreadIdFromPathname(pathname: string): string | null {
+  const parts = pathname.split("/").filter(Boolean);
+  const chatsIndex = parts.findIndex(
+    (part, idx) => part === "chats" && parts[idx - 1] === "workspace",
+  );
+  if (chatsIndex < 0) {
+    return null;
+  }
+  const threadId = parts[chatsIndex + 1];
+  return threadId?.trim() ? threadId : null;
+}
+
+function normalizeUrlParam(value: string | null): string | null {
+  const trimmed = value?.trim() ?? "";
+  return trimmed ? trimmed : null;
+}
+
+function ChatPageInner() {
   const { t } = useI18n();
   const [showFollowups, setShowFollowups] = useState(false);
   const { threadId, setThreadId, isNewThread, setIsNewThread, isMock } =
@@ -192,4 +215,89 @@ export default function ChatPage() {
       </ChatBox>
     </ThreadContext.Provider>
   );
+}
+
+export default function ChatPage() {
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const hashParams = getHashParams(url.hash);
+    const token =
+      normalizeUrlParam(hashParams.get("handoff")) ??
+      normalizeUrlParam(url.searchParams.get("handoff"));
+    const runId =
+      normalizeUrlParam(hashParams.get("run_id")) ??
+      normalizeUrlParam(url.searchParams.get("run_id"));
+    const threadId = getThreadIdFromPathname(url.pathname);
+
+    const cleanupUrl = () => {
+      url.hash = "";
+      url.searchParams.delete("handoff");
+      url.searchParams.delete("run_id");
+      const search = url.searchParams.toString();
+      const nextUrl = `${url.pathname}${search ? `?${search}` : ""}`;
+      history.replaceState(null, "", nextUrl);
+    };
+
+    if (!token && !runId) {
+      setReady(true);
+      return;
+    }
+
+    if (!threadId) {
+      cleanupUrl();
+      setError("Invalid chat URL.");
+      setReady(true);
+      return;
+    }
+
+    if (token) {
+      void redeemHandoff(token)
+        .then((redeemed) => {
+          if (redeemed.thread_id !== threadId) {
+            throw new Error("Handoff thread mismatch.");
+          }
+          window.sessionStorage.setItem(
+            `lg:stream:${threadId}`,
+            redeemed.run_id,
+          );
+          cleanupUrl();
+          setReady(true);
+        })
+        .catch((e: unknown) => {
+          cleanupUrl();
+          setError(
+            e instanceof Error ? e.message : "Failed to redeem handoff.",
+          );
+          setReady(true);
+        });
+      return;
+    }
+
+    if (runId) {
+      window.sessionStorage.setItem(`lg:stream:${threadId}`, runId);
+      cleanupUrl();
+      setReady(true);
+    }
+  }, []);
+
+  if (!ready) {
+    return (
+      <div className="flex size-full items-center justify-center">
+        <div className="text-muted-foreground text-sm">Loading…</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex size-full items-center justify-center px-4">
+        <div className="text-sm">{error}</div>
+      </div>
+    );
+  }
+
+  return <ChatPageInner />;
 }

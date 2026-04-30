@@ -116,6 +116,7 @@ export interface Translations {
     chats: string;
     demoChats: string;
     agents: string;
+    audits: string;
   };
 
   // Agents
@@ -157,6 +158,7 @@ export interface Translations {
   breadcrumb: {
     workspace: string;
     chats: string;
+    audits: string;
   };
 
   // Workspace
@@ -181,10 +183,23 @@ export interface Translations {
     searchChats: string;
   };
 
+  audits: {
+    title: string;
+    searchThreads: string;
+    threadSwitcherHint: string;
+    noMatchingThreads: string;
+    selectThread: string;
+    missingThread: string;
+    missingArtifacts: string;
+    loadingResult: string;
+    loadFailed: string;
+  };
+
   // Page titles (document title)
   pages: {
     appName: string;
     chats: string;
+    audits: string;
     newChat: string;
     untitled: string;
   };
