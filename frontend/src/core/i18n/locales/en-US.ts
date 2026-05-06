@@ -173,6 +173,7 @@ export const enUS: Translations = {
     recentChats: "Recent chats",
     demoChats: "Demo chats",
     agents: "Agents",
+    audits: "Audits",
   },
 
   // Agents
@@ -228,6 +229,7 @@ export const enUS: Translations = {
   breadcrumb: {
     workspace: "Workspace",
     chats: "Chats",
+    audits: "Audits",
   },
 
   // Workspace
@@ -253,10 +255,23 @@ export const enUS: Translations = {
     searchChats: "Search chats",
   },
 
+  audits: {
+    title: "Audit results",
+    searchThreads: "Search threads",
+    threadSwitcherHint: "Switch threads to inspect different audit outputs",
+    noMatchingThreads: "No matching threads",
+    selectThread: "Select a thread",
+    missingThread: "Thread not found",
+    missingArtifacts: "This thread has no audit results yet",
+    loadingResult: "Loading audit results",
+    loadFailed: "Failed to load audit results",
+  },
+
   // Page titles (document title)
   pages: {
     appName: "DeerFlow",
     chats: "Chats",
+    audits: "Audit results",
     newChat: "New chat",
     untitled: "Untitled",
   },

@@ -580,6 +580,8 @@ Tools follow the same philosophy. DeerFlow comes with a core toolset — web sea
 
 Gateway-generated follow-up suggestions now normalize both plain-string model output and block/list-style rich content before parsing the JSON array response, so provider-specific content wrappers do not silently drop suggestions.
 
+The frontend also includes a dedicated scout-audit workspace at `/workspace/audits/[thread_id]` that reads thread output artifacts (`*-results.json`, `*-audit-report.md`, `*-session-log.jsonl`) and renders them as a standalone review dashboard with thread switching, rule grouping, and phase timeline views.
+
 ```
 # Paths inside the sandbox container
 /mnt/skills/public

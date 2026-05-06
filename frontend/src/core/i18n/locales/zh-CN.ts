@@ -1,4 +1,4 @@
-﻿import {
+import {
   CompassIcon,
   GraduationCapIcon,
   ImageIcon,
@@ -167,6 +167,7 @@ export const zhCN: Translations = {
     recentChats: "最近的对话",
     demoChats: "演示对话",
     agents: "智能体",
+    audits: "审核结果",
   },
 
   // Agents
@@ -216,6 +217,7 @@ export const zhCN: Translations = {
   breadcrumb: {
     workspace: "工作区",
     chats: "对话",
+    audits: "审核结果",
   },
 
   // Workspace
@@ -241,10 +243,23 @@ export const zhCN: Translations = {
     searchChats: "搜索对话",
   },
 
+  audits: {
+    title: "审核结果",
+    searchThreads: "搜索线程",
+    threadSwitcherHint: "通过线程切换查看不同审核结果",
+    noMatchingThreads: "没有匹配的线程",
+    selectThread: "选择一个线程",
+    missingThread: "线程不存在",
+    missingArtifacts: "该线程暂无审核结果",
+    loadingResult: "正在加载审核结果",
+    loadFailed: "审核结果加载失败",
+  },
+
   // Page titles (document title)
   pages: {
     appName: "DeerFlow",
     chats: "对话",
+    audits: "审核结果",
     newChat: "新对话",
     untitled: "未命名",
   },

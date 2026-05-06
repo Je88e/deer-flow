@@ -662,6 +662,21 @@ export function useThreads(
   });
 }
 
+export function useThreadState(threadId: string | null | undefined) {
+  const apiClient = getAPIClient();
+  return useQuery({
+    queryKey: ["threads", "state", threadId],
+    queryFn: async () => {
+      if (!threadId) {
+        throw new Error("Missing threadId");
+      }
+      return apiClient.threads.getState<AgentThreadState>(threadId);
+    },
+    enabled: Boolean(threadId),
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useThreadRuns(threadId?: string) {
   const apiClient = getAPIClient();
   return useQuery<Run[]>({

@@ -1,0 +1,520 @@
+"use client";
+
+import {
+  AlertCircleIcon,
+  CheckCircle2Icon,
+  DownloadIcon,
+  FileJsonIcon,
+  FileTextIcon,
+  FlaskConicalIcon,
+  HourglassIcon,
+  ListChecksIcon,
+} from "lucide-react";
+import { Streamdown } from "streamdown";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { urlOfArtifact } from "@/core/artifacts/utils";
+import { type ScoutAuditViewModel } from "@/core/scout-audit/types";
+import { cn } from "@/lib/utils";
+
+function statusClasses(status: string) {
+  if (status === "PASS") {
+    return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+  }
+  if (status === "FAIL" || status === "CONDITIONAL_PASS") {
+    return "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300";
+  }
+  if (status === "SKIP") {
+    return "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+  }
+  return "border-border bg-muted text-foreground";
+}
+
+function toneClasses(tone: string) {
+  if (tone === "pass") {
+    return "text-emerald-600 dark:text-emerald-300";
+  }
+  if (tone === "fail") {
+    return "text-rose-600 dark:text-rose-300";
+  }
+  if (tone === "skip") {
+    return "text-amber-600 dark:text-amber-300";
+  }
+  return "text-foreground";
+}
+
+function ArtifactActions({
+  threadId,
+  audit,
+}: {
+  threadId: string;
+  audit: ScoutAuditViewModel;
+}) {
+  const actions = [
+    {
+      href: urlOfArtifact({
+        filepath: audit.files.resultsPath,
+        threadId,
+        download: true,
+      }),
+      icon: FileJsonIcon,
+      label: "下载 results.json",
+    },
+    {
+      href: urlOfArtifact({
+        filepath: audit.files.reportPath,
+        threadId,
+        download: true,
+      }),
+      icon: FileTextIcon,
+      label: "下载 audit-report.md",
+    },
+    {
+      href: urlOfArtifact({
+        filepath: audit.files.sessionLogPath,
+        threadId,
+        download: true,
+      }),
+      icon: DownloadIcon,
+      label: "下载 session-log.jsonl",
+    },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {actions.map((action) => (
+        <Button key={action.label} variant="outline" size="sm" asChild>
+          <a href={action.href} target="_blank" rel="noreferrer">
+            <action.icon />
+            {action.label}
+          </a>
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+function AuditEmpty({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex size-full items-center justify-center p-6">
+      <Empty className="max-w-2xl border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <FlaskConicalIcon />
+          </EmptyMedia>
+          <EmptyTitle>{title}</EmptyTitle>
+          <EmptyDescription>{description}</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    </div>
+  );
+}
+
+export function AuditDashboard({
+  threadId,
+  threadTitle,
+  audit,
+  isLoading,
+  error,
+  hasArtifacts,
+}: {
+  threadId: string;
+  threadTitle: string;
+  audit?: ScoutAuditViewModel | null;
+  isLoading: boolean;
+  error?: Error | null;
+  hasArtifacts: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <AuditEmpty
+        title="正在加载审核结果"
+        description="正在读取该线程下的 scout-audit 产物文件。"
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <AuditEmpty
+        title="审核结果加载失败"
+        description={error.message || "该线程的结果文件无法解析。"}
+      />
+    );
+  }
+
+  if (!hasArtifacts || !audit) {
+    return (
+      <AuditEmpty
+        title="该线程暂无审核结果"
+        description="当前线程下没有找到完整的 scout-audit 三件套输出文件。"
+      />
+    );
+  }
+
+  const passProgress =
+    audit.results.summary.applicableCount > 0
+      ? (audit.results.summary.passCount /
+          audit.results.summary.applicableCount) *
+        100
+      : 0;
+
+  return (
+    <div className="min-h-0 flex-1 overflow-auto">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-6">
+        <section className="from-background via-background to-primary/5 relative overflow-hidden rounded-3xl border bg-linear-to-br p-6 shadow-sm">
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-3">
+              <div className="text-muted-foreground text-sm">{threadTitle}</div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-semibold tracking-tight">
+                  {audit.header.reportNo}
+                </h1>
+                <Badge
+                  className={cn(
+                    "border",
+                    statusClasses(audit.header.overallResult),
+                  )}
+                >
+                  {audit.header.overallResult}
+                </Badge>
+              </div>
+              <div className="text-muted-foreground flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                <span>批号 {audit.header.batchNo}</span>
+                <span>文档类型 {audit.header.docType}</span>
+                {audit.header.auditDate && (
+                  <span>审核日期 {audit.header.auditDate}</span>
+                )}
+                {audit.header.standardRef && (
+                  <span>标准 {audit.header.standardRef}</span>
+                )}
+              </div>
+            </div>
+            <ArtifactActions threadId={threadId} audit={audit} />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {audit.summaryCards.map((card) => (
+              <Card key={card.label} className="gap-3 py-5">
+                <CardHeader className="px-5 pb-0">
+                  <CardDescription>{card.label}</CardDescription>
+                  <CardTitle className={cn("text-3xl", toneClasses(card.tone))}>
+                    {card.value}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        <Tabs defaultValue="overview" className="gap-4">
+          <TabsList
+            variant="line"
+            className="w-full justify-start overflow-auto"
+          >
+            <TabsTrigger value="overview">总览</TabsTrigger>
+            <TabsTrigger value="rules">规则结果</TabsTrigger>
+            <TabsTrigger value="corrections">修正记录</TabsTrigger>
+            <TabsTrigger value="phases">Phase 日志</TabsTrigger>
+            <TabsTrigger value="report">原始报告</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+              <Card>
+                <CardHeader>
+                  <CardTitle>报告信息</CardTitle>
+                  <CardDescription>从报告信息提取的核心字段</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <div className="text-muted-foreground text-xs">品名</div>
+                    <div className="font-medium">
+                      {audit.header.productName ?? "未提供"}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-muted-foreground text-xs">规格</div>
+                    <div className="font-medium">
+                      {audit.header.specification ?? "未提供"}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-muted-foreground text-xs">
+                      报告编号
+                    </div>
+                    <div className="font-medium">{audit.header.reportNo}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-muted-foreground text-xs">批号</div>
+                    <div className="font-medium">{audit.header.batchNo}</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>审核完成度</CardTitle>
+                  <CardDescription>适用规则通过率与生成元信息</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>适用规则通过率</span>
+                      <span>
+                        {audit.results.summary.passCount}/
+                        {audit.results.summary.applicableCount}
+                      </span>
+                    </div>
+                    <Progress value={passProgress} />
+                  </div>
+                  <div className="grid gap-3 text-sm md:grid-cols-2">
+                    <div>
+                      <div className="text-muted-foreground text-xs">
+                        生成方式
+                      </div>
+                      <div className="font-medium">
+                        {audit.results.metadata?.reportMethod ?? "未知"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-xs">
+                        生成器
+                      </div>
+                      <div className="font-medium">
+                        {audit.results.metadata?.generatedBy ?? "未知"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-xs">
+                        LIMS数据
+                      </div>
+                      <div className="font-medium">
+                        {audit.results.metadata?.limsAvailable
+                          ? "可用"
+                          : "不可用"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-xs">
+                        规则引擎
+                      </div>
+                      <div className="font-medium">
+                        {audit.results.metadata?.ruleEngineAvailable
+                          ? "可用"
+                          : "不可用"}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="rules" className="space-y-4">
+            {audit.ruleGroups.map((group) => (
+              <Card key={group.code}>
+                <CardHeader>
+                  <CardTitle>
+                    {group.label} ({group.code})
+                  </CardTitle>
+                  <CardDescription>{group.rules.length} 条规则</CardDescription>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <table className="w-full min-w-[720px] text-sm">
+                    <thead className="text-muted-foreground border-b text-left text-xs uppercase">
+                      <tr>
+                        <th className="py-2 pr-4 font-medium">规则</th>
+                        <th className="py-2 pr-4 font-medium">状态</th>
+                        <th className="py-2 pr-4 font-medium">严重级别</th>
+                        <th className="py-2 font-medium">说明</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.rules.map((rule) => (
+                        <tr
+                          key={rule.ruleId}
+                          className="border-b align-top last:border-b-0"
+                        >
+                          <td className="py-3 pr-4">
+                            <div className="font-medium">{rule.ruleId}</div>
+                            <div className="text-muted-foreground text-xs">
+                              {rule.ruleName}
+                            </div>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <Badge
+                              className={cn(
+                                "border",
+                                statusClasses(rule.status),
+                              )}
+                            >
+                              {rule.status}
+                            </Badge>
+                          </td>
+                          <td className="py-3 pr-4">{rule.severity}</td>
+                          <td className="py-3">{rule.details}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="corrections" className="space-y-4">
+            {audit.corrections.length === 0 ? (
+              <AuditEmpty
+                title="没有修正记录"
+                description="该次审核没有从 FAIL 修正为其他状态的规则。"
+              />
+            ) : (
+              audit.corrections.map((correction) => (
+                <Card key={`${correction.ruleId}-${correction.reason}`}>
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <CardTitle>{correction.ruleId}</CardTitle>
+                      <Badge
+                        className={cn(
+                          "border",
+                          statusClasses(correction.correctedTo),
+                        )}
+                      >
+                        {correction.originalStatus} → {correction.correctedTo}
+                      </Badge>
+                    </div>
+                    <CardDescription>规则修正说明</CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-sm leading-6">
+                    {correction.reason}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="phases" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Phase 时间线</CardTitle>
+                <CardDescription>
+                  来自 session-log.jsonl 的结构化阶段记录
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {audit.phaseTimeline.map((phase) => {
+                  const phaseLabel =
+                    phase.name ?? phase.action ?? `Phase ${phase.phase}`;
+                  const timestamp =
+                    typeof phase.timestamp === "string"
+                      ? phase.timestamp
+                      : null;
+
+                  return (
+                    <div
+                      key={`${phase.phase}-${phaseLabel}`}
+                      className="flex gap-4"
+                    >
+                      <div className="flex w-14 shrink-0 flex-col items-center">
+                        <div className="bg-muted flex size-10 items-center justify-center rounded-full text-sm font-semibold">
+                          {phase.phase}
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1 rounded-2xl border p-4">
+                        <div className="mb-2 space-y-1">
+                          <div className="font-medium">{phaseLabel}</div>
+                          {timestamp && (
+                            <div className="text-muted-foreground text-xs">
+                              {timestamp}
+                            </div>
+                          )}
+                        </div>
+                        <pre className="text-muted-foreground overflow-x-auto text-xs whitespace-pre-wrap">
+                          {JSON.stringify(phase, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="report" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Markdown 报告</CardTitle>
+                <CardDescription>直接预览 audit-report.md 内容</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <Streamdown>{audit.reportMarkdown}</Streamdown>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
+
+export function AuditThreadMissing({ threadId }: { threadId?: string }) {
+  return (
+    <div className="flex size-full items-center justify-center p-6">
+      <Empty className="max-w-2xl border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            {threadId ? <AlertCircleIcon /> : <ListChecksIcon />}
+          </EmptyMedia>
+          <EmptyTitle>{threadId ? "线程不存在" : "选择一个线程"}</EmptyTitle>
+          <EmptyDescription>
+            {threadId
+              ? "该路由参数对应的线程未找到。"
+              : "从左侧列表中选择一个线程以查看审核结果。"}
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    </div>
+  );
+}
+
+export function AuditPageMeta({ result }: { result: string }) {
+  const Icon =
+    result === "PASS"
+      ? CheckCircle2Icon
+      : result === "SKIP"
+        ? HourglassIcon
+        : AlertCircleIcon;
+
+  return (
+    <Badge className={cn("border", statusClasses(result))}>
+      <Icon />
+      {result}
+    </Badge>
+  );
+}

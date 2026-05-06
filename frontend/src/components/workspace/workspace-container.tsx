@@ -90,7 +90,7 @@ export function WorkspaceHeader({
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <div className="pr-4">
+      {/* <div className="pr-4">
         <Tooltip content={t.workspace.githubTooltip}>
           <a
             href="https://github.com/bytedance/deer-flow"
@@ -101,7 +101,7 @@ export function WorkspaceHeader({
             <GithubIcon className="size-6" />
           </a>
         </Tooltip>
-      </div>
+      </div> */}
     </header>
   );
 }
@@ -131,5 +131,6 @@ function nameOfSegment(
   if (!segment) return t.common.home;
   if (segment === "workspace") return t.breadcrumb.workspace;
   if (segment === "chats") return t.breadcrumb.chats;
+  if (segment === "audits") return t.breadcrumb.audits;
   return segment[0]?.toUpperCase() + segment.slice(1);
 }

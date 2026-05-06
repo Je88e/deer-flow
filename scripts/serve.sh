@@ -77,7 +77,8 @@ stop_all() {
     pkill -f "next dev" 2>/dev/null || true
     pkill -f "next start" 2>/dev/null || true
     pkill -f "next-server" 2>/dev/null || true
-    nginx -c "$REPO_ROOT/docker/nginx/nginx.local.conf" -p "$REPO_ROOT" -s quit 2>/dev/null || true
+    mkdir -p "$REPO_ROOT/logs" 2>/dev/null || true
+    nginx -g 'error_log stderr notice;' -c "$REPO_ROOT/docker/nginx/nginx.local.conf" -p "$REPO_ROOT" -s quit 2>/dev/null || true
     sleep 1
     pkill -9 nginx 2>/dev/null || true
     # Force-kill any survivors still holding the service ports
@@ -232,7 +233,7 @@ run_service "Frontend" \
 
 # 3. Nginx
 run_service "Nginx" \
-    "nginx -g 'daemon off;' -c '$REPO_ROOT/docker/nginx/nginx.local.conf' -p '$REPO_ROOT' > logs/nginx.log 2>&1" \
+    "nginx -g 'error_log stderr notice; daemon off;' -c '$REPO_ROOT/docker/nginx/nginx.local.conf' -p '$REPO_ROOT' > logs/nginx.log 2>&1" \
     2026 10
 
 # ── Ready ────────────────────────────────────────────────────────────────────
