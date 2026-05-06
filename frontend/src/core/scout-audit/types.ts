@@ -1,5 +1,7 @@
 export type AuditResultStatus = "PASS" | "FAIL" | "SKIP" | "CONDITIONAL_PASS";
 
+export type ScoutAuditRuleStatus = "PASS" | "FAIL" | "SKIP";
+
 export type AuditSeverity = "severe" | "warning" | "info";
 
 export type SummaryCardTone = "pass" | "fail" | "skip" | "neutral";
@@ -7,16 +9,21 @@ export type SummaryCardTone = "pass" | "fail" | "skip" | "neutral";
 export interface ScoutAuditRuleResult {
   ruleId: string;
   ruleName: string;
-  status: AuditResultStatus;
+  status: ScoutAuditRuleStatus;
   severity: AuditSeverity;
   details: string;
+  evidence?: {
+    expected?: string;
+    actual?: string;
+    location?: string;
+  };
   remediation: string;
 }
 
 export interface ScoutAuditCorrection {
   ruleId: string;
-  originalStatus: AuditResultStatus;
-  correctedTo: AuditResultStatus;
+  originalStatus: ScoutAuditRuleStatus;
+  correctedTo: ScoutAuditRuleStatus;
   reason: string;
 }
 
@@ -46,12 +53,20 @@ export interface ScoutAuditResultsFile {
   specification?: string;
   standardRef?: string;
   auditDate?: string;
-  overallResult: AuditResultStatus;
-  summary: ScoutAuditSummary;
+  overallResult?: AuditResultStatus;
+  summary?: ScoutAuditSummary;
   ruleResults: ScoutAuditRuleResult[];
   corrections?: ScoutAuditCorrection[];
   metadata?: ScoutAuditMetadata;
 }
+
+export type ScoutAuditResults = Omit<
+  ScoutAuditResultsFile,
+  "overallResult" | "summary"
+> & {
+  overallResult: AuditResultStatus;
+  summary: ScoutAuditSummary;
+};
 
 export interface ScoutAuditArtifactSet {
   reportBaseName: string;
@@ -62,8 +77,9 @@ export interface ScoutAuditArtifactSet {
 
 export interface ScoutAuditPhaseEntry extends Record<string, unknown> {
   phase: number;
-  action: string;
-  status: string;
+  name?: string;
+  action?: string;
+  timestamp?: string;
 }
 
 export interface ScoutAuditRuleGroup {
@@ -94,7 +110,7 @@ export interface ScoutAuditViewModel {
   files: ScoutAuditArtifactSet;
   header: ScoutAuditHeader;
   reportMarkdown: string;
-  results: ScoutAuditResultsFile;
+  results: ScoutAuditResults;
   summaryCards: ScoutAuditSummaryCard[];
   ruleGroups: ScoutAuditRuleGroup[];
   corrections: ScoutAuditCorrection[];

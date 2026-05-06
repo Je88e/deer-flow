@@ -5,8 +5,12 @@ import { useMemo } from "react";
 
 import { urlOfArtifact } from "@/core/artifacts/utils";
 
-import { buildAuditViewModel, pickAuditArtifacts } from "./parser";
-import type { ScoutAuditHeader, ScoutAuditResultsFile } from "./types";
+import {
+  buildAuditViewModel,
+  parseResultsFile,
+  pickAuditArtifacts,
+} from "./parser";
+import type { ScoutAuditHeader } from "./types";
 
 async function loadArtifactText({
   filepath,
@@ -94,7 +98,7 @@ export function useScoutAuditHeader({
         filepath: files.resultsPath,
         threadId,
       });
-      const results = JSON.parse(resultsContent) as ScoutAuditResultsFile;
+      const results = parseResultsFile(resultsContent);
 
       const header: ScoutAuditHeader = {
         reportNo: results.reportNo,

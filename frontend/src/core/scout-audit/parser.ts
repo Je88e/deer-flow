@@ -2,9 +2,11 @@ import type {
   ScoutAuditArtifactSet,
   ScoutAuditCorrection,
   ScoutAuditPhaseEntry,
+  ScoutAuditResults,
   ScoutAuditResultsFile,
   ScoutAuditRuleGroup,
   ScoutAuditRuleResult,
+  ScoutAuditRuleStatus,
   ScoutAuditSummaryCard,
   ScoutAuditViewModel,
 } from "./types";
@@ -31,7 +33,7 @@ function groupCodeOfRule(ruleId: string): string {
 }
 
 function buildSummaryCards(
-  results: ScoutAuditResultsFile,
+  results: ScoutAuditResults,
 ): ScoutAuditSummaryCard[] {
   return [
     { label: "PASS", tone: "pass", value: results.summary.passCount },
@@ -97,8 +99,128 @@ export function parseSessionLog(content: string): ScoutAuditPhaseEntry[] {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line) => JSON.parse(line) as ScoutAuditPhaseEntry)
-    .sort((left, right) => left.phase - right.phase);
+    .map((line, index) => {
+      try {
+        const parsed = JSON.parse(line) as unknown;
+        return normalizePhaseEntry(parsed);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `Failed to parse session-log.jsonl at line ${index + 1}: ${message}`,
+        );
+      }
+    })
+    .sort(
+      (left, right) =>
+        (left.phase ?? Number.POSITIVE_INFINITY) -
+        (right.phase ?? Number.POSITIVE_INFINITY),
+    );
+}
+
+function normalizePhaseEntry(entry: unknown): ScoutAuditPhaseEntry {
+  if (!entry || typeof entry !== "object") {
+    return { phase: Number.POSITIVE_INFINITY };
+  }
+
+  const record = entry as Record<string, unknown>;
+  const phaseValue = record.phase;
+  const phase =
+    typeof phaseValue === "number"
+      ? phaseValue
+      : typeof phaseValue === "string"
+        ? Number(phaseValue)
+        : Number.POSITIVE_INFINITY;
+
+  const name =
+    typeof record.name === "string"
+      ? record.name
+      : typeof record.action === "string"
+        ? record.action
+        : undefined;
+
+  const timestamp =
+    typeof record.timestamp === "string" ? record.timestamp : undefined;
+
+  const normalized: ScoutAuditPhaseEntry = {
+    ...record,
+    phase,
+  };
+
+  if (name) {
+    normalized.name = name;
+  }
+
+  if (timestamp) {
+    normalized.timestamp = timestamp;
+  }
+
+  return normalized;
+}
+
+function countByStatus(
+  ruleResults: ScoutAuditRuleResult[],
+  status: ScoutAuditRuleStatus,
+) {
+  return ruleResults.reduce(
+    (acc, rule) => (rule.status === status ? acc + 1 : acc),
+    0,
+  );
+}
+
+function computeOverallResult(ruleResults: ScoutAuditRuleResult[]) {
+  const failRules = ruleResults.filter((rule) => rule.status === "FAIL");
+  if (failRules.length === 0) {
+    const passCount = countByStatus(ruleResults, "PASS");
+    const skipCount = countByStatus(ruleResults, "SKIP");
+    if (passCount === 0 && skipCount > 0) {
+      return "SKIP";
+    }
+    return "PASS";
+  }
+
+  const hasSevereFail = failRules.some((rule) => rule.severity === "severe");
+  return hasSevereFail ? "FAIL" : "CONDITIONAL_PASS";
+}
+
+function computeSummary(results: ScoutAuditResultsFile) {
+  const totalRules = results.ruleResults.length;
+  const passCount = countByStatus(results.ruleResults, "PASS");
+  const failCount = countByStatus(results.ruleResults, "FAIL");
+  const skipCount = countByStatus(results.ruleResults, "SKIP");
+  const applicableCount = totalRules - skipCount;
+  const correctionCount = results.corrections?.length ?? 0;
+  const severeFailCount = results.ruleResults.filter(
+    (rule) => rule.status === "FAIL" && rule.severity === "severe",
+  ).length;
+
+  return {
+    totalRules,
+    passCount,
+    failCount,
+    skipCount,
+    applicableCount,
+    correctionCount,
+    severeFailCount,
+  };
+}
+
+function normalizeResultsFile(
+  results: ScoutAuditResultsFile,
+): ScoutAuditResults {
+  const summary = results.summary ?? computeSummary(results);
+  const overallResult =
+    results.overallResult ?? computeOverallResult(results.ruleResults);
+
+  return {
+    ...results,
+    overallResult,
+    summary,
+  };
+}
+
+export function parseResultsFile(content: string): ScoutAuditResults {
+  const parsed = JSON.parse(content) as ScoutAuditResultsFile;
+  return normalizeResultsFile(parsed);
 }
 
 export function buildAuditViewModel({
@@ -117,7 +239,7 @@ export function buildAuditViewModel({
     throw new Error("Missing scout-audit artifacts.");
   }
 
-  const results = JSON.parse(resultsContent) as ScoutAuditResultsFile;
+  const results = parseResultsFile(resultsContent);
   const corrections: ScoutAuditCorrection[] = results.corrections ?? [];
 
   return {

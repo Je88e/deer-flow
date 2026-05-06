@@ -426,34 +426,40 @@ export function AuditDashboard({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {audit.phaseTimeline.map((phase) => (
-                  <div
-                    key={`${phase.phase}-${phase.action}`}
-                    className="flex gap-4"
-                  >
-                    <div className="flex w-14 shrink-0 flex-col items-center">
-                      <div className="bg-muted flex size-10 items-center justify-center rounded-full text-sm font-semibold">
-                        {phase.phase}
+                {audit.phaseTimeline.map((phase) => {
+                  const phaseLabel =
+                    phase.name ?? phase.action ?? `Phase ${phase.phase}`;
+                  const timestamp =
+                    typeof phase.timestamp === "string"
+                      ? phase.timestamp
+                      : null;
+
+                  return (
+                    <div
+                      key={`${phase.phase}-${phaseLabel}`}
+                      className="flex gap-4"
+                    >
+                      <div className="flex w-14 shrink-0 flex-col items-center">
+                        <div className="bg-muted flex size-10 items-center justify-center rounded-full text-sm font-semibold">
+                          {phase.phase}
+                        </div>
                       </div>
-                    </div>
-                    <div className="min-w-0 flex-1 rounded-2xl border p-4">
-                      <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <div className="font-medium">{phase.action}</div>
-                        <Badge
-                          className={cn(
-                            "border",
-                            statusClasses(String(phase.status)),
+                      <div className="min-w-0 flex-1 rounded-2xl border p-4">
+                        <div className="mb-2 space-y-1">
+                          <div className="font-medium">{phaseLabel}</div>
+                          {timestamp && (
+                            <div className="text-muted-foreground text-xs">
+                              {timestamp}
+                            </div>
                           )}
-                        >
-                          {String(phase.status)}
-                        </Badge>
+                        </div>
+                        <pre className="text-muted-foreground overflow-x-auto text-xs whitespace-pre-wrap">
+                          {JSON.stringify(phase, null, 2)}
+                        </pre>
                       </div>
-                      <pre className="text-muted-foreground overflow-x-auto text-xs whitespace-pre-wrap">
-                        {JSON.stringify(phase, null, 2)}
-                      </pre>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           </TabsContent>
