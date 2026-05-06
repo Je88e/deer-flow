@@ -47,3 +47,19 @@ members = ["packages/harness"]
 
 [tool.uv.sources]
 deerflow-harness = { workspace = true }
+
+[tool.ruff]
+line-length = 240
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["deerflow", "app"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
