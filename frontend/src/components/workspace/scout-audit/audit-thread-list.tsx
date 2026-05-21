@@ -3,7 +3,7 @@
 import { SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -19,9 +19,15 @@ import { cn } from "@/lib/utils";
 function AuditThreadRow({
   thread,
   isActive,
+  searchKeyword,
+  onMatchChange,
+  pathBuilder,
 }: {
   thread: AgentThread;
   isActive: boolean;
+  searchKeyword: string;
+  onMatchChange: (id: string, matched: boolean) => void;
+  pathBuilder: (threadId: string) => string;
 }) {
   const { data: state } = useThreadState(thread.thread_id);
   const artifactPaths =
@@ -30,16 +36,35 @@ function AuditThreadRow({
     threadId: thread.thread_id,
     artifactPaths,
   });
-  const artifactCount =
-    state?.values?.artifacts?.length ?? thread.values.artifacts?.length ?? 0;
   const threadTitle = titleOfThread(thread);
   const displayTitle = auditHeader
-    ? `${auditHeader.reportNo}${auditHeader.productName ? ` ${auditHeader.productName}` : ""}`
+    ? `${auditHeader.batchNo} ${auditHeader.reportNo}${auditHeader.productName ? ` ${auditHeader.productName}` : ""}`
+    : threadTitle;
+
+  const matched =
+    !searchKeyword || displayTitle.toLowerCase().includes(searchKeyword);
+
+  useEffect(() => {
+    onMatchChange(thread.thread_id, matched);
+  }, [matched, onMatchChange, thread.thread_id]);
+
+  if (!matched) return null;
+
+  const statusLabel = auditHeader?.overallResult;
+  const statusStyle = {
+    PASS: "border-emerald-500/50 text-emerald-600 dark:text-emerald-400",
+    FAIL: "border-red-500/50 text-red-600 dark:text-red-400",
+    CONDITIONAL_PASS: "border-amber-500/50 text-amber-600 dark:text-amber-400",
+    SKIP: "border-muted text-muted-foreground",
+  }[statusLabel ?? "SKIP"];
+
+  const subtitle = auditHeader
+    ? [auditHeader.docType, auditHeader.auditDate].filter(Boolean).join(" · ")
     : threadTitle;
 
   return (
     <Link
-      href={pathOfAuditThread(thread.thread_id)}
+      href={pathBuilder(thread.thread_id)}
       className={cn(
         "hover:bg-accent mb-1 rounded-xl border px-3 py-3 transition-colors",
         isActive ? "border-primary/40 bg-primary/5" : "border-transparent",
@@ -47,32 +72,45 @@ function AuditThreadRow({
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="line-clamp-2 text-sm font-medium">{displayTitle}</div>
-        <Badge variant="outline" className="text-[10px]">
-          {artifactCount} 文件
-        </Badge>
+        {statusLabel && (
+          <Badge
+            variant="outline"
+            className={cn("shrink-0 text-[10px]", statusStyle)}
+          >
+            {statusLabel}
+          </Badge>
+        )}
       </div>
       <div className="text-muted-foreground flex items-center justify-between text-xs">
-        <span className="truncate">{threadTitle}</span>
+        <span className="truncate">{subtitle}</span>
         {thread.updated_at && <span>{formatTimeAgo(thread.updated_at)}</span>}
       </div>
     </Link>
   );
 }
 
-export function AuditThreadList({ threads }: { threads: AgentThread[] }) {
+export function AuditThreadList({
+  threads,
+  pathBuilder = pathOfAuditThread,
+}: {
+  threads: AgentThread[];
+  pathBuilder?: (threadId: string) => string;
+}) {
   const params = useParams<{ thread_id?: string }>();
   const [search, setSearch] = useState("");
 
-  const filteredThreads = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    if (!keyword) {
-      return threads;
-    }
+  const searchKeyword = useMemo(() => search.trim().toLowerCase(), [search]);
+  const [matchMap, setMatchMap] = useState<Record<string, boolean>>({});
 
-    return threads.filter((thread) => {
-      return titleOfThread(thread).toLowerCase().includes(keyword);
-    });
-  }, [search, threads]);
+  const handleMatchChange = useCallback((id: string, matched: boolean) => {
+    setMatchMap((prev) =>
+      prev[id] === matched ? prev : { ...prev, [id]: matched },
+    );
+  }, []);
+
+  const hasVisibleThreads = threads.some(
+    (t) => matchMap[t.thread_id] !== false,
+  );
 
   return (
     <aside className="bg-background/80 flex w-full max-w-80 shrink-0 flex-col border-r backdrop-blur">
@@ -93,17 +131,20 @@ export function AuditThreadList({ threads }: { threads: AgentThread[] }) {
       </div>
       <ScrollArea className="min-h-0 flex-1">
         <div className="flex flex-col p-2">
-          {filteredThreads.map((thread) => {
+          {threads.map((thread) => {
             const isActive = params.thread_id === thread.thread_id;
             return (
               <AuditThreadRow
                 key={thread.thread_id}
                 thread={thread}
                 isActive={isActive}
+                searchKeyword={searchKeyword}
+                onMatchChange={handleMatchChange}
+                pathBuilder={pathBuilder}
               />
             );
           })}
-          {filteredThreads.length === 0 && (
+          {!hasVisibleThreads && searchKeyword && (
             <div className="text-muted-foreground px-3 py-6 text-sm">
               没有匹配的线程
             </div>
