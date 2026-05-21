@@ -17,7 +17,6 @@ import { InputBox } from "@/components/workspace/input-box";
 import {
   MessageList,
   MESSAGE_LIST_DEFAULT_PADDING_BOTTOM,
-  MESSAGE_LIST_FOLLOWUPS_EXTRA_PADDING_BOTTOM,
 } from "@/components/workspace/messages";
 import { ThreadContext } from "@/components/workspace/messages/context";
 import { ThreadTitle } from "@/components/workspace/thread-title";
@@ -29,7 +28,12 @@ import { useI18n } from "@/core/i18n/hooks";
 import { useModels } from "@/core/models/hooks";
 import { useNotification } from "@/core/notification/hooks";
 import { useLocalSettings, useThreadSettings } from "@/core/settings";
-import { useThreads, useThreadStream } from "@/core/threads/hooks";
+import {
+  useThreads,
+  useThreadStream,
+  useThreadTokenUsage,
+} from "@/core/threads/hooks";
+import { threadTokenUsageToTokenUsage } from "@/core/threads/token-usage";
 import { textOfMessage } from "@/core/threads/utils";
 import { env } from "@/env";
 import { cn } from "@/lib/utils";
@@ -60,7 +64,6 @@ function normalizeUrlParam(value: string | null): string | null {
 function ChatPageInner() {
   const { t } = useI18n();
   const router = useRouter();
-  const [showFollowups, setShowFollowups] = useState(false);
   const { threadId, setThreadId, isNewThread, setIsNewThread, isMock } =
     useThreadChat();
   // `isNewThread` tracks whether the backend has the thread yet — gates the
@@ -72,6 +75,11 @@ function ChatPageInner() {
   const [settings, setSettings] = useThreadSettings(threadId);
   const [localSettings, setLocalSettings] = useLocalSettings();
   const { tokenUsageEnabled } = useModels();
+  const threadTokenUsage = useThreadTokenUsage(
+    isNewThread || isMock ? undefined : threadId,
+    { enabled: tokenUsageEnabled && !isMock },
+  );
+  const backendTokenUsage = threadTokenUsageToTokenUsage(threadTokenUsage.data);
   const mountedRef = useRef(false);
   const { data: threads = [] } = useThreads();
   useSpecificChatMode();
@@ -92,6 +100,7 @@ function ChatPageInner() {
 
   const {
     thread,
+    pendingUsageMessages,
     sendMessage,
     isUploading,
     isHistoryLoading,
@@ -133,7 +142,11 @@ function ChatPageInner() {
 
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
-      void sendMessage(threadId, message);
+      const sendPromise = sendMessage(threadId, message);
+      if (message.files.length > 0) {
+        return sendPromise;
+      }
+      void sendPromise;
     },
     [sendMessage, threadId],
   );
@@ -141,13 +154,10 @@ function ChatPageInner() {
     await thread.stop();
   }, [thread]);
 
-  const messageListPaddingBottom = showFollowups
-    ? MESSAGE_LIST_DEFAULT_PADDING_BOTTOM +
-      MESSAGE_LIST_FOLLOWUPS_EXTRA_PADDING_BOTTOM
-    : undefined;
   const tokenUsageInlineMode = tokenUsageEnabled
     ? localSettings.tokenUsage.inlineMode
     : "off";
+  const hasTodos = (thread.values.todos?.length ?? 0) > 0;
 
   const persistedThread = useMemo(() => {
     return threads.find((item) => item.thread_id === threadId);
@@ -213,8 +223,11 @@ function ChatPageInner() {
                 </Tooltip>
               )}
               <TokenUsageIndicator
+                threadId={isNewThread ? undefined : threadId}
+                backendUsage={backendTokenUsage}
                 enabled={tokenUsageEnabled}
                 messages={thread.messages}
+                pendingMessages={pendingUsageMessages}
                 preferences={localSettings.tokenUsage}
                 onPreferencesChange={(preferences) =>
                   setLocalSettings("tokenUsage", preferences)
@@ -225,19 +238,24 @@ function ChatPageInner() {
             </div>
           </header>
           <main className="flex min-h-0 max-w-full grow flex-col">
-            <div className="flex size-full justify-center">
+            <div className="flex min-h-0 flex-1 justify-center">
               <MessageList
                 className={cn("size-full", !isWelcomeMode && "pt-10")}
                 threadId={threadId}
                 thread={thread}
-                paddingBottom={messageListPaddingBottom}
+                paddingBottom={MESSAGE_LIST_DEFAULT_PADDING_BOTTOM}
                 hasMoreHistory={hasMoreHistory}
                 loadMoreHistory={loadMoreHistory}
                 isHistoryLoading={isHistoryLoading}
                 tokenUsageInlineMode={tokenUsageInlineMode}
               />
             </div>
-            <div className="absolute right-0 bottom-0 left-0 z-30 flex justify-center px-4">
+            <div
+              className={cn(
+                "right-0 bottom-0 left-0 z-30 flex justify-center px-4",
+                isWelcomeMode ? "absolute" : "relative shrink-0 pb-4",
+              )}
+            >
               <div
                 className={cn(
                   "relative w-full",
@@ -247,20 +265,33 @@ function ChatPageInner() {
                     : "max-w-(--container-width-md)",
                 )}
               >
-                <div className="absolute -top-4 right-0 left-0 z-0">
-                  <div className="absolute right-0 bottom-0 left-0">
-                    <TodoList
-                      className="bg-background/5"
-                      todos={thread.values.todos ?? []}
-                      hidden={
-                        !thread.values.todos || thread.values.todos.length === 0
-                      }
-                    />
+                {hasTodos && (
+                  <div
+                    className={cn(
+                      "right-0 left-0 z-0",
+                      isWelcomeMode ? "absolute -top-4" : "relative",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "right-0 bottom-0 left-0",
+                        isWelcomeMode ? "absolute" : "relative",
+                      )}
+                    >
+                      <TodoList
+                        className="bg-background/5"
+                        todos={thread.values.todos ?? []}
+                        hidden={false}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
                 {mountedRef.current ? (
                   <InputBox
-                    className={cn("bg-background/5 w-full -translate-y-4")}
+                    className={cn(
+                      "bg-background/5 w-full",
+                      isWelcomeMode && "-translate-y-4",
+                    )}
                     isWelcomeMode={isWelcomeMode}
                     threadId={threadId}
                     autoFocus={isWelcomeMode}
@@ -282,7 +313,6 @@ function ChatPageInner() {
                     onContextChange={(context) =>
                       setSettings("context", context)
                     }
-                    onFollowupsVisibilityChange={setShowFollowups}
                     onSubmit={handleSubmit}
                     onStop={handleStop}
                   />
@@ -290,7 +320,8 @@ function ChatPageInner() {
                   <div
                     aria-hidden="true"
                     className={cn(
-                      "bg-background/5 h-32 w-full -translate-y-4 rounded-2xl",
+                      "bg-background/5 h-32 w-full rounded-2xl",
+                      isWelcomeMode && "-translate-y-4",
                     )}
                   />
                 )}
