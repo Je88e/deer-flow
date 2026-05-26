@@ -196,6 +196,15 @@ export interface Translations {
     missingArtifacts: string;
     loadingResult: string;
     loadFailed: string;
+    approve: string;
+    approveToast: string;
+    reject: string;
+    rejectDialogTitle: string;
+    rejectDialogDescription: string;
+    rejectReasonLabel: string;
+    rejectReasonPlaceholder: string;
+    rejectSubmit: string;
+    rejectSubmitToast: string;
   };
 
   // Page titles (document title)

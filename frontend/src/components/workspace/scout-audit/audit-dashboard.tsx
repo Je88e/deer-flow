@@ -9,7 +9,10 @@ import {
   FlaskConicalIcon,
   HourglassIcon,
   ListChecksIcon,
+  XCircleIcon,
 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +25,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -30,7 +41,9 @@ import {
 } from "@/components/ui/empty";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { urlOfArtifact } from "@/core/artifacts/utils";
+import { useI18n } from "@/core/i18n/hooks";
 import { type ScoutAuditViewModel } from "@/core/scout-audit/types";
 import { cn } from "@/lib/utils";
 
@@ -111,6 +124,39 @@ function ArtifactActions({
   );
 }
 
+function AuditReviewActions({
+  onApprove,
+  onRejectOpen,
+}: {
+  onApprove: () => void;
+  onRejectOpen: () => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        className="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300"
+        onClick={onApprove}
+      >
+        <CheckCircle2Icon />
+        {t.audits.approve}
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="border-rose-500/20 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 dark:text-rose-300"
+        onClick={onRejectOpen}
+      >
+        <XCircleIcon />
+        {t.audits.reject}
+      </Button>
+    </div>
+  );
+}
+
 function AuditEmpty({
   title,
   description,
@@ -148,6 +194,24 @@ export function AuditDashboard({
   error?: Error | null;
   hasArtifacts: boolean;
 }) {
+  const { t } = useI18n();
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+
+  function handleApprove() {
+    toast.success(t.audits.approveToast);
+  }
+
+  function handleRejectOpen() {
+    setRejectReason("");
+    setRejectDialogOpen(true);
+  }
+
+  function handleRejectSubmit() {
+    toast.success(t.audits.rejectSubmitToast);
+    setRejectDialogOpen(false);
+  }
+
   if (isLoading) {
     return (
       <AuditEmpty
@@ -213,7 +277,14 @@ export function AuditDashboard({
                 )}
               </div>
             </div>
-            <ArtifactActions threadId={threadId} audit={audit} />
+            <div className="flex flex-wrap items-center gap-4">
+              <AuditReviewActions
+                onApprove={handleApprove}
+                onRejectOpen={handleRejectOpen}
+              />
+              <div className="bg-border mx-1 h-6 w-px" />
+              <ArtifactActions threadId={threadId} audit={audit} />
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -229,6 +300,39 @@ export function AuditDashboard({
             ))}
           </div>
         </section>
+
+        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t.audits.rejectDialogTitle}</DialogTitle>
+              <DialogDescription>
+                {t.audits.rejectDialogDescription}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 py-2">
+              <label className="text-sm font-medium">
+                {t.audits.rejectReasonLabel}
+              </label>
+              <Textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder={t.audits.rejectReasonPlaceholder}
+                rows={4}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setRejectDialogOpen(false)}
+              >
+                {t.common.cancel}
+              </Button>
+              <Button variant="destructive" onClick={handleRejectSubmit}>
+                {t.audits.rejectSubmit}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Tabs defaultValue="overview" className="gap-4">
           <TabsList

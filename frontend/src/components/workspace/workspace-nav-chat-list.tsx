@@ -53,7 +53,7 @@ export function WorkspaceNavChatList() {
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
-        <SidebarMenuItem>
+        {/* <SidebarMenuItem>
           <SidebarMenuButton
             isActive={pathname.startsWith("/scout-audit")}
             asChild
@@ -63,7 +63,7 @@ export function WorkspaceNavChatList() {
               <span>Scout Audit</span>
             </Link>
           </SidebarMenuButton>
-        </SidebarMenuItem>
+        </SidebarMenuItem> */}
       </SidebarMenu>
     </SidebarGroup>
   );
