@@ -261,6 +261,15 @@ export const enUS: Translations = {
     missingArtifacts: "This thread has no audit results yet",
     loadingResult: "Loading audit results",
     loadFailed: "Failed to load audit results",
+    approve: "Approve",
+    approveToast: "Audit approved",
+    reject: "Return",
+    rejectDialogTitle: "Return Audit",
+    rejectDialogDescription: "Please provide a reason before confirming.",
+    rejectReasonLabel: "Return Reason",
+    rejectReasonPlaceholder: "Enter the return reason...",
+    rejectSubmit: "Confirm Return",
+    rejectSubmitToast: "Audit returned",
   },
 
   // Page titles (document title)

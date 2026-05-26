@@ -249,6 +249,15 @@ export const zhCN: Translations = {
     missingArtifacts: "该线程暂无审核结果",
     loadingResult: "正在加载审核结果",
     loadFailed: "审核结果加载失败",
+    approve: "审核通过",
+    approveToast: "审核已通过",
+    reject: "审核退回",
+    rejectDialogTitle: "审核退回",
+    rejectDialogDescription: "请填写退回原因后确认提交。",
+    rejectReasonLabel: "退回原因",
+    rejectReasonPlaceholder: "请输入退回原因...",
+    rejectSubmit: "确认退回",
+    rejectSubmitToast: "审核已退回",
   },
 
   // Page titles (document title)
