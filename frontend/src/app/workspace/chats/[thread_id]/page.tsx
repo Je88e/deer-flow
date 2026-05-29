@@ -307,6 +307,7 @@ function ChatPageInner() {
                     //   isWelcomeMode && <Welcome mode={settings.context.mode} />
                     // }
                     disabled={
+                      isMock ||
                       env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true" ||
                       isUploading
                     }
