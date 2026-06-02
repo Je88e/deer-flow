@@ -23,7 +23,6 @@ import { ThreadTitle } from "@/components/workspace/thread-title";
 import { TodoList } from "@/components/workspace/todo-list";
 import { TokenUsageIndicator } from "@/components/workspace/token-usage-indicator";
 import { Tooltip } from "@/components/workspace/tooltip";
-import { redeemHandoff } from "@/core/handoff/api";
 import { useI18n } from "@/core/i18n/hooks";
 import { useModels } from "@/core/models/hooks";
 import { useNotification } from "@/core/notification/hooks";
@@ -347,9 +346,6 @@ export default function ChatPage() {
   useEffect(() => {
     const url = new URL(window.location.href);
     const hashParams = getHashParams(url.hash);
-    const token =
-      normalizeUrlParam(hashParams.get("handoff")) ??
-      normalizeUrlParam(url.searchParams.get("handoff"));
     const runId =
       normalizeUrlParam(hashParams.get("run_id")) ??
       normalizeUrlParam(url.searchParams.get("run_id"));
@@ -357,14 +353,13 @@ export default function ChatPage() {
 
     const cleanupUrl = () => {
       url.hash = "";
-      url.searchParams.delete("handoff");
       url.searchParams.delete("run_id");
       const search = url.searchParams.toString();
       const nextUrl = `${url.pathname}${search ? `?${search}` : ""}`;
       history.replaceState(null, "", nextUrl);
     };
 
-    if (!token && !runId) {
+    if (!runId) {
       setReady(true);
       return;
     }
@@ -376,34 +371,10 @@ export default function ChatPage() {
       return;
     }
 
-    if (token) {
-      void redeemHandoff(token)
-        .then((redeemed) => {
-          if (redeemed.thread_id !== threadId) {
-            throw new Error("Handoff thread mismatch.");
-          }
-          window.sessionStorage.setItem(
-            `lg:stream:${threadId}`,
-            redeemed.run_id,
-          );
-          cleanupUrl();
-          setReady(true);
-        })
-        .catch((e: unknown) => {
-          cleanupUrl();
-          setError(
-            e instanceof Error ? e.message : "Failed to redeem handoff.",
-          );
-          setReady(true);
-        });
-      return;
-    }
-
-    if (runId) {
-      window.sessionStorage.setItem(`lg:stream:${threadId}`, runId);
-      cleanupUrl();
-      setReady(true);
-    }
+    // Direct run_id pass-through: write to sessionStorage, triggering useStream reconnect
+    window.sessionStorage.setItem(`lg:stream:${threadId}`, runId);
+    cleanupUrl();
+    setReady(true);
   }, []);
 
   if (!ready) {
