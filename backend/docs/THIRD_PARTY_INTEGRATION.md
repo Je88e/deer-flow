@@ -140,9 +140,14 @@ Both cookies use `SameSite=Lax` on HTTP and `SameSite=None; Secure` on HTTPS.
 
 For all state-changing requests (POST, PUT, DELETE, PATCH), the client must:
 
-1. Read the `csrf_token` cookie value
-2. Send it as the `X-CSRF-Token` request header
+1. Obtain the CSRF token value from the login/initialize response
+2. Send it as the `X-CSRF-Token` request header on subsequent requests
 3. The gateway compares the header value with the cookie value (constant-time)
+
+**Critical cross-origin detail:** `document.cookie` cannot read cookies set by a different origin due to the browser's Same-Origin Policy. The DeerFlow backend provides the CSRF token value through two channels:
+
+1. **Response header** `X-CSRF-Token` on login/initialize/register POST responses (works cross-origin via CORS `Access-Control-Expose-Headers`)
+2. **`document.cookie`** only for same-origin clients
 
 ### 4.3 Required Headers Per Method
 
@@ -153,15 +158,35 @@ For all state-changing requests (POST, PUT, DELETE, PATCH), the client must:
 
 ### 4.4 CSRF Helper Function
 
+**Cross-origin approach (recommended for third-party clients):**
+
+Read the token from the login/initialize response header — this works regardless of origin:
+
 ```javascript
-function readCsrfToken() {
-  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : null;
+let csrfToken = null;  // Store in memory, NOT localStorage
+
+async function login(email, password) {
+  const formData = new URLSearchParams();
+  formData.append("username", email);
+  formData.append("password", password);
+
+  const res = await fetch(`${BASE}/auth/login/local`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: formData,
+    credentials: "include",
+  });
+
+  if (!res.ok) throw new Error("Login failed");
+
+  // Capture CSRF token from response header (works cross-origin)
+  csrfToken = res.headers.get("X-CSRF-Token");
+
+  return res.json();
 }
 
 function csrfHeaders() {
-  const token = readCsrfToken();
-  return token ? { "X-CSRF-Token": token } : {};
+  return csrfToken ? { "X-CSRF-Token": csrfToken } : {};
 }
 
 async function apiFetch(url, options = {}) {
@@ -169,9 +194,8 @@ async function apiFetch(url, options = {}) {
   const isStateChanging = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
 
   const headers = new Headers(options.headers);
-  if (isStateChanging) {
-    const token = readCsrfToken();
-    if (token) headers.set("X-CSRF-Token", token);
+  if (isStateChanging && csrfToken) {
+    headers.set("X-CSRF-Token", csrfToken);
   }
 
   const res = await fetch(url, {
@@ -181,11 +205,20 @@ async function apiFetch(url, options = {}) {
   });
 
   if (res.status === 401) {
-    // Redirect to login or emit event
+    csrfToken = null;
     window.dispatchEvent(new CustomEvent("deerflow:unauthorized"));
   }
 
   return res;
+}
+```
+
+**Same-origin fallback (only works when the client is served from the same origin as the API):**
+
+```javascript
+function readCsrfFromCookie() {
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 ```
 
@@ -364,12 +397,19 @@ fetch(url, { credentials: "include" })
 
 **Cause:** `X-CSRF-Token` header not sent on state-changing requests, or value doesn't match the `csrf_token` cookie.
 
-**Fix:** Ensure the CSRF helper is called for all POST/PUT/DELETE/PATCH requests:
+**Fix for cross-origin clients:** Capture the token from the login/initialize response header:
 
 ```javascript
-// Read cookie value
+// After login/initialize
+const csrfToken = res.headers.get("X-CSRF-Token");
+// Send on subsequent state-changing requests
+headers["X-CSRF-Token"] = csrfToken;
+```
+
+**Fix for same-origin clients only:** Read from `document.cookie` (won't work cross-origin):
+
+```javascript
 const token = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/)?.[1];
-// Send as header
 headers["X-CSRF-Token"] = decodeURIComponent(token);
 ```
 

@@ -218,6 +218,11 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 samesite=samesite,
                 path="/",
             )
+            # Also expose the token via a response header so cross-origin
+            # clients can read it — document.cookie is restricted to the
+            # current document's origin and won't show cookies from the API
+            # domain when the client runs on a different origin.
+            response.headers[CSRF_HEADER_NAME] = csrf_token
 
         return response
 

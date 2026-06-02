@@ -17,7 +17,6 @@ from app.gateway.routers import (
     auth,
     channels,
     feedback,
-    handoff,
     mcp,
     memory,
     models,
@@ -308,10 +307,6 @@ This gateway provides runtime endpoints for agent runs plus custom endpoints for
                 "name": "health",
                 "description": "Health check and system status endpoints",
             },
-            {
-                "name": "handoff",
-                "description": "One-time run handoff tokens for cross-origin navigation",
-            },
         ],
     )
 
@@ -332,6 +327,7 @@ This gateway provides runtime endpoints for agent runs plus custom endpoints for
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
+            expose_headers=["X-CSRF-Token"],
         )
 
     # Include routers
@@ -379,8 +375,6 @@ This gateway provides runtime endpoints for agent runs plus custom endpoints for
 
     # Stateless Runs API (stream/wait without a pre-existing thread)
     app.include_router(runs.router)
-
-    app.include_router(handoff.router)
 
     @app.get("/health", tags=["health"])
     async def health_check() -> dict[str, str]:

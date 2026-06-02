@@ -267,13 +267,22 @@ function getBaseUrl() {
 }
 
 /* ── CSRF Helpers ── */
-function readCsrfToken() {
-  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : null;
+/* Cross-origin: read token from response header (document.cookie is same-origin-only).
+   Same-origin fallback: read from document.cookie if header is absent. */
+let _csrfToken = null;  // In-memory only — never localStorage
+
+function getCsrfToken() {
+  /* Try same-origin cookie first (works when demo is served from the same origin) */
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+    if (match) return decodeURIComponent(match[1]);
+  }
+  /* Fall back to stored token from cross-origin response header */
+  return _csrfToken;
 }
 
 function csrfHeaders() {
-  const token = readCsrfToken();
+  const token = getCsrfToken();
   return token ? { "X-CSRF-Token": token } : {};
 }
 
@@ -289,7 +298,7 @@ async function apiFetch(path, options = {}) {
 
   const headers = new Headers(options.headers || {});
   if (isStateChanging(method)) {
-    const token = readCsrfToken();
+    const token = getCsrfToken();
     if (token) headers.set("X-CSRF-Token", token);
   }
 
@@ -302,6 +311,10 @@ async function apiFetch(path, options = {}) {
     addLogEntry(method, path, null, err.message, elapsed, true);
     return null;
   }
+
+  /* Capture CSRF token from response header (primary path for cross-origin clients) */
+  const headerToken = res.headers.get("X-CSRF-Token");
+  if (headerToken) _csrfToken = headerToken;
 
   const elapsed = (performance.now() - start).toFixed(0);
   let body;
@@ -430,8 +443,8 @@ btnLogin.addEventListener("click", async () => {
   });
 
   if (result?.ok) {
-    const csrfNow = readCsrfToken();
-    setStatus("authenticated", `Logged in as: ${email}${csrfNow ? " (CSRF cookie present)" : " (WARNING: no CSRF cookie)"}`);
+    const csrfNow = getCsrfToken();
+    setStatus("authenticated", `Logged in as: ${email}${csrfNow ? " (CSRF token captured)" : " (WARNING: no CSRF token)"}`);
     updateAuthUI(true);
   } else {
     setStatus("error", "Login failed. Check credentials.");
