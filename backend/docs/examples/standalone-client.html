@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeerFlow — Cross-Origin Client Demo</title>
+<style>
+  :root {
+    --bg: oklch(14% 0.01 260);
+    --surface: oklch(19% 0.01 260);
+    --border: oklch(28% 0.01 260);
+    --text: oklch(90% 0 0);
+    --text-muted: oklch(62% 0.01 260);
+    --accent: oklch(68% 0.18 250);
+    --accent-hover: oklch(72% 0.18 250);
+    --danger: oklch(58% 0.22 25);
+    --success: oklch(60% 0.18 160);
+    --radius: 8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .app {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-bottom: 2rem;
+  }
+
+  /* ── Config Bar ── */
+  .config-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .config-bar input {
+    flex: 1;
+    min-width: 260px;
+    padding: 0.5rem 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 0.875rem;
+    font-family: monospace;
+  }
+
+  .config-bar input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  /* ── Buttons ── */
+  button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+
+  button:hover { background: oklch(24% 0.01 260); }
+  button:active { background: oklch(28% 0.01 260); }
+
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+
+  button.primary:hover { background: var(--accent-hover); }
+
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* ── Status Banner ── */
+  .status {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .status-authenticated { background: oklch(22% 0.04 160); border: 1px solid oklch(45% 0.12 160); }
+  .status-unauthenticated { background: var(--surface); border: 1px solid var(--border); }
+  .status-error { background: oklch(22% 0.04 25); border: 1px solid oklch(45% 0.12 25); }
+
+  /* ── Log ── */
+  .log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .log-entries {
+    max-height: 480px;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
+  }
+
+  .log-entry {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid oklch(22% 0.01 260);
+    font-family: monospace;
+    font-size: 0.8125rem;
+  }
+
+  .log-entry:last-child { border-bottom: none; }
+
+  .log-entry .method {
+    display: inline-block;
+    width: 3rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .log-entry .path {
+    color: var(--text-muted);
+  }
+
+  .log-entry .status-code {
+    margin-left: 0.5rem;
+    font-weight: 600;
+  }
+
+  .log-entry .status-2xx { color: var(--success); }
+  .log-entry .status-4xx { color: var(--danger); }
+  .log-entry .status-5xx { color: var(--danger); }
+
+  .log-detail {
+    margin-top: 0.25rem;
+    padding: 0.5rem;
+    background: oklch(14% 0.01 260);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .log-detail.error { border-left: 2px solid var(--danger); }
+  .log-detail.success { border-left: 2px solid var(--success); }
+
+  .hint {
+    margin-top: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    background: oklch(22% 0.04 80);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: oklch(80% 0.08 80);
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>DeerFlow — Cross-Origin Client Demo</h1>
+  <p class="subtitle">
+    Zero-dependency demo showing how external browser apps authenticate and call the DeerFlow API.
+    Open this file from a <strong>different origin</strong> (e.g. <code>file://</code> or another server)
+    to verify cross-origin integration works.
+  </p>
+
+  <div class="config-bar">
+    <input id="baseUrl" type="text" value="https://localhost:2026" placeholder="https://deerflow-host:2026">
+    <button id="btnCheckSetup" class="primary">Check Setup</button>
+  </div>
+
+  <div id="statusBanner" class="status status-unauthenticated">
+    Enter the DeerFlow base URL and click "Check Setup" to begin.
+  </div>
+
+  <div class="actions" id="authActions">
+    <button id="btnInitialize">Initialize Admin</button>
+    <button id="btnLogin">Login</button>
+    <button id="btnMe" disabled>Get /me</button>
+    <button id="btnLogout" disabled>Logout</button>
+  </div>
+
+  <div class="log">
+    <div class="log-header">
+      <span>Request Log</span>
+      <button id="btnClearLog">Clear</button>
+    </div>
+    <div class="log-entries" id="logEntries">
+      <div class="log-entry" style="color:var(--text-muted)">No requests yet. Click "Check Setup" to start.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── State ── */
+const BASE_URL_KEY = "deerflow_demo_base_url";
+const baseUrlInput = document.getElementById("baseUrl");
+const statusBanner = document.getElementById("statusBanner");
+const logEntries = document.getElementById("logEntries");
+const btnCheckSetup = document.getElementById("btnCheckSetup");
+const btnInitialize = document.getElementById("btnInitialize");
+const btnLogin = document.getElementById("btnLogin");
+const btnMe = document.getElementById("btnMe");
+const btnLogout = document.getElementById("btnLogout");
+const btnClearLog = document.getElementById("btnClearLog");
+
+let isAuthenticated = false;
+
+// Restore saved base URL
+const saved = localStorage.getItem(BASE_URL_KEY);
+if (saved) baseUrlInput.value = saved;
+
+baseUrlInput.addEventListener("change", () => {
+  localStorage.setItem(BASE_URL_KEY, baseUrlInput.value.trim());
+});
+
+function getBaseUrl() {
+  return baseUrlInput.value.trim().replace(/\/+$/, "");
+}
+
+/* ── CSRF Helpers ── */
+function readCsrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function csrfHeaders() {
+  const token = readCsrfToken();
+  return token ? { "X-CSRF-Token": token } : {};
+}
+
+function isStateChanging(method) {
+  return ["POST", "PUT", "DELETE", "PATCH"].includes(method.toUpperCase());
+}
+
+/* ── API Fetch ── */
+async function apiFetch(path, options = {}) {
+  const base = getBaseUrl();
+  const url = `${base}/api/v1${path}`;
+  const method = (options.method || "GET").toUpperCase();
+
+  const headers = new Headers(options.headers || {});
+  if (isStateChanging(method)) {
+    const token = readCsrfToken();
+    if (token) headers.set("X-CSRF-Token", token);
+  }
+
+  const start = performance.now();
+  let res;
+  try {
+    res = await fetch(url, { ...options, method, headers, credentials: "include" });
+  } catch (err) {
+    const elapsed = (performance.now() - start).toFixed(0);
+    addLogEntry(method, path, null, err.message, elapsed, true);
+    return null;
+  }
+
+  const elapsed = (performance.now() - start).toFixed(0);
+  let body;
+  try { body = await res.json(); } catch { body = await res.text(); }
+
+  addLogEntry(method, path, res.status, body, elapsed, !res.ok);
+
+  return { status: res.status, ok: res.ok, body };
+}
+
+/* ── Logging ── */
+function addLogEntry(method, path, status, body, elapsed, isError) {
+  if (logEntries.querySelector(".log-entry[style]")) {
+    logEntries.innerHTML = "";
+  }
+
+  const entry = document.createElement("div");
+  entry.className = "log-entry";
+
+  let html = `<span class="method">${method}</span>`;
+  html += `<span class="path">${path}</span>`;
+  if (status !== null && status !== undefined) {
+    const cls = status < 300 ? "status-2xx" : status < 500 ? "status-4xx" : "status-5xx";
+    html += `<span class="status-code ${cls}">${status}</span>`;
+  }
+  html += `<span style="color:var(--text-muted);margin-left:0.5rem">${elapsed}ms</span>`;
+
+  if (body) {
+    const detailCls = isError ? "error" : "success";
+    html += `<div class="log-detail ${detailCls}">${escapeHtml(typeof body === "string" ? body : JSON.stringify(body, null, 2))}</div>`;
+  }
+
+  // Hints for common errors
+  if (status === 0 || status === null) {
+    html += `<div class="hint">⚠ Network error — is the server running? Check the base URL and make sure DeerFlow is accessible.</div>`;
+  } else if (status === 401 && !isAuthenticated) {
+    html += `<div class="hint">🔐 Not authenticated. Login first, then retry.</div>`;
+  } else if (status === 401 && isAuthenticated) {
+    html += `<div class="hint">🔐 Session expired. Login again to get a fresh token.</div>`;
+  } else if (status === 403) {
+    html += `<div class="hint">🛡 CSRF validation failed. Check: (1) Is csrf_token cookie present? (2) Is X-CSRF-Token header sent? (3) Are you on HTTPS?</div>`;
+  } else if (status === 404) {
+    html += `<div class="hint">📍 Endpoint not found. Check the path and API version.</div>`;
+  }
+
+  entry.innerHTML = html;
+  logEntries.insertBefore(entry, logEntries.firstChild);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function setStatus(type, message) {
+  statusBanner.className = `status status-${type}`;
+  statusBanner.textContent = message;
+}
+
+function updateAuthUI(authenticated) {
+  isAuthenticated = authenticated;
+  btnMe.disabled = !authenticated;
+  btnLogout.disabled = !authenticated;
+}
+
+/* ── Auth Actions ── */
+btnCheckSetup.addEventListener("click", async () => {
+  setStatus("unauthenticated", "Checking setup status...");
+  updateAuthUI(false);
+  const result = await apiFetch("/auth/setup-status");
+  if (result?.ok) {
+    const s = result.body.status || result.body;
+    if (result.body.status === "not_initialized") {
+      setStatus("unauthenticated", "System not initialized. Click 'Initialize Admin' to create the first user.");
+    } else {
+      setStatus("unauthenticated", "System is ready. Login or check if you already have a session.");
+      // Try /me to see if we have an existing session
+      const me = await apiFetch("/auth/me");
+      if (me?.ok) {
+        setStatus("authenticated", `Authenticated as: ${me.body.email || me.body.name || me.body.user_id}`);
+        updateAuthUI(true);
+      }
+    }
+  }
+});
+
+btnInitialize.addEventListener("click", async () => {
+  const name = prompt("Admin name:", "Admin") || "Admin";
+  const email = prompt("Admin email:", "admin@example.com") || "admin@example.com";
+  const password = prompt("Admin password:", "admin123") || "admin123";
+
+  const formData = new URLSearchParams();
+  formData.append("name", name);
+  formData.append("email", email);
+  formData.append("password", password);
+
+  setStatus("unauthenticated", "Initializing...");
+  const result = await apiFetch("/auth/initialize", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: formData,
+  });
+
+  if (result?.ok) {
+    setStatus("authenticated", `Initialized and logged in as: ${email}`);
+    updateAuthUI(true);
+  } else {
+    setStatus("error", "Initialization failed. System may already be initialized.");
+  }
+});
+
+btnLogin.addEventListener("click", async () => {
+  const email = prompt("Email:", "admin@example.com") || "admin@example.com";
+  const password = prompt("Password:", "admin123") || "admin123";
+
+  const formData = new URLSearchParams();
+  formData.append("username", email);
+  formData.append("password", password);
+
+  setStatus("unauthenticated", "Logging in...");
+  const result = await apiFetch("/auth/login/local", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: formData,
+  });
+
+  if (result?.ok) {
+    const csrfNow = readCsrfToken();
+    setStatus("authenticated", `Logged in as: ${email}${csrfNow ? " (CSRF cookie present)" : " (WARNING: no CSRF cookie)"}`);
+    updateAuthUI(true);
+  } else {
+    setStatus("error", "Login failed. Check credentials.");
+  }
+});
+
+btnMe.addEventListener("click", async () => {
+  const result = await apiFetch("/auth/me");
+  if (result?.ok) {
+    setStatus("authenticated", `Current user: ${result.body.email || result.body.name || result.body.user_id}`);
+  } else {
+    setStatus("error", "Not authenticated or session expired.");
+    updateAuthUI(false);
+  }
+});
+
+btnLogout.addEventListener("click", async () => {
+  const result = await apiFetch("/auth/logout", { method: "POST" });
+  if (result?.ok) {
+    setStatus("unauthenticated", "Logged out.");
+    updateAuthUI(false);
+  }
+});
+
+btnClearLog.addEventListener("click", () => {
+  logEntries.innerHTML = '<div class="log-entry" style="color:var(--text-muted)">Log cleared.</div>';
+});
+
+/* ── Keyboard shortcut ── */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && document.activeElement === baseUrlInput) {
+    btnCheckSetup.click();
+  }
+});
+</script>
+</body>
+</html>

@@ -209,12 +209,14 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             # Generate a new CSRF token for the session
             csrf_token = generate_csrf_token()
             is_https = is_secure_request(request)
+            samesite = "none" if is_https else "strict"
             response.set_cookie(
                 key=CSRF_COOKIE_NAME,
                 value=csrf_token,
                 httponly=False,  # Must be JS-readable for Double Submit Cookie pattern
                 secure=is_https,
-                samesite="strict",
+                samesite=samesite,
+                path="/",
             )
 
         return response

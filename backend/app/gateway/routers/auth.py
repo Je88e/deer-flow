@@ -136,13 +136,15 @@ def _set_session_cookie(response: Response, token: str, request: Request) -> Non
     """Set the access_token HttpOnly cookie on the response."""
     config = get_auth_config()
     is_https = is_secure_request(request)
+    samesite = "none" if is_https else "lax"
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
         secure=is_https,
-        samesite="lax",
+        samesite=samesite,
         max_age=config.token_expiry_days * 24 * 3600 if is_https else None,
+        path="/",
     )
 
 
@@ -326,7 +328,8 @@ async def register(request: Request, response: Response, body: RegisterRequest):
 @router.post("/logout", response_model=MessageResponse)
 async def logout(request: Request, response: Response):
     """Logout current user by clearing the cookie."""
-    response.delete_cookie(key="access_token", secure=is_secure_request(request), samesite="lax")
+    is_https = is_secure_request(request)
+    response.delete_cookie(key="access_token", secure=is_https, samesite="none" if is_https else "lax", path="/")
     return MessageResponse(message="Successfully logged out")
 
 

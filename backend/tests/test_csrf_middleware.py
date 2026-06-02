@@ -168,7 +168,8 @@ def test_auth_post_does_not_treat_wildcard_cors_as_allowed_origin(monkeypatch):
     assert response.json()["detail"] == "Cross-site auth request denied."
 
 
-def test_auth_post_sets_strict_samesite_csrf_cookie():
+def test_auth_post_sets_none_samesite_csrf_cookie_over_https():
+    """Over HTTPS the CSRF cookie uses SameSite=None so cross-origin clients can read it."""
     client = TestClient(_make_app(), base_url="https://deerflow.example")
 
     response = client.post(
@@ -179,8 +180,23 @@ def test_auth_post_sets_strict_samesite_csrf_cookie():
     assert response.status_code == 200
     set_cookie = response.headers["set-cookie"].lower()
     assert "csrf_token=" in set_cookie
-    assert "samesite=strict" in set_cookie
+    assert "samesite=none" in set_cookie
     assert "secure" in set_cookie
+
+
+def test_auth_post_sets_strict_samesite_csrf_cookie_over_http():
+    """Over HTTP the CSRF cookie keeps SameSite=Strict for same-origin safety."""
+    client = TestClient(_make_app(), base_url="http://deerflow.example")
+
+    response = client.post(
+        "/api/v1/auth/login/local",
+        headers={"Origin": "http://deerflow.example"},
+    )
+
+    assert response.status_code == 200
+    set_cookie = response.headers["set-cookie"].lower()
+    assert "csrf_token=" in set_cookie
+    assert "samesite=strict" in set_cookie
 
 
 def test_auth_post_without_origin_still_allows_non_browser_clients():
