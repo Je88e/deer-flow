@@ -37,7 +37,9 @@ coverage.xml
 coverage/
 .deer-flow/
 .claude/
-skills/custom/*
+# skills/custom/*
+dist/
+node_modules/
 logs/
 log/
 debug.log
