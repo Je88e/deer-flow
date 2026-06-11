@@ -9,12 +9,12 @@
   "overallResult": "FAIL",
   "summary": {
     "totalRules": 32,
-    "passCount": 16,
-    "failCount": 5,
+    "passCount": 17,
+    "failCount": 4,
     "skipCount": 11,
     "applicableCount": 21,
     "correctionCount": 1,
-    "severeFailCount": 4
+    "severeFailCount": 3
   },
   "ruleResults": [
     {
@@ -22,20 +22,16 @@
       "ruleName": "样品批号准确",
       "status": "PASS",
       "severity": "severe",
-      "details": "批号 240514002 格式正确",
+      "details": "批号 240514002 格式正确 (直接来源)",
       "remediation": ""
     },
     {
       "ruleId": "B002",
       "ruleName": "产品信息完整",
-      "status": "FAIL",
+      "status": "PASS",
       "severity": "severe",
-      "details": "字段 batchSize 缺失",
-      "evidence": {
-        "expected": "batchSize 必填",
-        "actual": "空"
-      },
-      "remediation": "补全缺失信息"
+      "details": "产品信息与请验单一致",
+      "remediation": ""
     },
     {
       "ruleId": "B003",
@@ -306,7 +302,7 @@
   ],
   "metadata": {
     "generatedBy": "run-minimal-regression.ts",
-    "generatedAt": "2026-06-05T05:15:39.273Z",
+    "generatedAt": "2026-06-11T06:29:59.138Z",
     "limsAvailable": true,
     "ruleEngineAvailable": true,
     "reportMethod": "script"

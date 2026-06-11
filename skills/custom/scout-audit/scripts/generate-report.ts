@@ -84,6 +84,8 @@ interface MetadataRecord {
   reportMethod: string
 }
 
+type JointSourceLabel = "COA" | "ELN" | "跨文档" | "待确认来源"
+
 function groupSkipReasons(results: RuleResult[]): string {
   const groups = new Map<string, number>()
   for (const r of results.filter((r) => r.status === "SKIP")) {
@@ -399,20 +401,39 @@ function generateJointReport(input: JointReportInput): string {
   ).join("\n")
 
   // Corrections (with doc source)
+  const nestedCorrections = [
+    ...(coa.corrections ?? []).map((correction) => ({ source: "COA" as const, correction })),
+    ...(eln.corrections ?? []).map((correction) => ({ source: "ELN" as const, correction })),
+  ]
+  const fallbackCorrections = (corrections ?? []).map((correction) => ({
+    source: correction.ruleId.startsWith("X") ? "跨文档" as const : "待确认来源" as const,
+    correction,
+  }))
+  const correctionKey = ({ source, correction }: { source: JointSourceLabel; correction: CorrectionRecord }) =>
+    `${source}|${correction.ruleId}|${correction.originalStatus}|${correction.correctedTo}|${correction.reason}`
+  const labeledCorrections = Array.from(
+    new Map(
+      [...nestedCorrections, ...fallbackCorrections].map((entry) => [correctionKey(entry), entry])
+    ).values()
+  )
   let correctionsSection = ""
-  if (corrections && corrections.length > 0) {
-    const rows = corrections
-      .map((c) => `| - | ${c.ruleId} | ${c.originalStatus} | ${c.correctedTo} | ${c.reason} |`)
+  if (labeledCorrections.length > 0) {
+    const rows = labeledCorrections
+      .map(({ source, correction }) => `| ${source} | ${correction.ruleId} | ${correction.originalStatus} | ${correction.correctedTo} | ${correction.reason} |`)
       .join("\n")
     correctionsSection = `## 修正记录\n\n| 文档 | 规则ID | 原始状态 | 修正后 | 原因 |\n|------|--------|---------|--------|------|\n${rows}\n\n---\n\n`
   }
 
   // Remediation - all FAILs
-  const allFailResults = allResults.filter((r) => r.status === "FAIL")
+  const labeledFailResults = [
+    ...coa.ruleResults.filter((result) => result.status === "FAIL").map((result) => ({ source: "COA" as const, result })),
+    ...eln.ruleResults.filter((result) => result.status === "FAIL").map((result) => ({ source: "ELN" as const, result })),
+    ...crossDocumentRules.filter((result) => result.status === "FAIL").map((result) => ({ source: "跨文档" as const, result })),
+  ]
   let remediationSection = ""
-  if (allFailResults.length > 0) {
-    const items = allFailResults.map((r) =>
-      `### ${r.ruleId}: ${r.ruleName}\n- **期望:** ${r.evidence?.expected ?? "-"}\n- **实际:** ${r.evidence?.actual ?? "-"}${r.evidence?.location ? `\n- **证据定位:** ${r.evidence.location}` : ""}\n- **严重级别:** ${r.severity}\n- **整改建议:** ${r.remediation}`
+  if (labeledFailResults.length > 0) {
+    const items = labeledFailResults.map(({ source, result }) =>
+      `### ${source} - ${result.ruleId}: ${result.ruleName}\n- **期望:** ${result.evidence?.expected ?? "-"}\n- **实际:** ${result.evidence?.actual ?? "-"}${result.evidence?.location ? `\n- **证据定位:** ${result.evidence.location}` : ""}\n- **严重级别:** ${result.severity}\n- **整改建议:** ${result.remediation}`
     ).join("\n\n")
     remediationSection = `## 整改建议\n\n${items}`
   }

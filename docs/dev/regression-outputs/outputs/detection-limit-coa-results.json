@@ -1,18 +1,18 @@
 {
-  "docType": "ELN",
-  "reportNo": "eln-with-complete-workflow",
-  "batchNo": "B202604034",
+  "docType": "COA",
+  "reportNo": "detection-limit-coa",
+  "batchNo": "DL202604001",
   "productName": "人血白蛋白原液",
   "specification": "20%",
   "standardRef": "HLGF/2-ZLBZ-ZJP-01",
-  "auditDate": "2026-04-04",
+  "auditDate": "2026-04-15",
   "overallResult": "PASS",
   "summary": {
     "totalRules": 32,
-    "passCount": 25,
+    "passCount": 20,
     "failCount": 0,
-    "skipCount": 7,
-    "applicableCount": 25,
+    "skipCount": 12,
+    "applicableCount": 20,
     "correctionCount": 0,
     "severeFailCount": 0
   },
@@ -22,7 +22,7 @@
       "ruleName": "样品批号准确",
       "status": "PASS",
       "severity": "severe",
-      "details": "批号 B202604034 格式正确 (直接来源)",
+      "details": "批号 DL202604001 格式正确",
       "remediation": ""
     },
     {
@@ -38,7 +38,7 @@
       "ruleName": "检测项目完整",
       "status": "PASS",
       "severity": "severe",
-      "details": "全部 3 项检测项目完整",
+      "details": "全部 1 项检测项目完整",
       "remediation": ""
     },
     {
@@ -52,17 +52,17 @@
     {
       "ruleId": "B005",
       "ruleName": "报告编号唯一",
-      "status": "SKIP",
+      "status": "PASS",
       "severity": "severe",
-      "details": "不适用于 ELN",
+      "details": "报告编号唯一",
       "remediation": ""
     },
     {
       "ruleId": "D001",
       "ruleName": "修改规范",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "未发现未说明原因的修改记录",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -70,7 +70,7 @@
       "ruleName": "原始数据可追溯",
       "status": "PASS",
       "severity": "severe",
-      "details": "原始数据索引可回溯到日志、图谱和序列",
+      "details": "原始数据索引可回溯到批次和日期",
       "remediation": ""
     },
     {
@@ -84,33 +84,33 @@
     {
       "ruleId": "E001",
       "ruleName": "人员资质校验",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "检测人与审核人资质均在有效期内",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
       "ruleId": "E002",
       "ruleName": "仪器编号匹配",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "仪器使用记录与 ELN 中仪器编号一致",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
       "ruleId": "E003",
       "ruleName": "仪器在校准期内",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "3 台仪器均在校准期内",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
       "ruleId": "E005",
       "ruleName": "系统适用性合格",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "系统适用性合格",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -124,17 +124,17 @@
     {
       "ruleId": "L003",
       "ruleName": "计算公式正确",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "公式和换算逻辑一致",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
       "ruleId": "L004",
       "ruleName": "标准编号正确",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "标准 HLGF/2-ZLBZ-ZJP-01 现行有效",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -142,7 +142,7 @@
       "ruleName": "结果在标准限度内",
       "status": "PASS",
       "severity": "severe",
-      "details": "3 项定量结果均在标准范围内",
+      "details": "1 项定量结果均在标准范围内",
       "remediation": ""
     },
     {
@@ -158,7 +158,7 @@
       "ruleName": "平行样相对偏差合格",
       "status": "SKIP",
       "severity": "severe",
-      "details": "无平行样数据",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -166,7 +166,7 @@
       "ruleName": "重复性RSD合格",
       "status": "SKIP",
       "severity": "severe",
-      "details": "无6次以上重复数据",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -174,7 +174,7 @@
       "ruleName": "加标回收率合格",
       "status": "SKIP",
       "severity": "severe",
-      "details": "无加标回收率数据",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -204,25 +204,25 @@
     {
       "ruleId": "S004",
       "ruleName": "审核流程完整",
-      "status": "SKIP",
+      "status": "PASS",
       "severity": "severe",
-      "details": "不适用于 ELN",
+      "details": "审核流程完整",
       "remediation": ""
     },
     {
       "ruleId": "C001",
       "ruleName": "结论规范",
-      "status": "SKIP",
+      "status": "PASS",
       "severity": "warning",
-      "details": "不适用于 ELN",
+      "details": "结论格式符合模板要求",
       "remediation": ""
     },
     {
       "ruleId": "E004",
       "ruleName": "环境条件合格",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "warning",
-      "details": "温度 23℃, 湿度 45% 合格",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -230,7 +230,7 @@
       "ruleName": "跨页数据一致",
       "status": "PASS",
       "severity": "warning",
-      "details": "跨页样品信息前后一致",
+      "details": "单页样例，无跨页不一致风险",
       "remediation": ""
     },
     {
@@ -262,7 +262,7 @@
       "ruleName": "无歧义表述",
       "status": "PASS",
       "severity": "info",
-      "details": "ELN 表述清晰，无模糊措辞",
+      "details": "结论措辞清晰明确",
       "remediation": ""
     },
     {
@@ -277,7 +277,7 @@
   "corrections": [],
   "metadata": {
     "generatedBy": "run-minimal-regression.ts",
-    "generatedAt": "2026-06-11T06:30:03.974Z",
+    "generatedAt": "2026-06-05T05:15:41.673Z",
     "limsAvailable": true,
     "ruleEngineAvailable": true,
     "reportMethod": "script"

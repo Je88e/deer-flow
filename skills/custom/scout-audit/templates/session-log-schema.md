@@ -16,10 +16,12 @@
 3. **规范字段名**: 使用 `name`, `data`, `method`, `calls`, `results`, `outputFiles` 等 schema 字段；不要用 `description` 或 `status` 代替结构。
 4. **结构化载荷**: 不要把关键结果压缩成 `"20 rule results"`、`"3 artifacts"` 这类摘要字符串。
 5. **ISO-8601 时间戳**: `timestamp` 必须可被 `new Date(timestamp)` 解析，且包含时区信息。
-6. **写入前验证**:
+6. **禁止骨架占位交付**: `generate-session-log.ts` 生成的骨架只能作为补写起点；若仍保留 `Generated from results.json`、`replace with full docExtract`、`replace with actual response`、`FILL_ME`、或同类占位文本，则该日志不具备交付资格。
+7. **禁止无效执行默认值**: Phase 3 的真实调用 `durationMs` 必须为正数；若 Phase 4 标记为真实执行（尤其 `executionMode = "rule-engine"`）却仍保留 `testItemCount = 0`、`limsDataSources = 0` 这类骨架默认值，视为未补全证据。
+8. **写入前验证**:
    - `single`: `npx tsx .claude/skills/scout-audit/scripts/validate-session-log.ts outputs/{reportNo}-session-log.jsonl outputs/{reportNo}-results.json`
    - `joint`: `npx tsx .claude/skills/scout-audit/scripts/validate-session-log.ts outputs/{batchNo}-joint-session-log.jsonl outputs/{batchNo}-joint-results.json`
-7. **自动生成 (推荐)**: 使用 `scripts/generate-session-log.ts` 从 results.json 自动生成 session-log 骨架，然后手动补充 Phase 0 源文件信息与 Phase 7 脚本执行结果:
+9. **自动生成 (推荐)**: 使用 `scripts/generate-session-log.ts` 从 results.json 自动生成 session-log 骨架，然后手动补充 Phase 0 源文件信息与 Phase 7 脚本执行结果:
 
 ```bash
 npx tsx .claude/skills/scout-audit/scripts/generate-session-log.ts outputs/{reportNo}-results.json
@@ -70,6 +72,10 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 
 必需字段: `data`，且内容应与 `schemas/docExtract-schema.md` 一致。
 
+交付约束:
+- 不接受仅含骨架 `_summary` 的占位提取结果
+- 不接受 `Generated from results.json` / `replace with full docExtract` 一类提示语残留在最终 JSONL 中
+
 ```json
 {
   "phase": 2,
@@ -98,6 +104,10 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 - `params`
 - `response` 或 `error`
 - `durationMs`
+
+交付约束:
+- `response` / `error` 必须是实际调用证据，不接受 `Generated from results.json` / `replace with actual response` 之类骨架占位
+- 对已发生的调用，`durationMs` 必须是正数；`0` 仅代表骨架默认值，不能作为真实交付证据
 
 聚合调用模式:
 
@@ -164,6 +174,10 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 - `inline-fallback`
 
 若 `executionMode = "inline-fallback"`，建议附加 `input.degradedRules[]` 说明哪些规则依赖降级或改为 `SKIP`
+
+交付约束:
+- `input.testItemCount`、`input.limsDataSources` 必须反映真实运行计数
+- 若 `executionMode = "rule-engine"` 且存在非 `SKIP` 结果，`testItemCount = 0` 或 `limsDataSources = 0` 视为骨架默认值未替换
 
 `output.results` MUST 恰好 20 条，且:
 - `passCount + failCount + skipCount = 20`
@@ -504,6 +518,9 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 
 - 仅写 `description` + `status` + 字符串型 `input`/`output`
 - Phase 3 只保留聚合摘要，不保留 `calls[].response` / `error`
+- Phase 2 / Phase 3 仍保留 `Generated from results.json`、`replace with ...`、`FILL_ME` 等骨架占位
+- Phase 3 调用 `durationMs = 0`
+- Phase 4 在 `executionMode = "rule-engine"` 下仍保留 `testItemCount = 0` 或 `limsDataSources = 0`
 - Phase 4 只写 `failRules`/`skipRules`，不写完整 `output.results`
 - Phase 5 用状态 map 或计数字段代替 12 条结构化 `results[]`
 - Phase 6 计数与 Phase 4/5 实际结果不一致
@@ -519,12 +536,14 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 3. **顶层字段**: 每行必须包含 `phase`, `name`, `timestamp`
 4. **字段命名**: 使用 `ruleId` 而不是 `ruleruleId` 或其他变体
 5. **Phase 0 模式**: `output.mode` 必须是 `convert` 或 `passthrough`，且 `input.fileType` 非空
-6. **Phase 3 结构**: `calls[]` 必须包含完整 `response` 或结构化 `error`，不接受 `responseSummary` 字符串
-7. **Phase 4 结构与数量一致性**: `single` 的 Phase 4、以及 `joint` 的 Phase `4a`/`4b`，`output.results` 都必须恰好 20 条。每条 result 必须包含 `ruleId`, `ruleName`, `status`, `severity`, `details`。且 `passCount + failCount + skipCount = 20`
-8. **Phase 5 结构与数量一致性**: `single` 的 Phase 5、以及 `joint` 的 Phase `5a`/`5b`，`results` 都必须恰好 12 条；`joint` 的 Phase `5c` 必须恰好 5 条。每条 result 必须包含 `ruleId`, `ruleName`, `status`, `severity`, `details`
-9. **Phase 6 数量一致性**: `single` 的 `totalRules = 32`，且 `passCount + failCount + skipCount = 32`；`joint` 的 `totalRules = 69`，且 `passCount + failCount + skipCount = 69`
-10. **Phase 6 corrections 契约**: `output.corrections` 必须存在，且每项都包含 `ruleId`, `originalStatus`, `correctedTo`, `reason`
-11. **Phase 7 可观测性**: 必须记录 `reportGeneration` 与 `sessionLogValidation` 对象
-12. **results/session-log 一致性**: 若同目录存在对应的 `results.json` / `joint-results.json`，其 `corrections[]` 与 Phase 6 的 `output.corrections[]` 数量和 `ruleId` 必须一致
-13. **Joint 3.5 固定槽位**: `auditMode="joint"` 时，无论 `elnScope` 是 `multi-batch` 还是 `single-batch`，都必须存在 `phase = "3.5"` 的独立记录
-14. **时间戳格式**: 所有 `timestamp` 必须是 ISO-8601 且含时区
+6. **禁止占位残留**: 不得在任何 phase 中保留 `Generated from results.json`、`replace with full docExtract`、`replace with actual response`、`FILL_ME` 等骨架占位文本
+7. **Phase 3 结构**: `calls[]` 必须包含完整 `response` 或结构化 `error`，不接受 `responseSummary` 字符串；真实调用 `durationMs` 必须大于 0
+8. **Phase 4 结构与数量一致性**: `single` 的 Phase 4、以及 `joint` 的 Phase `4a`/`4b`，`output.results` 都必须恰好 20 条。每条 result 必须包含 `ruleId`, `ruleName`, `status`, `severity`, `details`。且 `passCount + failCount + skipCount = 20`
+9. **Phase 4 骨架默认值拦截**: 若 `executionMode = "rule-engine"` 且存在非 `SKIP` 结果，`testItemCount` 与 `limsDataSources` 都不得为 `0`
+10. **Phase 5 结构与数量一致性**: `single` 的 Phase 5、以及 `joint` 的 Phase `5a`/`5b`，`results` 都必须恰好 12 条；`joint` 的 Phase `5c` 必须恰好 5 条。每条 result 必须包含 `ruleId`, `ruleName`, `status`, `severity`, `details`
+11. **Phase 6 数量一致性**: `single` 的 `totalRules = 32`，且 `passCount + failCount + skipCount = 32`；`joint` 的 `totalRules = 69`，且 `passCount + failCount + skipCount = 69`
+12. **Phase 6 corrections 契约**: `output.corrections` 必须存在，且每项都包含 `ruleId`, `originalStatus`, `correctedTo`, `reason`
+13. **Phase 7 可观测性**: 必须记录 `reportGeneration` 与 `sessionLogValidation` 对象
+14. **results/session-log 一致性**: 若同目录存在对应的 `results.json` / `joint-results.json`，其 `corrections[]` 与 Phase 6 的 `output.corrections[]` 数量和 `ruleId` 必须一致
+15. **Joint 3.5 固定槽位**: `auditMode="joint"` 时，无论 `elnScope` 是 `multi-batch` 还是 `single-batch`，都必须存在 `phase = "3.5"` 的独立记录
+16. **时间戳格式**: 所有 `timestamp` 必须是 ISO-8601 且含时区

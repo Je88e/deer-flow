@@ -22,7 +22,7 @@
       "ruleName": "样品批号准确",
       "status": "PASS",
       "severity": "severe",
-      "details": "批号 DL202604001 格式正确",
+      "details": "批号 DL202604001 格式正确 (直接来源)",
       "remediation": ""
     },
     {
@@ -277,7 +277,7 @@
   "corrections": [],
   "metadata": {
     "generatedBy": "run-minimal-regression.ts",
-    "generatedAt": "2026-06-05T05:15:41.673Z",
+    "generatedAt": "2026-06-11T06:30:02.375Z",
     "limsAvailable": true,
     "ruleEngineAvailable": true,
     "reportMethod": "script"

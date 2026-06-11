@@ -33,8 +33,8 @@ interface LimsRequest {
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(SCRIPT_DIR, "../../../..")
 const DEFAULT_OUTPUT_DIR = resolve(REPO_ROOT, "docs/reports/regression-outputs/outputs")
-const GENERATE_REPORT_SCRIPT = ".claude/skills/scout-audit/scripts/generate-report.ts"
-const VALIDATE_SESSION_LOG_SCRIPT = ".claude/skills/scout-audit/scripts/validate-session-log.ts"
+const GENERATE_REPORT_SCRIPT = resolve(SCRIPT_DIR, "generate-report.ts")
+const VALIDATE_SESSION_LOG_SCRIPT = resolve(SCRIPT_DIR, "validate-session-log.ts")
 const SEMANTIC_RULE_IDS = [
   "N002",
   "E001",

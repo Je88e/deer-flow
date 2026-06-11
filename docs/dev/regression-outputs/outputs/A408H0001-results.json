@@ -1,20 +1,20 @@
 {
-  "docType": "ELN",
-  "reportNo": "eln-with-complete-workflow",
-  "batchNo": "B202604034",
-  "productName": "人血白蛋白原液",
-  "specification": "20%",
-  "standardRef": "HLGF/2-ZLBZ-ZJP-01",
-  "auditDate": "2026-04-04",
-  "overallResult": "PASS",
+  "docType": "COA",
+  "reportNo": "A408H0001",
+  "batchNo": "240514002",
+  "productName": "流感病毒裂解疫苗（幼儿装）",
+  "specification": "0.25ml/瓶",
+  "standardRef": "STP/ZL028-12",
+  "auditDate": "2024-05-14",
+  "overallResult": "FAIL",
   "summary": {
     "totalRules": 32,
-    "passCount": 25,
-    "failCount": 0,
-    "skipCount": 7,
-    "applicableCount": 25,
-    "correctionCount": 0,
-    "severeFailCount": 0
+    "passCount": 16,
+    "failCount": 5,
+    "skipCount": 11,
+    "applicableCount": 21,
+    "correctionCount": 1,
+    "severeFailCount": 4
   },
   "ruleResults": [
     {
@@ -22,16 +22,20 @@
       "ruleName": "样品批号准确",
       "status": "PASS",
       "severity": "severe",
-      "details": "批号 B202604034 格式正确 (直接来源)",
+      "details": "批号 240514002 格式正确",
       "remediation": ""
     },
     {
       "ruleId": "B002",
       "ruleName": "产品信息完整",
-      "status": "PASS",
+      "status": "FAIL",
       "severity": "severe",
-      "details": "产品信息与请验单一致",
-      "remediation": ""
+      "details": "字段 batchSize 缺失",
+      "evidence": {
+        "expected": "batchSize 必填",
+        "actual": "空"
+      },
+      "remediation": "补全缺失信息"
     },
     {
       "ruleId": "B003",
@@ -52,65 +56,70 @@
     {
       "ruleId": "B005",
       "ruleName": "报告编号唯一",
-      "status": "SKIP",
+      "status": "PASS",
       "severity": "severe",
-      "details": "不适用于 ELN",
+      "details": "报告编号唯一",
       "remediation": ""
     },
     {
       "ruleId": "D001",
       "ruleName": "修改规范",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "未发现未说明原因的修改记录",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
       "ruleId": "D002",
       "ruleName": "原始数据可追溯",
-      "status": "PASS",
+      "status": "FAIL",
       "severity": "severe",
-      "details": "原始数据索引可回溯到日志、图谱和序列",
-      "remediation": ""
+      "details": "原始数据索引缺少图谱和序列关联信息，无法支撑结果回溯",
+      "evidence": {
+        "expected": "应提供原始数据索引并关联图谱/序列/日志",
+        "actual": "originalDataIndex 中 chromatograms 和 sequences 为空",
+        "location": "originalDataIndex"
+      },
+      "remediation": "补齐原始数据索引并建立结果到原始记录的映射"
     },
     {
       "ruleId": "D003",
       "ruleName": "无缺失页面",
       "status": "PASS",
       "severity": "severe",
-      "details": "页数与原始数据索引一致",
+      "details": "记录页数与索引页数一致",
       "remediation": ""
     },
     {
       "ruleId": "E001",
       "ruleName": "人员资质校验",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "检测人与审核人资质均在有效期内",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
       "ruleId": "E002",
       "ruleName": "仪器编号匹配",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "仪器使用记录与 ELN 中仪器编号一致",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
       "ruleId": "E003",
       "ruleName": "仪器在校准期内",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "3 台仪器均在校准期内",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
       "ruleId": "E005",
       "ruleName": "系统适用性合格",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "系统适用性合格",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -118,23 +127,23 @@
       "ruleName": "结果与结论一致",
       "status": "PASS",
       "severity": "severe",
-      "details": "结果与结论一致",
+      "details": "蛋白质含量: 结果合格但结论 \"\" 未包含\"符合\"; 蛋白质含量与血凝素含量比值: 结果合格但结论 \"\" 未包含\"符合\" [修正: COA 使用总结论，且总结论与全部定量项目结果一致，按既有豁免规则保留为 PASS。]",
       "remediation": ""
     },
     {
       "ruleId": "L003",
       "ruleName": "计算公式正确",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "公式和换算逻辑一致",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
       "ruleId": "L004",
       "ruleName": "标准编号正确",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "severe",
-      "details": "标准 HLGF/2-ZLBZ-ZJP-01 现行有效",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -142,15 +151,15 @@
       "ruleName": "结果在标准限度内",
       "status": "PASS",
       "severity": "severe",
-      "details": "3 项定量结果均在标准范围内",
+      "details": "2 项定量结果均在标准范围内",
       "remediation": ""
     },
     {
       "ruleId": "N002",
       "ruleName": "结果在可选结果内",
-      "status": "SKIP",
+      "status": "PASS",
       "severity": "severe",
-      "details": "无定性检测项目",
+      "details": "无菌检查结果“符合规定”在允许枚举值内",
       "remediation": ""
     },
     {
@@ -158,7 +167,7 @@
       "ruleName": "平行样相对偏差合格",
       "status": "SKIP",
       "severity": "severe",
-      "details": "无平行样数据",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -166,7 +175,7 @@
       "ruleName": "重复性RSD合格",
       "status": "SKIP",
       "severity": "severe",
-      "details": "无6次以上重复数据",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -174,23 +183,27 @@
       "ruleName": "加标回收率合格",
       "status": "SKIP",
       "severity": "severe",
-      "details": "无加标回收率数据",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
       "ruleId": "S001",
       "ruleName": "签名完整",
-      "status": "PASS",
+      "status": "FAIL",
       "severity": "severe",
-      "details": "签名完整 (tester, reviewer, approver)",
-      "remediation": ""
+      "details": "空签名角色: reviewer, approver",
+      "evidence": {
+        "expected": "tester/reviewer/approver 均存在，且非 image 签名需包含 name/date",
+        "actual": "空签名角色: reviewer, approver"
+      },
+      "remediation": "补全缺失签名，或仅在确认存在图片签名证据时标记 signatureMethod=image"
     },
     {
       "ruleId": "S002",
       "ruleName": "电子签名合规",
       "status": "PASS",
       "severity": "severe",
-      "details": "发现 3 条完整 sign 留痕，满足最小电子签名审计要求",
+      "details": "发现 1 条完整 sign 留痕，满足最小电子签名审计要求",
       "remediation": ""
     },
     {
@@ -198,31 +211,40 @@
       "ruleName": "禁止代签",
       "status": "PASS",
       "severity": "severe",
-      "details": "发现 3 条 sign 记录，user/account 映射保持一一稳定",
+      "details": "发现 1 条 sign 记录，user/account 映射保持一一稳定",
       "remediation": ""
     },
     {
       "ruleId": "S004",
       "ruleName": "审核流程完整",
-      "status": "SKIP",
+      "status": "FAIL",
       "severity": "severe",
-      "details": "不适用于 ELN",
-      "remediation": ""
+      "details": "存在未完成步骤: reviewer, approver",
+      "evidence": {
+        "expected": "全部 required steps 状态为 completed",
+        "actual": "reviewer:pending, approver:pending"
+      },
+      "remediation": "完成全部审核步骤"
     },
     {
       "ruleId": "C001",
       "ruleName": "结论规范",
-      "status": "SKIP",
+      "status": "FAIL",
       "severity": "warning",
-      "details": "不适用于 ELN",
-      "remediation": ""
+      "details": "结论段落使用“结果符合规定”，但未按模板明确写成“符合XXX标准规定”",
+      "evidence": {
+        "expected": "结论应明确引用标准并使用规范措辞",
+        "actual": "结论段落仅写“结果符合规定”",
+        "location": "结论段落"
+      },
+      "remediation": "按模板补全标准引用和规范措辞"
     },
     {
       "ruleId": "E004",
       "ruleName": "环境条件合格",
-      "status": "PASS",
+      "status": "SKIP",
       "severity": "warning",
-      "details": "温度 23℃, 湿度 45% 合格",
+      "details": "不适用于 COA",
       "remediation": ""
     },
     {
@@ -230,7 +252,7 @@
       "ruleName": "跨页数据一致",
       "status": "PASS",
       "severity": "warning",
-      "details": "跨页样品信息前后一致",
+      "details": "单页 COA，无跨页不一致风险",
       "remediation": ""
     },
     {
@@ -262,7 +284,7 @@
       "ruleName": "无歧义表述",
       "status": "PASS",
       "severity": "info",
-      "details": "ELN 表述清晰，无模糊措辞",
+      "details": "未发现“大概”“基本合格”等模糊措辞",
       "remediation": ""
     },
     {
@@ -274,10 +296,17 @@
       "remediation": ""
     }
   ],
-  "corrections": [],
+  "corrections": [
+    {
+      "ruleId": "L001",
+      "originalStatus": "FAIL",
+      "correctedTo": "PASS",
+      "reason": "COA 使用总结论，且总结论与全部定量项目结果一致，按既有豁免规则保留为 PASS。"
+    }
+  ],
   "metadata": {
     "generatedBy": "run-minimal-regression.ts",
-    "generatedAt": "2026-06-11T06:30:03.974Z",
+    "generatedAt": "2026-06-05T05:15:39.273Z",
     "limsAvailable": true,
     "ruleEngineAvailable": true,
     "reportMethod": "script"

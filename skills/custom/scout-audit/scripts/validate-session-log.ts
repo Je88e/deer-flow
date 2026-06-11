@@ -43,6 +43,13 @@ const VALID_DEPENDENCY_STATUS = new Set(["available", "degraded", "unavailable"]
 const VALID_EXECUTION_MODES = new Set(["rule-engine", "inline-fallback"])
 const VALID_VALIDATION_RESULTS = new Set(["OK", "INVALID"])
 const VALID_FILTER_METHODS = new Set(["lims", "coa-sampleIds", "none", "unavailable"])
+const PLACEHOLDER_MARKERS = [
+  "generated from results.json",
+  "replace with full docextract",
+  "replace with actual response",
+  "fill_me",
+  "populated from results.json",
+] as const
 
 function printHelp(): void {
   process.stdout.write(
@@ -105,6 +112,34 @@ function requireStringArray(value: unknown, label: string, errors: string[]): st
     return null
   }
   return strings
+}
+
+function findPlaceholderPaths(value: unknown, label: string): string[] {
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase()
+    return PLACEHOLDER_MARKERS.some((marker) => normalized.includes(marker)) ? [label] : []
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => findPlaceholderPaths(item, `${label}[${index}]`))
+  }
+
+  if (isObject(value)) {
+    return Object.entries(value).flatMap(([key, item]) => findPlaceholderPaths(item, `${label}.${key}`))
+  }
+
+  return []
+}
+
+function validateNoPlaceholders(value: unknown, label: string, errors: string[]): void {
+  const placeholderPaths = findPlaceholderPaths(value, label)
+  placeholderPaths.forEach((path) => {
+    errors.push(`${path} contains scaffold placeholder text; replace with real execution evidence`)
+  })
+}
+
+function hasNonSkipResults(results: unknown[] | null): boolean {
+  return (results ?? []).some((result) => isObject(result) && result.status !== "SKIP")
 }
 
 function validateTimestamp(row: JsonRecord, label: string, errors: string[]): void {
@@ -210,7 +245,10 @@ function validatePhaseRow(row: JsonRecord, index: number, errors: string[]): voi
       break
     }
     case 2: {
-      asObject(row.data, `${label}.data`, errors)
+      const data = asObject(row.data, `${label}.data`, errors)
+      if (data) {
+        validateNoPlaceholders(data, `${label}.data`, errors)
+      }
       break
     }
     case 3: {
@@ -233,7 +271,7 @@ function validatePhaseRow(row: JsonRecord, index: number, errors: string[]): voi
         if (!item) return
         requireString(item, "tool", `${label}.calls[${callIndex}]`, errors)
         asObject(item.params, `${label}.calls[${callIndex}].params`, errors)
-        requireNumber(item, "durationMs", `${label}.calls[${callIndex}]`, errors)
+        const durationMs = requireNumber(item, "durationMs", `${label}.calls[${callIndex}]`, errors)
         const hasResponse = item.response !== undefined
         const hasError = item.error !== undefined
         if (!hasResponse && !hasError) {
@@ -241,10 +279,15 @@ function validatePhaseRow(row: JsonRecord, index: number, errors: string[]): voi
           return
         }
         if (hasResponse) {
-          asObject(item.response, `${label}.calls[${callIndex}].response`, errors)
+          const response = asObject(item.response, `${label}.calls[${callIndex}].response`, errors)
+          if (response) validateNoPlaceholders(response, `${label}.calls[${callIndex}].response`, errors)
         }
         if (hasError) {
-          asObject(item.error, `${label}.calls[${callIndex}].error`, errors)
+          const error = asObject(item.error, `${label}.calls[${callIndex}].error`, errors)
+          if (error) validateNoPlaceholders(error, `${label}.calls[${callIndex}].error`, errors)
+        }
+        if (durationMs !== null && durationMs <= 0) {
+          errors.push(`${label}.calls[${callIndex}].durationMs must be > 0 for a real attempted call`)
         }
       })
       break
@@ -278,6 +321,14 @@ function validatePhaseRow(row: JsonRecord, index: number, errors: string[]): voi
       results?.forEach((result, resultIndex) => {
         validateRuleResult(result, `${label}.output.results[${resultIndex}]`, errors)
       })
+      if (input && results && input.executionMode === "rule-engine" && hasNonSkipResults(results)) {
+        if (typeof input.testItemCount === "number" && input.testItemCount <= 0) {
+          errors.push(`${label}.input.testItemCount must be > 0 for rule-engine runs with non-SKIP results`)
+        }
+        if (typeof input.limsDataSources === "number" && input.limsDataSources <= 0) {
+          errors.push(`${label}.input.limsDataSources must be > 0 for rule-engine runs with non-SKIP results`)
+        }
+      }
       break
     }
     case 5: {
@@ -369,7 +420,7 @@ function validatePhaseRow(row: JsonRecord, index: number, errors: string[]): voi
 }
 
 function getResultCounts(results: JsonRecord[]): { passCount: number; failCount: number; skipCount: number } {
-  return results.reduce(
+  return results.reduce<{ passCount: number; failCount: number; skipCount: number }>(
     (acc, item) => {
       const status = item.status
       if (status === "PASS") acc.passCount += 1
@@ -759,7 +810,10 @@ function validateJointPhaseRow(row: JsonRecord, index: number, errors: string[])
 
   // Phase 2a/2b: same as Phase 2
   if (phaseKey === "2a" || phaseKey === "2b") {
-    asObject(row.data, `${label}.data`, errors)
+    const data = asObject(row.data, `${label}.data`, errors)
+    if (data) {
+      validateNoPlaceholders(data, `${label}.data`, errors)
+    }
     return
   }
 
@@ -784,11 +838,22 @@ function validateJointPhaseRow(row: JsonRecord, index: number, errors: string[])
       if (!item) return
       requireString(item, "tool", `${label}.calls[${callIndex}]`, errors)
       asObject(item.params, `${label}.calls[${callIndex}].params`, errors)
-      requireNumber(item, "durationMs", `${label}.calls[${callIndex}]`, errors)
+      const durationMs = requireNumber(item, "durationMs", `${label}.calls[${callIndex}]`, errors)
       const hasResponse = item.response !== undefined
       const hasError = item.error !== undefined
       if (!hasResponse && !hasError) {
         errors.push(`${label}.calls[${callIndex}] must contain response or error`)
+      }
+      if (hasResponse) {
+        const response = asObject(item.response, `${label}.calls[${callIndex}].response`, errors)
+        if (response) validateNoPlaceholders(response, `${label}.calls[${callIndex}].response`, errors)
+      }
+      if (hasError) {
+        const error = asObject(item.error, `${label}.calls[${callIndex}].error`, errors)
+        if (error) validateNoPlaceholders(error, `${label}.calls[${callIndex}].error`, errors)
+      }
+      if (durationMs !== null && durationMs <= 0) {
+        errors.push(`${label}.calls[${callIndex}].durationMs must be > 0 for a real attempted call`)
       }
     })
     return
@@ -841,6 +906,14 @@ function validateJointPhaseRow(row: JsonRecord, index: number, errors: string[])
       results?.forEach((result, resultIndex) => {
         validateRuleResult(result, `${label}.output.results[${resultIndex}]`, errors)
       })
+      if (input && results && input.executionMode === "rule-engine" && hasNonSkipResults(results)) {
+        if (typeof input.testItemCount === "number" && input.testItemCount <= 0) {
+          errors.push(`${label}.input.testItemCount must be > 0 for rule-engine runs with non-SKIP results`)
+        }
+        if (typeof input.limsDataSources === "number" && input.limsDataSources <= 0) {
+          errors.push(`${label}.input.limsDataSources must be > 0 for rule-engine runs with non-SKIP results`)
+        }
+      }
     }
     return
   }
@@ -968,7 +1041,7 @@ function main(): void {
   const expectedLineCount = auditMode === "joint" ? 15 : 8
 
   const content = readFileSync(sessionLogPath, "utf-8")
-  const lines = content.split(/\r?\n/).filter((line) => line.trim() !== "")
+  const lines = content.split(/\r?\n/).filter((line: string) => line.trim() !== "")
   const errors: string[] = []
 
   if (lines.length !== expectedLineCount) {
@@ -976,7 +1049,7 @@ function main(): void {
   }
 
   const rows: JsonRecord[] = []
-  lines.forEach((line, index) => {
+  lines.forEach((line: string, index: number) => {
     try {
       const parsed = JSON.parse(line) as unknown
       if (!isObject(parsed)) {

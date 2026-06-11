@@ -80,6 +80,8 @@ description: Use when a user provides or references a lab COA (检验报告) or 
 8. supporting docs 与交付脚本共同构成交付 contract；任一仓库契约调整，都必须回看整条交付链是否仍然一致（参见 `docs/sync-matrix.md`）。
 9. Phase 0 只允许 `convert` 或 `passthrough` 两种输入处理语义；Markdown/纯文本不得伪装成 PDF 转换。
 10. Phase 2 产出的提取结果必须保留足够的原文上下文供后续 Phase 5 语义规则使用，相关提取结构以 `schemas/docExtract-schema.md` 为准。
+10a. `B002` 的样品量字段合同以 `docExtract.sampleInfo.quantity` 为唯一 canonical 字段；“批量”“检品数量”“代表量”等原文都要在 Phase 2 统一归一到 `quantity`。进入结构化产物后，不得再以 `batchSize` 或其他旧字段名充当 canonical key、FAIL 详情或证据期望值。
+10b. `scripts/generate-session-log.ts` 生成的 JSONL 只是一份可编辑骨架，不是可交付证据；凡是仍保留 `Generated from results.json`、`replace with full docExtract`、`replace with actual response`、`FILL_ME`、`durationMs <= 0`、或 Phase 4 默认零值计数伪装成真实执行的内容，都必须在 Delivery Gate 被拒绝。
 11. Phase 3 的 LIMS 主路径优先使用聚合查询；若降级到拆分查询或不可用，必须在结构化产物中显式记录依赖状态与真实执行路径。
 12. Phase 4 的确定性规则主路径优先使用规则引擎；若走 inline fallback，只能按 `rules/rule-map.md` 的既有算法执行，并显式记录降级范围。
 12a. (joint only) Phase 3.5 成功筛选后（filteredSampleCount > 0），LLM 必须将 COA 的 batchNo 写入 ELN docExtract 的 `sampleInfo.resolvedBatchNo`，然后传递给 Phase 4b 规则引擎。若 Phase 3.5 筛选失败，不得注入 resolvedBatchNo。
@@ -89,6 +91,7 @@ description: Use when a user provides or references a lab COA (检验报告) or 
 16. 输出产物固定为三件套，且命名由 `auditMode` 决定:
    - `single`: `outputs/{reportNo}-results.json`、`outputs/{reportNo}-audit-report.md`、`outputs/{reportNo}-session-log.jsonl`
    - `joint`: `outputs/{batchNo}-joint-results.json`、`outputs/{batchNo}-joint-audit-report.md`、`outputs/{batchNo}-joint-session-log.jsonl`
+16a. `joint` 报告中的整改建议与修正记录必须显式标注来源文档域；同号规则不得只写 `B002` / `S001`，而要写成 `COA - B002`、`ELN - S001`、`跨文档 - X003` 这类可执行格式。
 17. 所有 FAIL、SKIP、correction、dependency degradation、脚本执行结果都必须落在结构化产物中，而不是只留在自然语言总结里。
 18. 任一步前置条件、脚本校验或结构验证失败都必须停止；不能在失败状态下宣称审核完成。
 
@@ -145,7 +148,7 @@ Joint Constraints:
 
 交付顺序固定，必须按以下顺序完成:
 
-0. (新增) 写入 `results.json` 后立即校验结构完整性
+1. 写入 `results.json` 后立即校验结构完整性
 
 ```bash
 npx tsx .claude/skills/scout-audit/scripts/validate-results.ts <results.json>
@@ -178,6 +181,7 @@ npx tsx .claude/skills/scout-audit/scripts/generate-session-log.ts <results.json
 
    - 脚本自动检测 auditMode，生成 8 行 (single) 或 15 行 (joint)
    - 生成后 LLM 需补充 Phase 0 源文件信息和 Phase 7 脚本执行结果 (exitCode/result)
+   - 骨架中的占位摘要、占位 response、`FILL_ME`、`durationMs <= 0` 与默认零值计数都属于“未补全证据”，在 Delivery Gate 中必须被视为失败而不是“稍后补”
 3. 补全 Phase 7 交付字段并校验 `session-log.jsonl`
 
 ```bash
@@ -188,7 +192,7 @@ npx tsx .claude/skills/scout-audit/scripts/validate-session-log.ts <session-log.
    - `single`: `outputs/{reportNo}-session-log.jsonl` + `outputs/{reportNo}-results.json`
    - `joint`: `outputs/{batchNo}-joint-session-log.jsonl` + `outputs/{batchNo}-joint-results.json`
    - 未通过校验前，不得宣称交付完成
-   - 常见失败: phase 行数不匹配 (single 8 行 / joint 15 行)、Phase 7 缺少 exitCode/result 字段、phase 顺序错乱
+   - 常见失败: phase 行数不匹配 (single 8 行 / joint 15 行)、Phase 7 缺少 exitCode/result 字段、phase 顺序错乱、Phase 2/3 仍保留骨架占位、LIMS 调用 `durationMs <= 0`、Phase 4 仍保留骨架默认零值
 4. 如本次变更触及仓库契约，再运行最小回归
 
 ```bash
@@ -233,6 +237,9 @@ npx tsx .claude/skills/scout-audit/scripts/run-minimal-regression.ts
 | "已有报告也可以再审一次" | 已生成产物不是原始审核输入，必须在 preflight 直接拦下。 |
 | "缺个 reportNo/batchNo 可以先猜" | 审核锚点缺失时只能停止并返回结构化失败摘要。 |
 | "ELN 是 single-batch 所以不需要 3.5" | `single-batch` 也必须保留显式 no-op / passthrough `3.5` 记录。 |
+| "`batchSize` 只是旧叫法，先继续用也没关系" | `B002` 的 canonical 字段只有 `quantity`；旧字段名不能再出现在结构化产物或最终 FAIL 文案中。 |
+| "session-log 骨架已经能过脚本，先交付再说" | 骨架只是补写起点；占位摘要、占位 response、`FILL_ME`、无效 duration 或默认零值一律不算真实审计证据。 |
+| "joint 报告里同号规则读者自己能分辨" | 联合报告必须给整改项标来源；没有 `COA/ELN/跨文档` 标签就不具备执行性。 |
 | "规则引擎不可用但我知道算法" | inline fallback 只能按 `rule-map.md` 既有算法，且必须显式记录降级范围。 |
 | "Phase 5 可以修正 Phase 4 的判定" | Phase 5 不得重写确定性判定边界；语义修正有明确范围限制。 |
 
@@ -251,5 +258,8 @@ npx tsx .claude/skills/scout-audit/scripts/run-minimal-regression.ts
 - 报告先于 `results.json` 生成，或跳过 `generate-report.ts`
 - 脚本非零退出、结构校验失败或产物不完整，却仍用“差不多完成”对外交付
 - `session-log.jsonl` 未经 `validate-session-log.ts` 校验就宣称完成
+- `session-log.jsonl` 中仍保留 `Generated from results.json`、`replace with ...`、`FILL_ME`、`durationMs <= 0` 或明显骨架默认值
+- `B002` 在文档已存在样品量信息时仍输出 `batchSize 缺失` 一类旧字段 FAIL 文案
+- `joint` 报告整改建议仍只写规则号，不写 `COA` / `ELN` / `跨文档` 来源
 - 任一脚本、结构校验或覆盖确认未通过，却继续对外输出最终结论
 - `session-log.jsonl` 未按 phase 完成顺序追加写入，而是在最后批量补写所有记录
