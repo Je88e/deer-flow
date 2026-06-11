@@ -1,6 +1,6 @@
 # Session Log Schema — JSONL 格式
 
-> **Ownership:** 本文件是 `session-log.jsonl` 的权威结构定义与记录粒度来源；`SKILL.md` 只引用 session log contract，不重复字段级说明。
+> **Ownership:** 本文件是 `session-log.jsonl` 的权威结构定义、记录粒度与 joint 15 行固定布局来源；`SKILL.md` 只引用 session log contract，不重复字段级说明。
 
 会话日志采用 JSONL 格式，每行一条独立 JSON。它是结构化审计证据，不是进度摘要，也不是 Markdown。
 
@@ -19,12 +19,12 @@
 6. **禁止骨架占位交付**: `generate-session-log.ts` 生成的骨架只能作为补写起点；若仍保留 `Generated from results.json`、`replace with full docExtract`、`replace with actual response`、`FILL_ME`、或同类占位文本，则该日志不具备交付资格。
 7. **禁止无效执行默认值**: Phase 3 的真实调用 `durationMs` 必须为正数；若 Phase 4 标记为真实执行（尤其 `executionMode = "rule-engine"`）却仍保留 `testItemCount = 0`、`limsDataSources = 0` 这类骨架默认值，视为未补全证据。
 8. **写入前验证**:
-   - `single`: `npx tsx .claude/skills/scout-audit/scripts/validate-session-log.ts outputs/{reportNo}-session-log.jsonl outputs/{reportNo}-results.json`
-   - `joint`: `npx tsx .claude/skills/scout-audit/scripts/validate-session-log.ts outputs/{batchNo}-joint-session-log.jsonl outputs/{batchNo}-joint-results.json`
+   - `single`: `npx tsx skills/custom/scout-audit/scripts/validate-session-log.ts outputs/{reportNo}-session-log.jsonl outputs/{reportNo}-results.json`
+   - `joint`: `npx tsx skills/custom/scout-audit/scripts/validate-session-log.ts outputs/{batchNo}-joint-session-log.jsonl outputs/{batchNo}-joint-results.json`
 9. **自动生成 (推荐)**: 使用 `scripts/generate-session-log.ts` 从 results.json 自动生成 session-log 骨架，然后手动补充 Phase 0 源文件信息与 Phase 7 脚本执行结果:
 
 ```bash
-npx tsx .claude/skills/scout-audit/scripts/generate-session-log.ts outputs/{reportNo}-results.json
+npx tsx skills/custom/scout-audit/scripts/generate-session-log.ts outputs/{reportNo}-results.json
 ```
 
 ## 行格式定义
@@ -73,6 +73,7 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 必需字段: `data`，且内容应与 `schemas/docExtract-schema.md` 一致。
 
 交付约束:
+
 - 不接受仅含骨架 `_summary` 的占位提取结果
 - 不接受 `Generated from results.json` / `replace with full docExtract` 一类提示语残留在最终 JSONL 中
 
@@ -90,22 +91,26 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 必需字段: `method`, `dependencyStatus`, `calls[]`
 
 `method` 允许值:
+
 - `aggregated`
 - `individual`
 - `unavailable`
 
 `dependencyStatus` 允许值:
+
 - `available`
 - `degraded`
 - `unavailable`
 
 `calls[]` 每项必须包含:
+
 - `tool`
 - `params`
 - `response` 或 `error`
 - `durationMs`
 
 交付约束:
+
 - `response` / `error` 必须是实际调用证据，不接受 `Generated from results.json` / `replace with actual response` 之类骨架占位
 - 对已发生的调用，`durationMs` 必须是正数；`0` 仅代表骨架默认值，不能作为真实交付证据
 
@@ -170,16 +175,19 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 必需字段: `input.docType`, `input.testItemCount`, `input.limsDataSources`, `input.executionMode`, `output.passCount`, `output.failCount`, `output.skipCount`, `output.results`
 
 `input.executionMode` 允许值:
+
 - `rule-engine`
 - `inline-fallback`
 
 若 `executionMode = "inline-fallback"`，建议附加 `input.degradedRules[]` 说明哪些规则依赖降级或改为 `SKIP`
 
 交付约束:
+
 - `input.testItemCount`、`input.limsDataSources` 必须反映真实运行计数
 - 若 `executionMode = "rule-engine"` 且存在非 `SKIP` 结果，`testItemCount = 0` 或 `limsDataSources = 0` 视为骨架默认值未替换
 
 `output.results` MUST 恰好 20 条，且:
+
 - `passCount + failCount + skipCount = 20`
 - `results.length = 20`
 - 每条 result MUST 包含 `ruleId`, `ruleName`, `status`, `severity`, `details`
@@ -212,6 +220,7 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 必需字段: `results`
 
 `results` MUST:
+
 - 恰好 12 条
 - 每个对象都使用 `ruleId` 字段
 - 记录每条语义规则的 `ruleId`, `ruleName`, `status`, `severity`, `details`
@@ -233,6 +242,7 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 必需字段: `input.deterministicCount`, `input.semanticCount`, `output.totalRules`, `output.passCount`, `output.failCount`, `output.skipCount`, `output.overallResult`, `output.corrections`
 
 一致性约束:
+
 - `input.deterministicCount = 20`
 - `input.semanticCount = 12`
 - `output.totalRules = 32`
@@ -277,22 +287,26 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 必需字段: `mcpCallCount`, `overallResult`, `outputFiles`, `dependencyStatus`, `reportGeneration`, `sessionLogValidation`
 
 `outputFiles` 必须包含:
+
 - `outputs/{reportNo}-results.json`
 - `outputs/{reportNo}-audit-report.md`
 - `outputs/{reportNo}-session-log.jsonl`
 
 `reportGeneration` 必须包含:
+
 - `command`
 - `exitCode`
 - `warnings`
 - `outputPath`
 
 `sessionLogValidation` 必须包含:
+
 - `command`
 - `exitCode`
 - `result`
 
 `dependencyStatus` 必须至少包含:
+
 - `lims`
 - `ruleEngine`
 
@@ -308,13 +322,13 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
     "ruleEngine": "available"
   },
   "reportGeneration": {
-    "command": "npx tsx .claude/skills/scout-audit/scripts/generate-report.ts outputs/{reportNo}-results.json outputs/{reportNo}-audit-report.md",
+    "command": "npx tsx skills/custom/scout-audit/scripts/generate-report.ts outputs/{reportNo}-results.json outputs/{reportNo}-audit-report.md",
     "exitCode": 0,
     "warnings": [],
     "outputPath": "outputs/{reportNo}-audit-report.md"
   },
   "sessionLogValidation": {
-    "command": "npx tsx .claude/skills/scout-audit/scripts/validate-session-log.ts outputs/{reportNo}-session-log.jsonl outputs/{reportNo}-results.json",
+    "command": "npx tsx skills/custom/scout-audit/scripts/validate-session-log.ts outputs/{reportNo}-session-log.jsonl outputs/{reportNo}-results.json",
     "exitCode": 0,
     "result": "OK"
   },
@@ -337,7 +351,7 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 ### 行序列
 
 | 行序 | phase | name | 说明 |
-|------|-------|------|------|
+| ---- | ----- | ---- | ---- |
 | 1 | 0a | pdfConvert | COA 源文档准备 |
 | 2 | 0b | pdfConvert | ELN 源文档准备 |
 | 3 | 1a | classify | COA 文档分类 |
@@ -396,6 +410,7 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 ```
 
 若筛选不可用（报错前记录）:
+
 ```json
 {
   "phase": "3.5",
@@ -423,6 +438,7 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
 即使记录失败，也必须保留 `output.filteredSampleCount`、`output.excludedSampleIds`、`output.keptSampleIds`，否则不会通过 `validate-session-log.ts`。
 
 `input.filterMethod` 允许值:
+
 - `lims` — 通过 LIMS 数据筛选
 - `coa-sampleIds` — 通过 COA 的 sampleIds 筛选
 - `none` — 无需筛选（single-batch 直通）
@@ -494,13 +510,13 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
     "ruleEngine": "available"
   },
   "reportGeneration": {
-    "command": "npx tsx .claude/skills/scout-audit/scripts/generate-report.ts outputs/{batchNo}-joint-results.json outputs/{batchNo}-joint-audit-report.md",
+    "command": "npx tsx skills/custom/scout-audit/scripts/generate-report.ts outputs/{batchNo}-joint-results.json outputs/{batchNo}-joint-audit-report.md",
     "exitCode": 0,
     "warnings": [],
     "outputPath": "outputs/{batchNo}-joint-audit-report.md"
   },
   "sessionLogValidation": {
-    "command": "npx tsx .claude/skills/scout-audit/scripts/validate-session-log.ts outputs/{batchNo}-joint-session-log.jsonl outputs/{batchNo}-joint-results.json",
+    "command": "npx tsx skills/custom/scout-audit/scripts/validate-session-log.ts outputs/{batchNo}-joint-session-log.jsonl outputs/{batchNo}-joint-results.json",
     "exitCode": 0,
     "result": "OK"
   },

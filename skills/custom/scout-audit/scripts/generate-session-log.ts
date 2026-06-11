@@ -223,13 +223,13 @@ function generateSingle(resultsJson: JsonRecord, paths: ReturnType<typeof inferP
       ruleEngine: metadata.ruleEngineAvailable !== false ? "available" : "unavailable",
     },
     reportGeneration: {
-      command: `npx tsx .claude/skills/scout-audit/scripts/generate-report.ts ${paths.resultsPath} ${paths.reportPath}`,
+      command: `npx tsx skills/custom/scout-audit/scripts/generate-report.ts ${paths.resultsPath} ${paths.reportPath}`,
       exitCode: -1,
       warnings: [],
       outputPath: paths.reportPath,
     },
     sessionLogValidation: {
-      command: `npx tsx .claude/skills/scout-audit/scripts/validate-session-log.ts ${paths.sessionLogPath} ${paths.resultsPath}`,
+      command: `npx tsx skills/custom/scout-audit/scripts/validate-session-log.ts ${paths.sessionLogPath} ${paths.resultsPath}`,
       exitCode: -1,
       result: "FILL_ME",
     },
@@ -451,13 +451,13 @@ function generateJoint(resultsJson: JsonRecord, paths: ReturnType<typeof inferPa
       ruleEngine: metadata.ruleEngineAvailable !== false ? "available" : "unavailable",
     },
     reportGeneration: {
-      command: `npx tsx .claude/skills/scout-audit/scripts/generate-report.ts ${paths.resultsPath} ${paths.reportPath}`,
+      command: `npx tsx skills/custom/scout-audit/scripts/generate-report.ts ${paths.resultsPath} ${paths.reportPath}`,
       exitCode: -1,
       warnings: [],
       outputPath: paths.reportPath,
     },
     sessionLogValidation: {
-      command: `npx tsx .claude/skills/scout-audit/scripts/validate-session-log.ts ${paths.sessionLogPath} ${paths.resultsPath}`,
+      command: `npx tsx skills/custom/scout-audit/scripts/validate-session-log.ts ${paths.sessionLogPath} ${paths.resultsPath}`,
       exitCode: -1,
       result: "FILL_ME",
     },
@@ -556,7 +556,7 @@ function main(): void {
   process.stdout.write("     - reportGeneration.exitCode (int, e.g. 0)\n")
   process.stdout.write("     - sessionLogValidation.exitCode (int, e.g. 0)\n")
   process.stdout.write('     - sessionLogValidation.result ("OK" | "INVALID")\n')
-  process.stdout.write(`  4. Validate: npx tsx .claude/skills/scout-audit/scripts/validate-session-log.ts ${outputPath} ${resultsPath}\n`)
+  process.stdout.write(`  4. Validate: npx tsx skills/custom/scout-audit/scripts/validate-session-log.ts ${outputPath} ${resultsPath}\n`)
 }
 
 main()

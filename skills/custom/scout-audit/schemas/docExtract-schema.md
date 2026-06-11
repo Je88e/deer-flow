@@ -1,5 +1,6 @@
 # DocExtract Schema — PDF 提取结构化数据
 
+> **Ownership:** 本文件是 `docExtract` 结构、字段定义与字段级 canonical 约束的权威来源；`SKILL.md` 只引用，不重复字段级规则。
 > 从 PDF (Markdown) 中提取的结构化 JSON。由 LLM Phase 2 生成。
 > **同步警告:** 此接口与 `prompts/extract.md` 中的 JSON 模板对应。修改字段时必须同步更新两处。
 
@@ -117,6 +118,15 @@ interface DocExtract {
 | `testItems[*].sampleSource` | Phase 3.5 筛选 | ELN 可选 |
 | `elnScope` | Phase 3.5 筛选 | ELN 必须 |
 
+## Canonical Field Rules
+
+- `docExtract.sampleInfo.quantity` 是样品量的唯一 canonical 字段。
+- 原文中的“批量”“检品数量”“代表量”等量信息，都必须统一归一到 `sampleInfo.quantity`。
+- 进入结构化产物后，不得再以 `batchSize` 或其他旧字段名作为:
+  - canonical key
+  - FAIL 详情字段
+  - 证据中的期望字段名
+
 ## 提取注意事项
 
 1. **数值提取**: `"98.52%"` → `resultNumeric: 98.52, unit: "%"`
@@ -136,7 +146,7 @@ interface DocExtract {
 15. **COA 表格拆分**: PDF 转换后 COA 检测项可能被压缩到同一单元格内（以 `<br>` 堆叠），需按语义拆分为独立 testItem；同一数据重复多列时需去重
 16. **中文操作符**: "应不高于"→≤, "应大于"→>, "应不低于"→≥, "X～Y"→≥/≤
 17. **HTML 表格**: ELN 可能使用 HTML `<table>` 标签，需正确解析 colspan/rowspan
-18. **样品量统一**: 文档中"批量""检品数量""代表量"等量信息统一填入 `quantity` 字段，不需区分类型
+18. **样品量统一**: 文档中"批量""检品数量""代表量"等量信息统一填入 `quantity` 字段，不需区分类型，且不得再回写到旧字段名
 
 ## 字段 Nullable 条件
 

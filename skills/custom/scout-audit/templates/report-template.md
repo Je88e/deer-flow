@@ -1,5 +1,7 @@
 # Scout 合规审核报告
 
+> **Ownership:** 本文件是审核报告版式、段落顺序、占位符布局与整改建议来源标签写法的权威模板；`SKILL.md` 只引用报告 contract，不重复模板细节。
+
 > 报告编号: {reportNo} | 批号: {batchNo} | 文档类型: {docType}
 > 品名: {productName} | 规格: {specification} | 审核日期: {auditDate}
 
@@ -216,7 +218,7 @@
 ## 整改建议
 
 <!-- 合并 COA、ELN、跨文档的全部 FAIL 项 -->
-<!-- 每条标题必须带来源标签，禁止只写裸规则号。
+<!-- 每条标题必须带来源标签，禁止只写裸规则号；这是 joint 报告整改建议的固定 contract。
 示例:
 ### COA - B002: 产品信息完整
 ### ELN - S001: 签名完整

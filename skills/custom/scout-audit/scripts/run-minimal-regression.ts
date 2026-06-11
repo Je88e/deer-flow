@@ -62,9 +62,9 @@ function printHelp(): void {
       "- {reportNo}-session-log.jsonl",
       "",
       "Examples:",
-      "  npx tsx .claude/skills/scout-audit/scripts/run-minimal-regression.ts",
-      "  npx tsx .claude/skills/scout-audit/scripts/run-minimal-regression.ts --scenario A408H0001",
-      `  npx tsx .claude/skills/scout-audit/scripts/run-minimal-regression.ts --output-dir ${DEFAULT_OUTPUT_DIR}`,
+      "  npx tsx skills/custom/scout-audit/scripts/run-minimal-regression.ts",
+      "  npx tsx skills/custom/scout-audit/scripts/run-minimal-regression.ts --scenario A408H0001",
+      `  npx tsx skills/custom/scout-audit/scripts/run-minimal-regression.ts --output-dir ${DEFAULT_OUTPUT_DIR}`,
     ].join("\n") + "\n"
   )
 }

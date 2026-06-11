@@ -1,0 +1,57 @@
+# Preflight Contract
+
+## Purpose
+
+定义进入 Phase 0 之前必须完成的准入检查。Preflight gate 不是正式 phase，不写入 `session-log.jsonl`，但它决定审核是否允许开始。
+
+## Eligibility
+
+- 输入对象必须是 COA/ELN 原始文档，或其可信的 Markdown / 纯文本转写。
+- 以下对象不得作为原始输入再次审核:
+  - `results.json`
+  - 审核报告
+  - `session-log.jsonl`
+- 非 COA/ELN 审核场景必须直接停止，例如 SOP、方案、偏差报告、普通总结或改写任务。
+- 审核锚点必须可建立:
+  - `single` 需要可用的 `reportNo`
+  - `joint` 需要可用的 `batchNo`，且场景必须是同批次 `1 COA + 1..N ELN`
+
+## Capability
+
+- `scout-lims-connector` 必须可用，且优先走 `fetch_all_lims_data`。
+- `scout-rule-engine` 必须可用，主路径为 `run_all_rules`。
+- 对 `.pdf` 输入，必须确认至少存在一种可用的 Markdown 获取路径；仅在必要时才回退到 `pdf` skill。
+- 若关键依赖不可用且无法给出结构化降级结果，必须停止，不得先进入 Phase 0 再补救。
+
+## Mode Detection
+
+- `single`
+  - 1 个 COA 或 ELN 文档
+  - 输出锚点为 `reportNo`
+- `joint`
+  - 1 份 COA + 1..N 份同批次 ELN
+  - 输出锚点为 `batchNo`
+  - ELN 在提取阶段必须判定 `elnScope = "single-batch" | "multi-batch"`
+
+## Failure Policy
+
+- 任一 gate 失败即停止，不进入 Phase 0。
+- 返回结构化失败摘要，字段定义见 `../schemas/gate-failure-schema.md`。
+- 不允许先“试试看”再补救。
+- 失败摘要至少要说明:
+  - 缺失条件
+  - 影响范围
+  - 是否可恢复
+  - 建议动作
+
+## Overwrite Confirmation
+
+- 若预期输出文件已存在，必须先停下征求用户确认。
+- 未获得覆盖确认前，不允许继续写入任何三件套产物。
+
+## References
+
+- `../schemas/gate-failure-schema.md`
+- `../schemas/docExtract-schema.md`
+- `../templates/session-log-schema.md`
+- `../docs/operator-guardrails.md`
