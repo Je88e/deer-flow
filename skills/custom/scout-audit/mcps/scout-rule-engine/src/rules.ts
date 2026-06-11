@@ -55,10 +55,21 @@ const B001: RuleDef = {
   applicable: ["ELN", "COA"],
   execute(docExtract) {
     const batchNo: string = docExtract?.sampleInfo?.batchNo ?? ""
-    if (!batchNo) return fail("B001", "样品批号准确", "severe", "样品批号为空", "非空批号", "空", "补全规范样品编号")
-    if (!/^[A-Za-z0-9]+$/.test(batchNo))
-      return fail("B001", "样品批号准确", "severe", `批号格式不合规: ${batchNo}`, "字母+数字", batchNo, "补全规范样品编号")
-    return pass("B001", "样品批号准确", "severe", `批号 ${batchNo} 格式正确`)
+    const resolved: string = docExtract?.sampleInfo?.resolvedBatchNo ?? ""
+    const effectiveBatchNo = batchNo || resolved
+    if (!effectiveBatchNo)
+      return fail("B001", "样品批号准确", "severe",
+        "样品批号为空且无解析批号",
+        "非空批号", "空",
+        "补全规范样品编号，或在 joint 审核中通过 Phase 3.5 解析批号")
+    if (!/^[A-Za-z0-9]+$/.test(effectiveBatchNo))
+      return fail("B001", "样品批号准确", "severe",
+        `批号格式不合规: ${effectiveBatchNo}`,
+        "字母+数字", effectiveBatchNo,
+        "补全规范样品编号")
+    const source = batchNo ? "直接" : "Phase 3.5 解析"
+    return pass("B001", "样品批号准确", "severe",
+      `批号 ${effectiveBatchNo} 格式正确 (${source}来源)`)
   },
 }
 
@@ -70,7 +81,7 @@ const B002: RuleDef = {
     const si = docExtract?.sampleInfo
     const rf = limsData?.requestForm
     if (!si || !rf) return skip("B002", "产品信息完整", "severe", "缺少请验单数据")
-    const fields = ["productName", "specification", "batchSize"] as const
+    const fields = ["productName", "specification", "quantity"] as const
     for (const f of fields) {
       if (!si[f]) return fail("B002", "产品信息完整", "severe", `字段 ${f} 缺失`, `${f} 必填`, "空", "补全缺失信息")
       if (rf[f] && si[f] !== rf[f])

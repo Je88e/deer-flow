@@ -1,8 +1,7 @@
 # Report Schema — 审核报告输出结构
 
-> **重要:** 此 schema 是 `results.json` 的权威定义。
-> `generate-report.ts` 脚本严格依赖此结构。两者必须保持同步。
-> 如果修改此 schema，必须同步更新 `scripts/generate-report.ts` 的 `ReportInput` 接口。
+> **Ownership:** 本文件是 `results.json` / `JointResultsJSON` 的权威结构定义；`SKILL.md` 只引用交付 contract，不重复字段级 schema。
+> `generate-report.ts` 严格依赖此结构；如调整 schema，必须同步更新 `scripts/generate-report.ts` 的 `ReportInput` 接口。
 
 ## JSON 结构 (flat, 非 nested)
 
@@ -22,6 +21,7 @@ interface RuleResult {
 }
 
 interface ResultsJSON {
+  auditMode?: "single" | "joint"  // NEW: 审核模式，默认 "single"。joint 时参见 JointResultsJSON
   docType: "COA" | "ELN"
   reportNo: string              // 报告编号
   batchNo: string               // 批号
@@ -56,15 +56,55 @@ interface ResultsJSON {
 }
 ```
 
+## JointResultsJSON — 联合审核结构 (auditMode="joint")
+
+```typescript
+interface JointResultsJSON {
+  auditMode: "joint"
+  batchNo: string              // 来自 COA
+  productName: string
+  specification: string
+  standardRef?: string
+  auditDate: string            // YYYY-MM-DD
+  overallResult?: "PASS" | "FAIL" | "CONDITIONAL_PASS"
+  summary?: {
+    totalRules: number          // e.g., 69 (COA 32 + ELN 32 + 5 跨文档)
+    passCount: number
+    failCount: number
+    skipCount: number
+    applicableCount?: number    // totalRules - skipCount
+    correctionCount?: number    // corrections[].length
+    severeFailCount?: number    // FAIL 且 severity="severe" 的数量
+  }
+  documents: {
+    coa: ResultsJSON           // COA 32 条结果
+    eln: ResultsJSON           // ELN 32 条结果（可能已经 Phase 3.5 筛选）
+  }
+  crossDocumentRules: RuleResult[]  // X001-X005，恰好 5 条
+  elnFiltering?: {             // Phase 3.5 筛选记录（仅 multi-batch ELN 时存在）
+    elnScope: "single-batch" | "multi-batch"
+    originalSampleCount: number
+    filteredSampleCount: number
+    filterMethod: "lims" | "coa-sampleIds" | "none" | "unavailable"
+    excludedSampleIds?: string[]
+    keptSampleIds?: string[]   // NEW: 筛选保留的样品ID列表（与 excluded 互斥）
+  }
+  corrections?: CorrectionRecord[]
+  metadata?: MetadataRecord
+}
+```
+
 ## 关键约束
 
 | 约束 | 说明 |
 |------|------|
 | **Flat 结构** | 顶层字段是 `docType`, `reportNo`, `batchNo`, `ruleResults[]`。**不要**嵌套到 `reportMeta`/`summary`/`results` 下 |
-| **32 条规则** | `ruleResults` 必须恰好 32 条，覆盖 B001–C002 |
+| **single: 32 条规则** | `ruleResults` 必须恰好 32 条，覆盖 B001–C002 |
+| **joint: 69 条规则** | COA 32 + ELN 32 + 跨文档 5。`documents.coa.ruleResults` 和 `documents.eln.ruleResults` 各 32 条，`crossDocumentRules` 恰好 5 条 |
 | **FAIL evidence** | FAIL 结果的 `evidence` 必须非空，含 `expected` + `actual`，建议含 `location` |
 | **FAIL remediation** | FAIL 结果的 `remediation` 必须非空 |
 | **corrections 完整** | 所有修正都必须在 `corrections[]` 中记录，结构固定为 `{ ruleId, originalStatus, correctedTo, reason }` |
+| **ruleResults 状态语义** | `ruleResults[].status` 必须是**最终状态**（修正后的状态），而非原始状态。修正前的状态保留在 `corrections[].originalStatus` 中。`summary` 计数必须与 `ruleResults` 直接计数一致 |
 
 ## overallResult 判定逻辑
 
@@ -81,6 +121,8 @@ interface ResultsJSON {
 | PASS | 该 {docType} 文档全部适用规则审核通过，未发现合规问题。 |
 | CONDITIONAL_PASS | 该 {docType} 文档存在 {warningCount} 项警告级别问题，需复核后确认。 |
 | FAIL | 该 {docType} 文档存在 {severeCount} 项严重问题，审核不通过，需整改后重新提交。 |
+
+> **joint 模式注意:** joint 模式下无顶层 `docType`，应使用 "该批次联合审核" / "该批次联合审核（COA + ELN）" 替代 "{docType} 文档"。`generate-report.ts` 已自动处理此转换。
 
 ## 修正注释 (correctionNote)
 

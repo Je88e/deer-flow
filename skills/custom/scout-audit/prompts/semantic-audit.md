@@ -160,3 +160,78 @@ N002 结果在可选结果内:
 - severity 按规则定义表确定，不要自行判断
 - N002 的部分匹配需要 AI 判断语义相似度
 - L003 需要识别公式类型并验证计算过程
+
+---
+
+## Phase 5c: 跨文档一致性规则 (X001-X005) — joint 模式专用
+
+仅当 auditMode="joint" 时执行此段。输入包含 docExtract_COA + docExtract_ELN + limsData。
+
+### Prompt
+
+```
+你是实验室合规审核AI。对以下 COA 和 ELN 文档执行跨文档一致性审核。
+
+## COA 提取数据
+{coa_docExtract_json}
+
+## ELN 提取数据（可能已经 Phase 3.5 筛选）
+{eln_docExtract_json}
+
+## LIMS 数据
+{limsData_json}
+
+## 需要执行的规则
+
+X001 结果数据一致 (severity: severe):
+- 比对 COA 与 ELN 中同名检测项（itemName 相同）的结果
+- 定量: COA.resultNumeric 与 ELN.resultNumeric 偏差 ≤ 0.5% → PASS
+- 定性: COA.result 与 ELN.result 文本一致 → PASS
+- 若 COA 检测项在 ELN 中无对应 → SKIP，details 说明"ELN 中无对应检测项"
+- 若 ELN 经筛选，只比对筛选后保留的检测项
+
+X002 签名角色对应 (severity: warning):
+- COA signatures 中有姓名的 tester/reviewer 应在 ELN personnel 中存在
+- 角色不需要一一对应，但人员姓名应出现
+- COA 签名为空（name/date 缺失）→ SKIP，不参与比对
+- ELN personnel 为空 → SKIP
+- 若 ELN 的 检验人 姓名与 COA 的 tester 一致 → PASS
+
+X003 日期逻辑一致 (severity: severe):
+- ELN.dates.testDate ≤ COA.dates.testDate（先检测后出 COA）
+- ELN.dates.reportDate ≤ COA.dates.reportDate（ELN 报告不晚于 COA）
+- 任一日期字段缺失 → SKIP 该比对项，details 说明缺失字段
+
+X004 检测项目覆盖 (severity: severe):
+- COA.testItems[].itemName 集合 ⊆ ELN.testItems[].itemName 集合
+- ELN 应覆盖 COA 声明的所有检测项
+- COA 项目在 ELN 中缺失 → FAIL，details 列出缺失项
+- 若 ELN 经筛选，检查 COA 项目是否在筛选后的 ELN 中
+
+X005 仪器使用一致 (severity: warning):
+- 若 COA 不含 instruments → SKIP（COA 通常不列仪器）
+- 若 COA 含 instruments: COA 的 instrumentNo 应在 ELN instruments 中存在
+- 缺失仪器编号 → FAIL
+
+## 输出格式
+
+```json
+[
+  {
+    "ruleId": "X001",
+    "ruleName": "结果数据一致",
+    "status": "PASS|FAIL|SKIP",
+    "severity": "severe|warning|info",
+    "details": "具体描述",
+    "evidence": {
+      "expected": "期望值",
+      "actual": "实际值",
+      "location": "字段路径"
+    },
+    "remediation": "整改建议（FAIL 时必填）"
+  }
+]
+```
+
+仅输出 JSON 数组，不要输出其他内容。
+```

@@ -1,11 +1,12 @@
 // Mock LIMS data derived from real COA/ELN PDFs
-// Batches: B202604034 (批31772, 20%), B202604035 (批32037, 10%)
+// Batches: B202604034 (批31772, 20%), B202604035 (批32037, 10%), B2025051101 (注射用水, 重金属, 6份), B2025051102 (注射用水, 重金属, 11份)
 
 export interface RequestFormDTO {
   productName: string
   specification: string
-  batchSize: string
+  quantity: string
   standardRef: string
+  registeredSampleIds?: string[]  // Phase 3.5: 该批次注册的取样点编号集合
   requiredTestItems: Array<{
     itemName: string
     testType: "quantitative" | "qualitative"
@@ -111,7 +112,7 @@ const REQUEST_FORMS: Record<string, RequestFormDTO> = {
   B202604034: {
     productName: "人血白蛋白原液",
     specification: "20%",
-    batchSize: "12ml",
+    quantity: "12ml",
     standardRef: "HLGF/2-ZLBZ-ZJP-01",
     requiredTestItems: [
       {
@@ -153,7 +154,7 @@ const REQUEST_FORMS: Record<string, RequestFormDTO> = {
   B202604035: {
     productName: "人血白蛋白原液",
     specification: "10%",
-    batchSize: "12ml",
+    quantity: "12ml",
     standardRef: "HLGF/2-ZLBZ-ZJP-01",
     requiredTestItems: [
       {
@@ -195,7 +196,7 @@ const REQUEST_FORMS: Record<string, RequestFormDTO> = {
   "240514002": {
     productName: "流感病毒裂解疫苗（幼儿装）",
     specification: "0.25ml/瓶",
-    batchSize: "20支",
+    quantity: "20支",
     standardRef: "STP/ZL028-12",
     requiredTestItems: [
       {
@@ -233,7 +234,7 @@ const REQUEST_FORMS: Record<string, RequestFormDTO> = {
   DL202604001: {
     productName: "人血白蛋白原液",
     specification: "20%",
-    batchSize: "12ml",
+    quantity: "12ml",
     standardRef: "HLGF/2-ZLBZ-ZJP-01",
     requiredTestItems: [
       {
@@ -242,6 +243,71 @@ const REQUEST_FORMS: Record<string, RequestFormDTO> = {
         specUpper: 0.025,
         specOperator: "<",
         significantDigits: 2,
+        unit: "%",
+        envRequirements: { tempMin: 18, tempMax: 28, humidityMin: 20, humidityMax: 60 },
+      },
+    ],
+    approvalWorkflow: [
+      { step: 1, role: "tester", required: true },
+      { step: 2, role: "reviewer", required: true },
+      { step: 3, role: "approver", required: true },
+    ],
+  },
+  B2025051101: {
+    productName: "注射用水",
+    specification: "液体",
+    quantity: "6份",
+    standardRef: "QA-SMP-F052-10",
+    registeredSampleIds: [
+      "250511-20201",
+      "250511-20210",
+      "250511-20214",
+      "250511-20551",
+      "250511-20559",
+      "250511-20560",
+    ],
+    requiredTestItems: [
+      {
+        itemName: "重金属",
+        testType: "qualitative",
+        specUpper: 0.0001,
+        specOperator: "≤",
+        allowedResults: ["符合规定", "不符合规定"],
+        unit: "%",
+        envRequirements: { tempMin: 18, tempMax: 28, humidityMin: 20, humidityMax: 60 },
+      },
+    ],
+    approvalWorkflow: [
+      { step: 1, role: "tester", required: true },
+      { step: 2, role: "reviewer", required: true },
+      { step: 3, role: "approver", required: true },
+    ],
+  },
+  B2025051102: {
+    productName: "注射用水",
+    specification: "液体",
+    quantity: "11份",
+    standardRef: "QA-SMP-F052-10",
+    registeredSampleIds: [
+      "250511-21845",
+      "250511-21849",
+      "250511-21860",
+      "250511-21861",
+      "250511-508012",
+      "250511-508032",
+      "250511-508033",
+      "250511-508036",
+      "250511-802101",
+      "250511-802102",
+      "250511-802103",
+    ],
+    requiredTestItems: [
+      {
+        itemName: "重金属",
+        testType: "qualitative",
+        specUpper: 0.0001,
+        specOperator: "≤",
+        allowedResults: ["符合规定", "不符合规定"],
         unit: "%",
         envRequirements: { tempMin: 18, tempMax: 28, humidityMin: 20, humidityMax: 60 },
       },
@@ -265,6 +331,9 @@ const REPORT_UNIQUE: Record<string, ReportUniqueDTO> = {
   "S004-missing-approver-step": { unique: true, duplicates: [] },
   "detection-limit-coa": { unique: true, duplicates: [] },
   "eln-with-complete-workflow": { unique: true, duplicates: [] },
+  "HLGF-I-25051101": { unique: true, duplicates: [] },
+  "HLGF-I-25051102": { unique: true, duplicates: [] },
+  "ELN20190064": { unique: true, duplicates: [] },
 }
 
 const QUALIFICATIONS: Record<string, QualificationDTO> = {
@@ -285,6 +354,13 @@ const QUALIFICATIONS: Record<string, QualificationDTO> = {
         authorizedTests: ["pH值"],
         issueDate: "2025-03-01",
         expiryDate: "2027-03-01",
+        status: "active",
+      },
+      {
+        type: "重金属检测",
+        authorizedTests: ["重金属"],
+        issueDate: "2025-01-10",
+        expiryDate: "2027-01-10",
         status: "active",
       },
     ],
@@ -434,6 +510,24 @@ const STANDARDS: Record<string, StandardDTO> = {
     effectiveDate: "2024-05-01",
     isActive: true,
   },
+  "QA-SMP-F052-10": {
+    refCode: "QA-SMP-F052-10",
+    currentVersion: "2024-01",
+    effectiveDate: "2024-01-01",
+    isActive: true,
+  },
+  "QC-SOP-F052-16": {
+    refCode: "QC-SOP-F052-16",
+    currentVersion: "2024-06",
+    effectiveDate: "2024-06-01",
+    isActive: true,
+  },
+  "QC-R-F052-00": {
+    refCode: "QC-R-F052-00",
+    currentVersion: "2024-06",
+    effectiveDate: "2024-06-01",
+    isActive: true,
+  },
 }
 
 const AUDIT_TRAILS: Record<string, AuditTrailDTO[]> = {
@@ -461,6 +555,19 @@ const AUDIT_TRAILS: Record<string, AuditTrailDTO[]> = {
     { action: "sign", user: "韩梅", account: "hanmei", timestamp: "2026-04-15T10:00:00" },
     { action: "sign", user: "王斌", account: "wangbin", timestamp: "2026-04-15T14:00:00" },
     { action: "sign", user: "王斌", account: "wangbin", timestamp: "2026-04-15T16:00:00" },
+  ],
+  B2025051101: [
+    { action: "create", user: "王斌", account: "wangbin", timestamp: "2025-05-11T09:00:00" },
+    { action: "sign", user: "王斌", account: "wangbin", timestamp: "2025-05-15T13:51:29" },
+    { action: "sign", user: "韩梅", account: "hanmei", timestamp: "2025-05-15T14:30:00" },
+    { action: "sign", user: "韩梅", account: "hanmei", timestamp: "2025-05-15T15:00:00" },
+  ],
+  B2025051102: [
+    { action: "create", user: "王斌", account: "wangbin", timestamp: "2025-05-11T09:00:00" },
+    { action: "sign", user: "王斌", account: "wangbin", timestamp: "2025-05-15T13:51:29" },
+    { action: "sign", user: "韩梅", account: "hanmei", timestamp: "2025-05-15T14:30:00" },
+    { action: "sign", user: "韩梅", account: "hanmei", timestamp: "2025-05-15T15:00:00" },
+    { action: "view", user: "System Administrator", account: "admin", timestamp: "2025-05-15T14:43:42" },
   ],
 }
 
@@ -500,6 +607,28 @@ const ORIGINAL_DATA: Record<string, OriginalDataDTO> = {
     instrumentLogs: [],
     chromatograms: [],
     sequences: [],
+  },
+  B2025051101: {
+    expectedPages: 2,
+    foundPages: 2,
+    instrumentLogs: [
+      { logId: "LOG-006", instrumentNo: "VISUAL-001", date: "2025-05-15", type: "visual_comparison" },
+    ],
+    chromatograms: [],
+    sequences: [
+      { seqId: "SEQ-003", instrumentNo: "VISUAL-001", date: "2025-05-15", injectionCount: 1 },
+    ],
+  },
+  B2025051102: {
+    expectedPages: 2,
+    foundPages: 2,
+    instrumentLogs: [
+      { logId: "LOG-007", instrumentNo: "VISUAL-001", date: "2025-05-15", type: "visual_comparison" },
+    ],
+    chromatograms: [],
+    sequences: [
+      { seqId: "SEQ-004", instrumentNo: "VISUAL-001", date: "2025-05-15", injectionCount: 1 },
+    ],
   },
 }
 
@@ -607,6 +736,33 @@ const WORKFLOWS: Record<string, WorkflowDTO> = {
       { step: 3, role: "approver", status: "completed", operator: "韩梅", completedDate: "2026-04-04", signatureValid: true },
     ],
   },
+  "HLGF-I-25051101": {
+    currentStep: 3,
+    totalSteps: 3,
+    steps: [
+      { step: 1, role: "tester", status: "completed", operator: "王斌", completedDate: "2025-05-15", signatureValid: true },
+      { step: 2, role: "reviewer", status: "completed", operator: "韩梅", completedDate: "2025-05-15", signatureValid: true },
+      { step: 3, role: "approver", status: "completed", operator: "韩梅", completedDate: "2025-05-15", signatureValid: true },
+    ],
+  },
+  "HLGF-I-25051102": {
+    currentStep: 3,
+    totalSteps: 3,
+    steps: [
+      { step: 1, role: "tester", status: "completed", operator: "王斌", completedDate: "2025-05-15", signatureValid: true },
+      { step: 2, role: "reviewer", status: "completed", operator: "韩梅", completedDate: "2025-05-15", signatureValid: true },
+      { step: 3, role: "approver", status: "completed", operator: "韩梅", completedDate: "2025-05-15", signatureValid: true },
+    ],
+  },
+  "ELN20190064": {
+    currentStep: 3,
+    totalSteps: 3,
+    steps: [
+      { step: 1, role: "tester", status: "completed", operator: "王斌", completedDate: "2025-05-15", signatureValid: true },
+      { step: 2, role: "reviewer", status: "completed", operator: "韩梅", completedDate: "2025-05-15", signatureValid: true },
+      { step: 3, role: "approver", status: "completed", operator: "韩梅", completedDate: "2025-05-15", signatureValid: true },
+    ],
+  },
 }
 
 // Lookup functions
@@ -658,6 +814,13 @@ export function getMockTestItemOptions(productName: string, testItemName: string
   if (productName === "流感病毒裂解疫苗（幼儿装）" && testItemName === "无菌检查") {
     return {
       testItemName: "无菌检查",
+      allowedResults: ["符合规定", "不符合规定"],
+      resultFormat: "enum",
+    }
+  }
+  if (productName === "注射用水" && testItemName === "重金属") {
+    return {
+      testItemName: "重金属",
       allowedResults: ["符合规定", "不符合规定"],
       resultFormat: "enum",
     }

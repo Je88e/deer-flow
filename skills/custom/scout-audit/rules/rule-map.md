@@ -8,7 +8,7 @@
 
 | RuleID | 规则名称 | 输入 | 判定逻辑 | 适用 | 等级 (severity) |
 |--------|---------|------|---------|------|------|
-| B001 | 样品批号准确 | docExtract.batchNo | 非空 + 正则 `[A-Za-z0-9]+` | ELN/COA | 严重 |
+| B001 | 样品批号准确 | docExtract.sampleInfo.batchNo 或 resolvedBatchNo | 任一非空 + 正则 `[A-Za-z0-9]+` | ELN/COA | 严重 |
 | B002 | 产品信息完整 | docExtract.sampleInfo + limsData.requestForm | 逐一比对必填字段 | ELN/COA | 严重 |
 | B003 | 检测项目完整 | docExtract.testItems[].itemName vs limsData.requestForm.requiredTestItems | 子集匹配，无漏项 | ELN/COA | 严重 |
 | B004 | 日期逻辑正确 | docExtract.dates | testDate ≤ reviewDate ≤ approveDate ≤ reportDate | ELN/COA | 严重 |
@@ -163,6 +163,28 @@ function countSignificantDigits(numericStr):
   移除前导零和小数点, 计算剩余数字位数
   特殊: 末尾零算有效数字 (如 "3.0" → 2位)
 ```
+
+### 跨文档规则 (5条) — joint 模式专用
+
+| RuleID | 规则名称 | 输入 | 判定逻辑 | 等级 |
+|--------|---------|------|---------|------|
+| X001 | 结果数据一致 | COA.testItems + ELN.testItems | COA 与 ELN 同名检测项 resultNumeric 偏差 ≤ 0.5%；定性检测项 result 文本一致 | severe |
+| X002 | 签名角色对应 | COA.signatures + ELN.personnel | COA signatures 中的 tester/reviewer 姓名在 ELN personnel 中存在 | warning |
+| X003 | 日期逻辑一致 | COA.dates + ELN.dates | ELN.testDate ≤ COA.testDate 且 ELN.reportDate ≤ COA.reportDate | severe |
+| X004 | 检测项目覆盖 | COA.testItems[].itemName + ELN.testItems[].itemName | COA 项目名称集合 ⊆ ELN 项目名称集合 | severe |
+| X005 | 仪器使用一致 | COA.instruments + ELN.instruments | COA 引用的 instrumentNo 在 ELN instruments 中存在对应记录 | warning |
+
+> **执行约束:** X001-X005 仅在 `auditMode="joint"` 时由 Phase 5c 执行。若 ELN 经过 Phase 3.5 筛选，跨文档规则使用筛选后的 ELN 数据。
+> **实现方式:** X001-X005 由 LLM 在 Phase 5c 语义判断，不走 MCP 规则引擎。
+
+### B001 joint 模式多批次 ELN
+
+多批次 ELN 不含批号字段时，若 Phase 3.5 筛选成功，LLM 应在 Phase 4b 前
+将 COA 的 batchNo 注入 `docExtract.sampleInfo.resolvedBatchNo`，
+B001 将使用 `resolvedBatchNo` 通过检查。
+
+Phase 3.5 筛选失败（filteredSampleCount = 0 或 filterMethod = "unavailable"）时，
+不注入 `resolvedBatchNo`，B001 保留 FAIL。
 
 ## LIMS 依赖分类
 

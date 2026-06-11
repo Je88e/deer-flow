@@ -9,7 +9,7 @@ function createDocExtract(overrides: Record<string, unknown> = {}) {
       batchNo: "A408H0001",
       productName: "人血白蛋白",
       specification: "20%",
-      batchSize: "1000 支",
+      quantity: "1000 支",
     },
     signatures: [
       { role: "tester", name: "Alice", date: "2026-04-15" },
@@ -169,6 +169,39 @@ describe("scout-rule-engine regression coverage", () => {
     expect(runSingleRule("N001", docExtract, limsData, "COA").status).toBe("PASS")
     expect(runSingleRule("R002", docExtract, limsData, "COA").status).toBe("PASS")
     expect(runSingleRule("R004", docExtract, limsData, "COA").status).toBe("PASS")
+  })
+
+  it("B001 在 batchNo 为空但 resolvedBatchNo 有效时 PASS", () => {
+    const docExtract = createDocExtract({
+      sampleInfo: {
+        batchNo: "",
+        resolvedBatchNo: "B2025051101",
+        productName: "注射用水",
+        specification: "液体",
+        quantity: "6份",
+      },
+    })
+
+    const result = runSingleRule("B001", docExtract, createLimsData(), "ELN")
+
+    expect(result.status).toBe("PASS")
+    expect(result.details).toContain("Phase 3.5 解析")
+  })
+
+  it("B001 在 batchNo 和 resolvedBatchNo 均为空时 FAIL", () => {
+    const docExtract = createDocExtract({
+      sampleInfo: {
+        batchNo: "",
+        resolvedBatchNo: "",
+        productName: "注射用水",
+        specification: "液体",
+        quantity: "6份",
+      },
+    })
+
+    const result = runSingleRule("B001", docExtract, createLimsData(), "ELN")
+
+    expect(result.status).toBe("FAIL")
   })
 
   it("L001 在 detection limit 合格且结论为符合规定时 PASS", () => {

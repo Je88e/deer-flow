@@ -7,10 +7,9 @@ import { urlOfArtifact } from "@/core/artifacts/utils";
 
 import {
   buildAuditViewModel,
-  parseResultsFile,
+  parseHeaderFromResults,
   pickAuditArtifacts,
 } from "./parser";
-import type { ScoutAuditHeader } from "./types";
 
 async function loadArtifactText({
   filepath,
@@ -98,20 +97,8 @@ export function useScoutAuditHeader({
         filepath: files.resultsPath,
         threadId,
       });
-      const results = parseResultsFile(resultsContent);
 
-      const header: ScoutAuditHeader = {
-        reportNo: results.reportNo,
-        batchNo: results.batchNo,
-        docType: results.docType,
-        overallResult: results.overallResult,
-        productName: results.productName,
-        specification: results.specification,
-        standardRef: results.standardRef,
-        auditDate: results.auditDate,
-      };
-
-      return header;
+      return parseHeaderFromResults(resultsContent);
     },
   });
 

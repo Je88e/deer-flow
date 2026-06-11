@@ -10,7 +10,7 @@
 interface RequestFormDTO {
   productName: string
   specification: string
-  batchSize: string
+  quantity: string
   standardRef: string
   requiredTestItems: [{
     itemName: string
@@ -29,7 +29,7 @@ interface RequestFormDTO {
       humidityMax: number
     }
   }]
-  approvalWorkflow: [{             // → S004
+  approvalWorkflow: [{             // 流程定义（参考用；S004 实际使用 fetch_approval_workflow 返回的 WorkflowDTO）
     step: number
     role: "tester" | "reviewer" | "approver" | "release"
     required: boolean

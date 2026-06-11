@@ -150,6 +150,93 @@
 
 **{overallResult}** — {overallSummary}
 
+---
+
+# Template C: 联合审核报告 (auditMode="joint")
+
+```markdown
+# Scout 联合合规审核报告
+
+> 批号: {batchNo} | 品名: {productName} | 规格: {specification}
+> COA 报告编号: {coaReportNo} | ELN 编号: {elnReportNo}
+> 审核日期: {auditDate} | 审核模式: 联合审核 (COA + ELN)
+
+---
+
+## 审核总评: {overallResult}
+
+| 文档 | PASS | FAIL | SKIP | 合计 |
+|------|------|------|------|------|
+| COA | {coaPassCount} | {coaFailCount} | {coaSkipCount} | 32 |
+| ELN | {elnPassCount} | {elnFailCount} | {elnSkipCount} | 32 |
+| 跨文档 | {crossPassCount} | {crossFailCount} | {crossSkipCount} | 5 |
+| **合计** | **{passCount}** | **{failCount}** | **{skipCount}** | **69** |
+
+<!-- 若 ELN 经过 Phase 3.5 筛选，添加: -->
+> **ELN 筛选说明:** ELN 原始含 {originalSampleCount} 个样品，经 Phase 3.5 筛选（依据 COA 批号 {batchNo}，方式: {filterMethod}），保留 {filteredSampleCount} 个样品参与审核。排除样品ID: {excludedSampleIds}。
+
+---
+
+## COA 审核结果
+
+<!-- 标准 32 条规则表格，Template A 结构 -->
+<!-- 包含: 基本信息 / 数值判定 / 数值规范 / 签名审核 / 数据完整性 / 逻辑一致性 / 结论表述 -->
+
+---
+
+## ELN 审核结果
+
+<!-- 标准 32 条规则表格，Template A 结构 -->
+<!-- 若 ELN 经筛选，段落标题可加注: -->
+<!-- ### ELN 审核结果（筛选后，{filteredSampleCount}/{originalSampleCount} 样品） -->
+
+---
+
+## 跨文档一致性审核 (X001-X005)
+
+| 规则ID | 规则名称 | 状态 | 说明 |
+|--------|---------|------|------|
+| X001 | 结果数据一致 | {X001_status} | {X001_details} |
+| X002 | 签名角色对应 | {X002_status} | {X002_details} |
+| X003 | 日期逻辑一致 | {X003_status} | {X003_details} |
+| X004 | 检测项目覆盖 | {X004_status} | {X004_details} |
+| X005 | 仪器使用一致 | {X005_status} | {X005_details} |
+
+---
+
+## 修正记录
+
+<!-- joint 模式下 corrections 可能来自 COA 或 ELN -->
+| 文档 | 规则ID | 原始状态 | 修正后 | 原因 |
+|------|--------|---------|--------|------|
+| {correction_doc} | {correction_ruleId} | {correction_originalStatus} | {correction_correctedTo} | {correction_reason} |
+
+---
+
+## 整改建议
+
+<!-- 合并 COA、ELN、跨文档的全部 FAIL 项 -->
+
+---
+
+## 审核结论
+
+**{overallResult}** — {overallSummary}
+```
+
+## 模板变量映射 (joint 模式, generate-report.ts)
+
+| 模板变量 | 来源 |
+|---------|------|
+| `{batchNo}` | jointResultsJSON.batchNo |
+| `{productName}` | jointResultsJSON.productName |
+| `{coaReportNo}` | jointResultsJSON.documents.coa.reportNo |
+| `{elnReportNo}` | jointResultsJSON.documents.eln.reportNo |
+| `{coaPassCount}` 等 | 从 jointResultsJSON.documents.coa.ruleResults 计算 |
+| `{crossPassCount}` 等 | 从 jointResultsJSON.crossDocumentRules 计算 |
+| `{originalSampleCount}` | jointResultsJSON.elnFiltering.originalSampleCount |
+| `{filteredSampleCount}` | jointResultsJSON.elnFiltering.filteredSampleCount |
+
 <!-- overallSummary 模板:
   PASS: "该 {docType} 文档全部适用规则审核通过，未发现合规问题。"
   CONDITIONAL_PASS: "该 {docType} 文档存在 {warningCount} 项警告级别问题，需复核后确认。"

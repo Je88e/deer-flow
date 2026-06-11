@@ -94,6 +94,23 @@ export interface ScoutAuditSummaryCard {
   tone: SummaryCardTone;
 }
 
+export interface ElnFilteringInfo {
+  elnScope: string;
+  originalSampleCount: number;
+  filteredSampleCount: number;
+  filterMethod: string;
+  keptSampleIds?: string[];
+  excludedSampleIds?: string[];
+}
+
+export interface JointDocumentData {
+  docType: string;
+  reportNo: string;
+  overallResult: AuditResultStatus;
+  results: ScoutAuditResults;
+  ruleGroups: ScoutAuditRuleGroup[];
+}
+
 export interface ScoutAuditHeader {
   reportNo: string;
   batchNo: string;
@@ -115,4 +132,12 @@ export interface ScoutAuditViewModel {
   ruleGroups: ScoutAuditRuleGroup[];
   corrections: ScoutAuditCorrection[];
   phaseTimeline: ScoutAuditPhaseEntry[];
+  /** "joint" for multi-document audits; undefined defaults to "single" */
+  auditMode?: "single" | "joint";
+  /** Per-document results for joint mode */
+  documentResults?: Record<string, JointDocumentData>;
+  /** Cross-document rule groups for joint mode */
+  crossDocumentRuleGroups?: ScoutAuditRuleGroup[];
+  /** ELN filtering info for joint mode */
+  elnFiltering?: ElnFilteringInfo;
 }

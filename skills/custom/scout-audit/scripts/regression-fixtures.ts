@@ -102,8 +102,7 @@ export const regressionScenarios: RegressionScenario[] = [
         batchNo: "240514002",
         productName: "流感病毒裂解疫苗（幼儿装）",
         specification: "0.25ml/瓶",
-        batchSize: "",
-        representativeQuantity: "20支",
+        quantity: "20支",
         manufacturer: "大连雅立峰生物制药有限公司",
       },
       dates: {
@@ -227,7 +226,7 @@ export const regressionScenarios: RegressionScenario[] = [
         batchNo: "DL202604001",
         productName: "人血白蛋白原液",
         specification: "20%",
-        batchSize: "12ml",
+        quantity: "12ml",
       },
       dates: {
         testDate: "2026-04-15",
@@ -307,7 +306,7 @@ export const regressionScenarios: RegressionScenario[] = [
         batchNo: "B202604034",
         productName: "人血白蛋白原液",
         specification: "20%",
-        batchSize: "12ml",
+        quantity: "12ml",
       },
       dates: {
         testDate: "2026-04-04",

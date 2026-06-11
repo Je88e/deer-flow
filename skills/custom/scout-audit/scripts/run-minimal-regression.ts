@@ -33,8 +33,8 @@ interface LimsRequest {
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(SCRIPT_DIR, "../../../..")
 const DEFAULT_OUTPUT_DIR = resolve(REPO_ROOT, "docs/reports/regression-outputs/outputs")
-const GENERATE_REPORT_SCRIPT = resolve(SCRIPT_DIR, "generate-report.ts")
-const VALIDATE_SESSION_LOG_SCRIPT = resolve(SCRIPT_DIR, "validate-session-log.ts")
+const GENERATE_REPORT_SCRIPT = ".claude/skills/scout-audit/scripts/generate-report.ts"
+const VALIDATE_SESSION_LOG_SCRIPT = ".claude/skills/scout-audit/scripts/validate-session-log.ts"
 const SEMANTIC_RULE_IDS = [
   "N002",
   "E001",
@@ -62,9 +62,9 @@ function printHelp(): void {
       "- {reportNo}-session-log.jsonl",
       "",
       "Examples:",
-      "  npx tsx skills/custom/scout-audit/scripts/run-minimal-regression.ts",
-      "  npx tsx skills/custom/scout-audit/scripts/run-minimal-regression.ts --scenario A408H0001",
-      `  npx tsx skills/custom/scout-audit/scripts/run-minimal-regression.ts --output-dir ${DEFAULT_OUTPUT_DIR}`,
+      "  npx tsx .claude/skills/scout-audit/scripts/run-minimal-regression.ts",
+      "  npx tsx .claude/skills/scout-audit/scripts/run-minimal-regression.ts --scenario A408H0001",
+      `  npx tsx .claude/skills/scout-audit/scripts/run-minimal-regression.ts --output-dir ${DEFAULT_OUTPUT_DIR}`,
     ].join("\n") + "\n"
   )
 }
@@ -258,11 +258,17 @@ function inferFileType(filePath: string): string {
 }
 
 function runCliScript(scriptPath: string, args: string[]): string {
-  return execFileSync("npx", ["tsx", scriptPath, ...args], {
+  const options = {
     cwd: REPO_ROOT,
-    encoding: "utf-8",
-    stdio: "pipe",
-  }).trim()
+    encoding: "utf-8" as const,
+    stdio: "pipe" as const,
+  }
+
+  if (process.platform === "win32") {
+    return execFileSync("cmd.exe", ["/c", "npx", "tsx", scriptPath, ...args], options).trim()
+  }
+
+  return execFileSync("npx", ["tsx", scriptPath, ...args], options).trim()
 }
 
 function validateSemanticFixtures(scenario: RegressionScenario): void {
@@ -377,10 +383,12 @@ function main(): void {
       scenario.semanticResults.map(cloneRuleResult),
       limsData as Record<string, unknown>
     )
-    const deterministicResults = applyCorrections(deterministicBase, scenario.corrections, { requireMatch: true })
-    const semanticResults = applyCorrections(semanticBase, scenario.corrections)
+    const deterministicResults = deterministicBase
+    const semanticResults = semanticBase
     const mergedResults = sortResults([...deterministicResults, ...semanticResults])
-    const { overallResult, summary } = summarize(mergedResults, scenario.corrections.length)
+    const correctedMergedResults = applyCorrections(mergedResults, scenario.corrections, { requireMatch: true })
+    const correctedSummary = summarize(correctedMergedResults, scenario.corrections.length)
+    const correctedOverallResult = correctedSummary.overallResult
 
     const docExtract = asRecord(scenario.docExtract, `${scenario.id}.docExtract`)
     const reportInfo = asRecord(docExtract.reportInfo, `${scenario.id}.docExtract.reportInfo`)
@@ -397,6 +405,8 @@ function main(): void {
     const resultsPath = resolve(outputDir, `${reportNo}-results.json`)
     const reportPath = resolve(outputDir, `${reportNo}-audit-report.md`)
     const sessionLogPath = resolve(outputDir, `${reportNo}-session-log.jsonl`)
+    const outputFiles = relativeOutputFiles(reportNo)
+    const [relativeResultsPath, relativeReportPath, relativeSessionLogPath] = outputFiles
 
     const resultsJson = {
       docType: scenario.docType,
@@ -406,9 +416,9 @@ function main(): void {
       specification: readString(sampleInfo, "specification", `${scenario.id}.docExtract.sampleInfo`),
       standardRef: readString(docExtract, "standardRef", `${scenario.id}.docExtract`),
       auditDate,
-      overallResult,
-      summary,
-      ruleResults: mergedResults,
+      overallResult: correctedOverallResult,
+      summary: correctedSummary.summary,
+      ruleResults: correctedMergedResults,
       corrections: scenario.corrections,
       metadata: {
         generatedBy: "run-minimal-regression.ts",
@@ -424,8 +434,6 @@ function main(): void {
 
     const phaseBaseMs = Date.now()
     const phase4Summary = summarize(deterministicResults, 0).summary
-    const phase6Summary = summarize([...deterministicResults, ...semanticResults], scenario.corrections.length)
-    const outputFiles = relativeOutputFiles(reportNo)
     const sessionRows = [
       {
         phase: 0,
@@ -504,10 +512,10 @@ function main(): void {
         },
         output: {
           totalRules: mergedResults.length,
-          passCount: phase6Summary.summary.passCount,
-          failCount: phase6Summary.summary.failCount,
-          skipCount: phase6Summary.summary.skipCount,
-          overallResult: phase6Summary.overallResult,
+          passCount: correctedSummary.summary.passCount,
+          failCount: correctedSummary.summary.failCount,
+          skipCount: correctedSummary.summary.skipCount,
+          overallResult: correctedOverallResult,
           corrections: scenario.corrections,
         },
       },
@@ -516,19 +524,19 @@ function main(): void {
         name: "summary",
         timestamp: phaseTimestamp(phaseBaseMs, 7),
         mcpCallCount: 2,
-        overallResult,
+        overallResult: correctedOverallResult,
         dependencyStatus: {
           lims: "available",
           ruleEngine: "available",
         },
         reportGeneration: {
-          command: `npx tsx ${GENERATE_REPORT_SCRIPT} ${resultsPath} ${reportPath}`,
+          command: `npx tsx ${GENERATE_REPORT_SCRIPT} ${relativeResultsPath} ${relativeReportPath}`,
           exitCode: 0,
           warnings: [],
           outputPath: reportPath,
         },
         sessionLogValidation: {
-          command: `npx tsx ${VALIDATE_SESSION_LOG_SCRIPT} ${sessionLogPath} ${resultsPath}`,
+          command: `npx tsx ${VALIDATE_SESSION_LOG_SCRIPT} ${relativeSessionLogPath} ${relativeResultsPath}`,
           exitCode: 0,
           result: "OK",
         },
@@ -546,8 +554,8 @@ function main(): void {
     manifest.push({
       id: scenario.id,
       reportNo,
-      overallResult,
-      summary,
+      overallResult: correctedOverallResult,
+      summary: correctedSummary.summary,
       resultsPath,
       reportPath,
       sessionLogPath,

@@ -1,6 +1,11 @@
 import type {
+  AuditResultStatus,
+  ElnFilteringInfo,
+  JointDocumentData,
   ScoutAuditArtifactSet,
   ScoutAuditCorrection,
+  ScoutAuditHeader,
+  ScoutAuditMetadata,
   ScoutAuditPhaseEntry,
   ScoutAuditResults,
   ScoutAuditResultsFile,
@@ -25,6 +30,7 @@ const RULE_GROUP_LABELS: Record<string, string> = {
   D: "数据完整性",
   L: "逻辑一致性",
   C: "结论/表述",
+  X: "跨文档一致性",
 };
 
 function groupCodeOfRule(ruleId: string): string {
@@ -223,6 +229,155 @@ export function parseResultsFile(content: string): ScoutAuditResults {
   return normalizeResultsFile(parsed);
 }
 
+// ---------------------------------------------------------------------------
+// Joint mode detection and parsing
+// ---------------------------------------------------------------------------
+
+interface JointRawFile {
+  auditMode: "joint";
+  batchNo: string;
+  productName?: string;
+  specification?: string;
+  standardRef?: string;
+  auditDate?: string;
+  overallResult?: string;
+  summary?: {
+    totalRules: number;
+    passCount: number;
+    failCount: number;
+    skipCount: number;
+    applicableCount?: number;
+    correctionCount?: number;
+    severeFailCount?: number;
+  };
+  documents: Record<string, ScoutAuditResultsFile>;
+  crossDocumentRules?: ScoutAuditRuleResult[];
+  elnFiltering?: ElnFilteringInfo;
+  corrections?: ScoutAuditCorrection[];
+  metadata?: ScoutAuditMetadata;
+}
+
+function isJointMode(raw: Record<string, unknown>): boolean {
+  return (
+    raw.auditMode === "joint" ||
+    (typeof raw.documents === "object" && raw.documents !== null)
+  );
+}
+
+function parseJointContent(raw: JointRawFile): {
+  results: ScoutAuditResults;
+  documentResults: Record<string, JointDocumentData>;
+  crossDocumentRuleGroups: ScoutAuditRuleGroup[];
+  elnFiltering?: ElnFilteringInfo;
+} {
+  // Build per-document data
+  const documentResults: Record<string, JointDocumentData> = {};
+  for (const [key, docFile] of Object.entries(raw.documents)) {
+    const docResults = normalizeResultsFile(docFile);
+    documentResults[key] = {
+      docType: docResults.docType,
+      reportNo: docResults.reportNo,
+      overallResult: docResults.overallResult,
+      results: docResults,
+      ruleGroups: buildRuleGroups(docResults.ruleResults),
+    };
+  }
+
+  // Build cross-document rule groups
+  const crossDocumentRuleGroups = buildRuleGroups(raw.crossDocumentRules ?? []);
+
+  // Compute aggregate summary (root may only have partial counts)
+  const totalRules = raw.summary?.totalRules ?? 0;
+  const passCount = raw.summary?.passCount ?? 0;
+  const failCount = raw.summary?.failCount ?? 0;
+  const skipCount = raw.summary?.skipCount ?? 0;
+  const applicableCount =
+    raw.summary?.applicableCount ?? totalRules - skipCount;
+  const correctionCount =
+    raw.summary?.correctionCount ?? raw.corrections?.length ?? 0;
+
+  // Count severe fails across all documents + cross-doc rules
+  let severeFailCount = 0;
+  for (const doc of Object.values(raw.documents)) {
+    severeFailCount += doc.ruleResults.filter(
+      (r) => r.status === "FAIL" && r.severity === "severe",
+    ).length;
+  }
+  severeFailCount += (raw.crossDocumentRules ?? []).filter(
+    (r) => r.status === "FAIL" && r.severity === "severe",
+  ).length;
+  severeFailCount = raw.summary?.severeFailCount ?? severeFailCount;
+
+  // Build aggregate rule results list
+  const allRuleResults: ScoutAuditRuleResult[] = [];
+  for (const doc of Object.values(raw.documents)) {
+    allRuleResults.push(...doc.ruleResults);
+  }
+  allRuleResults.push(...(raw.crossDocumentRules ?? []));
+
+  const results: ScoutAuditResults = {
+    docType: "JOINT",
+    reportNo: "",
+    batchNo: raw.batchNo,
+    productName: raw.productName,
+    specification: raw.specification,
+    standardRef: raw.standardRef,
+    auditDate: raw.auditDate,
+    overallResult: (raw.overallResult as AuditResultStatus) ?? "FAIL",
+    summary: {
+      totalRules,
+      passCount,
+      failCount,
+      skipCount,
+      applicableCount,
+      correctionCount,
+      severeFailCount,
+    },
+    ruleResults: allRuleResults,
+    corrections: raw.corrections ?? [],
+    metadata: raw.metadata,
+  };
+
+  return {
+    results,
+    documentResults,
+    crossDocumentRuleGroups,
+    elnFiltering: raw.elnFiltering,
+  };
+}
+
+export function parseHeaderFromResults(content: string): ScoutAuditHeader {
+  const rawParsed = JSON.parse(content) as Record<string, unknown>;
+
+  if (isJointMode(rawParsed)) {
+    const joint = rawParsed as unknown as JointRawFile;
+    return {
+      reportNo: "",
+      batchNo: joint.batchNo,
+      docType: "JOINT",
+      overallResult: (joint.overallResult as AuditResultStatus) ?? "FAIL",
+      productName: joint.productName,
+      specification: joint.specification,
+      standardRef: joint.standardRef,
+      auditDate: joint.auditDate,
+    };
+  }
+
+  const results = normalizeResultsFile(
+    rawParsed as unknown as ScoutAuditResultsFile,
+  );
+  return {
+    reportNo: results.reportNo,
+    batchNo: results.batchNo,
+    docType: results.docType,
+    overallResult: results.overallResult,
+    productName: results.productName,
+    specification: results.specification,
+    standardRef: results.standardRef,
+    auditDate: results.auditDate,
+  };
+}
+
 export function buildAuditViewModel({
   artifactPaths,
   resultsContent,
@@ -239,7 +394,40 @@ export function buildAuditViewModel({
     throw new Error("Missing scout-audit artifacts.");
   }
 
-  const results = parseResultsFile(resultsContent);
+  const rawParsed = JSON.parse(resultsContent) as Record<string, unknown>;
+
+  if (isJointMode(rawParsed)) {
+    const joint = parseJointContent(rawParsed as unknown as JointRawFile);
+
+    return {
+      reportBaseName: files.reportBaseName,
+      files,
+      header: {
+        reportNo: "",
+        batchNo: joint.results.batchNo,
+        docType: "JOINT",
+        overallResult: joint.results.overallResult,
+        productName: joint.results.productName,
+        specification: joint.results.specification,
+        standardRef: joint.results.standardRef,
+        auditDate: joint.results.auditDate,
+      },
+      reportMarkdown: reportContent,
+      results: joint.results,
+      summaryCards: buildSummaryCards(joint.results),
+      ruleGroups: [],
+      corrections: joint.results.corrections ?? [],
+      phaseTimeline: parseSessionLog(sessionLogContent),
+      auditMode: "joint",
+      documentResults: joint.documentResults,
+      crossDocumentRuleGroups: joint.crossDocumentRuleGroups,
+      elnFiltering: joint.elnFiltering,
+    };
+  }
+
+  const results = normalizeResultsFile(
+    rawParsed as unknown as ScoutAuditResultsFile,
+  );
   const corrections: ScoutAuditCorrection[] = results.corrections ?? [];
 
   return {
@@ -261,5 +449,6 @@ export function buildAuditViewModel({
     ruleGroups: buildRuleGroups(results.ruleResults),
     corrections,
     phaseTimeline: parseSessionLog(sessionLogContent),
+    auditMode: "single",
   };
 }

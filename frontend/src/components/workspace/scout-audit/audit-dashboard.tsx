@@ -44,7 +44,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { urlOfArtifact } from "@/core/artifacts/utils";
 import { useI18n } from "@/core/i18n/hooks";
-import { type ScoutAuditViewModel } from "@/core/scout-audit/types";
+import {
+  type ScoutAuditRuleGroup,
+  type ScoutAuditViewModel,
+} from "@/core/scout-audit/types";
 import { cn } from "@/lib/utils";
 
 function statusClasses(status: string) {
@@ -71,6 +74,53 @@ function toneClasses(tone: string) {
     return "text-amber-600 dark:text-amber-300";
   }
   return "text-foreground";
+}
+
+function RuleGroupTable({ groups }: { groups: ScoutAuditRuleGroup[] }) {
+  return groups.map((group) => (
+    <Card key={group.code}>
+      <CardHeader>
+        <CardTitle>
+          {group.label} ({group.code})
+        </CardTitle>
+        <CardDescription>{group.rules.length} 条规则</CardDescription>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <table className="w-full min-w-[720px] text-sm">
+          <thead className="text-muted-foreground border-b text-left text-xs uppercase">
+            <tr>
+              <th className="w-[180px] py-2 pr-4 font-medium">规则</th>
+              <th className="w-[100px] py-2 pr-4 font-medium">状态</th>
+              <th className="w-[90px] py-2 pr-4 font-medium">严重级别</th>
+              <th className="py-2 font-medium">说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            {group.rules.map((rule) => (
+              <tr
+                key={rule.ruleId}
+                className="border-b align-top last:border-b-0"
+              >
+                <td className="w-[180px] py-3 pr-4">
+                  <div className="font-medium">{rule.ruleId}</div>
+                  <div className="text-muted-foreground text-xs">
+                    {rule.ruleName}
+                  </div>
+                </td>
+                <td className="w-[100px] py-3 pr-4">
+                  <Badge className={cn("border", statusClasses(rule.status))}>
+                    {rule.status}
+                  </Badge>
+                </td>
+                <td className="w-[90px] py-3 pr-4">{rule.severity}</td>
+                <td className="py-3">{rule.details}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
+  ));
 }
 
 function ArtifactActions({
@@ -255,7 +305,9 @@ export function AuditDashboard({
               <div className="text-muted-foreground text-sm">{threadTitle}</div>
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-3xl font-semibold tracking-tight">
-                  {audit.header.reportNo}
+                  {audit.auditMode === "joint"
+                    ? audit.header.batchNo
+                    : audit.header.reportNo}
                 </h1>
                 <Badge
                   className={cn(
@@ -268,7 +320,17 @@ export function AuditDashboard({
               </div>
               <div className="text-muted-foreground flex flex-wrap gap-x-6 gap-y-2 text-sm">
                 <span>批号 {audit.header.batchNo}</span>
-                <span>文档类型 {audit.header.docType}</span>
+                {audit.auditMode === "joint" ? (
+                  Object.entries(audit.documentResults ?? {}).map(
+                    ([key, doc]) => (
+                      <span key={key}>
+                        {doc.docType}: {doc.reportNo}
+                      </span>
+                    ),
+                  )
+                ) : (
+                  <span>文档类型 {audit.header.docType}</span>
+                )}
                 {audit.header.auditDate && (
                   <span>审核日期 {audit.header.auditDate}</span>
                 )}
@@ -366,16 +428,37 @@ export function AuditDashboard({
                       {audit.header.specification ?? "未提供"}
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">
-                      报告编号
-                    </div>
-                    <div className="font-medium">{audit.header.reportNo}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">批号</div>
-                    <div className="font-medium">{audit.header.batchNo}</div>
-                  </div>
+                  {audit.auditMode === "joint" ? (
+                    Object.entries(audit.documentResults ?? {}).map(
+                      ([key, doc]) => (
+                        <div key={key} className="space-y-1">
+                          <div className="text-muted-foreground text-xs">
+                            {doc.docType} 报告编号
+                          </div>
+                          <div className="font-medium">{doc.reportNo}</div>
+                        </div>
+                      ),
+                    )
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">
+                          报告编号
+                        </div>
+                        <div className="font-medium">
+                          {audit.header.reportNo}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">
+                          批号
+                        </div>
+                        <div className="font-medium">
+                          {audit.header.batchNo}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -436,58 +519,163 @@ export function AuditDashboard({
                 </CardContent>
               </Card>
             </div>
+
+            {audit.auditMode === "joint" && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>各文档审核摘要</CardTitle>
+                    <CardDescription>
+                      COA / ELN / 跨文档规则各自统计
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="overflow-x-auto">
+                    <table className="w-full min-w-[600px] text-sm">
+                      <thead className="text-muted-foreground border-b text-left text-xs uppercase">
+                        <tr>
+                          <th className="py-2 pr-4 font-medium">文档</th>
+                          <th className="py-2 pr-4 font-medium">报告编号</th>
+                          <th className="py-2 pr-4 font-medium">PASS</th>
+                          <th className="py-2 pr-4 font-medium">FAIL</th>
+                          <th className="py-2 pr-4 font-medium">SKIP</th>
+                          <th className="py-2 pr-4 font-medium">合计</th>
+                          <th className="py-2 font-medium">结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(audit.documentResults ?? {}).map(
+                          ([key, doc]) => (
+                            <tr key={key} className="border-b last:border-b-0">
+                              <td className="py-2 pr-4 font-medium">
+                                {doc.docType}
+                              </td>
+                              <td className="py-2 pr-4">{doc.reportNo}</td>
+                              <td className="py-2 pr-4 text-emerald-600">
+                                {doc.results.summary.passCount}
+                              </td>
+                              <td className="py-2 pr-4 text-rose-600">
+                                {doc.results.summary.failCount}
+                              </td>
+                              <td className="py-2 pr-4 text-amber-600">
+                                {doc.results.summary.skipCount}
+                              </td>
+                              <td className="py-2 pr-4">
+                                {doc.results.summary.totalRules}
+                              </td>
+                              <td className="py-2">
+                                <Badge
+                                  className={cn(
+                                    "border",
+                                    statusClasses(doc.overallResult),
+                                  )}
+                                >
+                                  {doc.overallResult}
+                                </Badge>
+                              </td>
+                            </tr>
+                          ),
+                        )}
+                        {(audit.crossDocumentRuleGroups?.length ?? 0) > 0 && (
+                          <tr className="border-b last:border-b-0">
+                            <td className="py-2 pr-4 font-medium">跨文档</td>
+                            <td className="py-2 pr-4">—</td>
+                            <td className="py-2 pr-4 text-emerald-600">
+                              {audit.crossDocumentRuleGroups?.reduce(
+                                (sum, g) =>
+                                  sum +
+                                  g.rules.filter((r) => r.status === "PASS")
+                                    .length,
+                                0,
+                              ) ?? 0}
+                            </td>
+                            <td className="py-2 pr-4 text-rose-600">
+                              {audit.crossDocumentRuleGroups?.reduce(
+                                (sum, g) =>
+                                  sum +
+                                  g.rules.filter((r) => r.status === "FAIL")
+                                    .length,
+                                0,
+                              ) ?? 0}
+                            </td>
+                            <td className="py-2 pr-4 text-amber-600">
+                              {audit.crossDocumentRuleGroups?.reduce(
+                                (sum, g) =>
+                                  sum +
+                                  g.rules.filter((r) => r.status === "SKIP")
+                                    .length,
+                                0,
+                              ) ?? 0}
+                            </td>
+                            <td className="py-2 pr-4">
+                              {audit.crossDocumentRuleGroups?.reduce(
+                                (sum, g) => sum + g.rules.length,
+                                0,
+                              ) ?? 0}
+                            </td>
+                            <td className="py-2">
+                              <Badge
+                                className={cn(
+                                  "border",
+                                  statusClasses(
+                                    audit.crossDocumentRuleGroups?.some((g) =>
+                                      g.rules.some((r) => r.status === "FAIL"),
+                                    )
+                                      ? "FAIL"
+                                      : "PASS",
+                                  ),
+                                )}
+                              >
+                                {audit.crossDocumentRuleGroups?.some((g) =>
+                                  g.rules.some((r) => r.status === "FAIL"),
+                                )
+                                  ? "FAIL"
+                                  : "PASS"}
+                              </Badge>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="rules" className="space-y-4">
-            {audit.ruleGroups.map((group) => (
-              <Card key={group.code}>
-                <CardHeader>
-                  <CardTitle>
-                    {group.label} ({group.code})
-                  </CardTitle>
-                  <CardDescription>{group.rules.length} 条规则</CardDescription>
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  <table className="w-full min-w-[720px] text-sm">
-                    <thead className="text-muted-foreground border-b text-left text-xs uppercase">
-                      <tr>
-                        <th className="py-2 pr-4 font-medium">规则</th>
-                        <th className="py-2 pr-4 font-medium">状态</th>
-                        <th className="py-2 pr-4 font-medium">严重级别</th>
-                        <th className="py-2 font-medium">说明</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {group.rules.map((rule) => (
-                        <tr
-                          key={rule.ruleId}
-                          className="border-b align-top last:border-b-0"
-                        >
-                          <td className="py-3 pr-4">
-                            <div className="font-medium">{rule.ruleId}</div>
-                            <div className="text-muted-foreground text-xs">
-                              {rule.ruleName}
-                            </div>
-                          </td>
-                          <td className="py-3 pr-4">
-                            <Badge
-                              className={cn(
-                                "border",
-                                statusClasses(rule.status),
-                              )}
-                            >
-                              {rule.status}
-                            </Badge>
-                          </td>
-                          <td className="py-3 pr-4">{rule.severity}</td>
-                          <td className="py-3">{rule.details}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </CardContent>
-              </Card>
-            ))}
+            {audit.auditMode === "joint" ? (
+              <Tabs
+                defaultValue={Object.keys(audit.documentResults ?? {})[0]}
+                className="gap-4"
+              >
+                <TabsList variant="line" className="justify-start">
+                  {Object.entries(audit.documentResults ?? {}).map(
+                    ([key, doc]) => (
+                      <TabsTrigger key={key} value={key}>
+                        {doc.docType}
+                      </TabsTrigger>
+                    ),
+                  )}
+                  {(audit.crossDocumentRuleGroups?.length ?? 0) > 0 && (
+                    <TabsTrigger value="__cross">跨文档规则</TabsTrigger>
+                  )}
+                </TabsList>
+                {Object.entries(audit.documentResults ?? {}).map(
+                  ([key, doc]) => (
+                    <TabsContent key={key} value={key} className="space-y-4">
+                      <RuleGroupTable groups={doc.ruleGroups} />
+                    </TabsContent>
+                  ),
+                )}
+                {(audit.crossDocumentRuleGroups?.length ?? 0) > 0 && (
+                  <TabsContent value="__cross" className="space-y-4">
+                    <RuleGroupTable groups={audit.crossDocumentRuleGroups!} />
+                  </TabsContent>
+                )}
+              </Tabs>
+            ) : (
+              <RuleGroupTable groups={audit.ruleGroups} />
+            )}
           </TabsContent>
 
           <TabsContent value="corrections" className="space-y-4">

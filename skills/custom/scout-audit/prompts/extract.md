@@ -21,16 +21,17 @@
 {
   "docType": "{docType}",
   "reportInfo": {
-    "reportNo": "报告编号",
+    "reportNo": "报告编号 (COA取'报告单编号/Report No.', ELN取'ELN编号')",
     "reportDate": "YYYY-MM-DD"
   },
   "sampleInfo": {
     "batchNo": "样品批号",
+    "resolvedBatchNo": null,
     "productName": "品名",
     "specification": "规格",
-    "batchSize": "批量",
-    "representativeQuantity": "代表量 或 null",
-    "manufacturer": "生产单位 或 null"
+    "quantity": "样品量信息原文 (批量/检品数量/代表量, 取文档中出现的) 或 null",
+    "manufacturer": "生产单位 或 null",
+    "sampleIds": ["取样点编号1", "取样点编号2"] 或 null
   },
   "dates": {
     "testDate": "YYYY-MM-DD 或 null",
@@ -56,12 +57,16 @@
       "specOperator": "≥|≤|>|<|≥/≤|>/< 或 null",
       "result": "实测值原文",
       "resultNumeric": 数值 或 null,
+      "isDetectionLimit": false,
       "unit": "单位 或 null",
       "significantDigits": 有效数字位数 或 null,
       "conclusion": "单项结论",
       "isParallel": false,
       "parallelGroup": null,
-      "sampleLabel": null
+      "sampleLabel": null,
+      "sampleId": "取样点编号 或 null",
+      "sampleSource": "样品来源 或 null",
+      "rawObservation": "原始观察值 或 null"
     }
   ],
   "instruments": [
@@ -76,7 +81,8 @@
   ],
   "modifications": [],
   "standardRef": "执行标准 或 null",
-  "totalPages": 页数 或 null
+  "totalPages": 页数 或 null,
+  "elnScope": "single-batch" | "multi-batch" | null
 }
 
 提取规则:
@@ -88,10 +94,50 @@
 6. 有效数字: 从标准规定推断 (如 "90.0%" → 1位小数 → significantDigits: 3)
 7. 日期格式: 统一转为 YYYY-MM-DD
 8. testType: 含数值→quantitative, 含选项列表→qualitative, 描述性→descriptive
-9. 签名处理: 只有看到手写签名/印章/图片签名证据时, 才允许设置 signatureMethod: "image"
-10. 如果姓名和日期都为空, 视为缺失签名, 不得输出 signatureMethod: "image"
-11. 如果 OCR 未提取到姓名, 但能确认存在图片签名证据, 可输出 name: null 且 signatureMethod: "image"
-12. COA 中的"代表量"填入 representativeQuantity, 不要挤占 batchSize
+9. 签名处理 — 三种情况:
+   a) 姓名和日期都有文本值 → name=提取值, date=提取值, signatureMethod=null
+   b) 日期有值但姓名为空 → 此模式高度暗示原始 PDF 中存在图片签名（手写/印章），
+      因 PDF→Markdown 转换丢失了图像内容。输出: name=null, date=提取日期, signatureMethod="image"
+   c) 姓名和日期均为空 → 视为缺失签名, name=null, date=null, signatureMethod=null
+10. 签名推断依据: 在制药 GMP 文档中，如果审核/签发日期已填写但姓名空缺，
+    几乎必然是图片签名（手写或印章）被 OCR/转换丢失。不应视为"缺失签名"。
+11. 样品量统一: 文档中出现的"批量""检品数量""代表量"等样品量信息，统一填入 sampleInfo.quantity 字段原文，不需区分类型。
+12. ELN 取样点提取: 若文档类型为 ELN 且检测结果表格含"取样点编号"列，提取所有取样点编号到 sampleInfo.sampleIds[]，每个 testItem 关联对应的 sampleId 和 sampleSource（样品来源列）
+13. elnScope 检测（仅 ELN）:
+    - ELN 含多个不同批次或无法判断批次的取样点 → elnScope: "multi-batch"
+    - ELN 全部取样点明确属于同一批次 → elnScope: "single-batch"
+    - ELN 不含批号字段无法判断批次归属 → 默认 "multi-batch"
+14. ELN 双重结果列: 当 ELN 表格同时含原始观察值列（如"检验结果"中的"标准管深"）和报出结果列（如"报出结果"中的"符合规定"）时,
+    testItems[].result 取报出结果/结论值, 原始观察值写入 rawObservation 可选字段。
+    仅当确实存在双重列且值不同时才填写 rawObservation。
+15. COA 表格单元格拆分: 某些 COA 的检测项目被 PDF 转换工具压缩到同一表格单元格中,
+    多个检测项的"项目名+标准规定+结果"以 <br> 连续堆叠。必须识别此模式,
+    按语义分组将每个检测项拆分为独立的 testItem 对象。典型模式:
+    "应大于XXX<br>结果值<br>项目名<br>English Name" → itemName=项目名, specification=应大于XXX, result=结果值
+16. COA 重复列去重: PDF 转换后同一表格可能被重复渲染多次（如4列完全相同的数据），
+    需识别并去重, 只保留一份检测项数据。
+17. 编号区分:
+    - COA: "记录编号/Record No." 是文档模板的固定编号(如 HLGF/4-ZK-300-L027-02),
+      不随批次变化, 填入 reportInfo.recordNo；"报告单编号/Report No." 才是随批次唯一的报告编号 → 填入 reportNo
+    - ELN: "ELN编号" 是独立的电子记录编号 → 填入 reportNo；"记录编号" 是纸质表单模板编号, 填入 recordNo
+18. 中文操作符转换:
+    - "应不高于 X" / "不得超过 X" / "不得过 X" → specUpper: X, specOperator: "≤"
+    - "应大于 X" / "应高于 X" → specLower: X, specOperator: ">"
+    - "应不低于 X" / "不得少于 X" → specLower: X, specOperator: "≥"
+    - "X～Y" / "X~Y" / "X—Y" → specLower: X, specUpper: Y, specOperator: "≥/≤"
+    - "shall be not more than" → specOperator: "≤"
+    - "shall be more than" → specOperator: ">"
+19. 单位提取: 从标准规定尾部也可提取单位(如 "200.0g/L" → unit: "g/L", specLower: 200.0),
+    标准和结果的单位应保持一致。
+20. HTML 表格: 源文档中可能包含 HTML <table> 标签而非 Markdown 表格语法。
+    必须正确解析 HTML 表格结构, 特别注意 colspan/rowspan 属性对列合并的影响。
+21. 定性检验特殊表达:
+    - "标准管深" + "√" 表示"样品颜色不超过标准比色管", 是 PASS 的定性结果。
+      设: testType="qualitative", result="符合规定", rawObservation="标准管深 √"
+    - "标准管浅" + "×" 表示不合格
+22. ELN 无批号场景: 注射用水等公用系统检验的 ELN 不包含"检品批号"字段,
+    此时 batchNo 应设为 null（不要从取样点编号中猜测）, elnScope 应设为 "multi-batch"。
+23. 样品量字段: "批量""检品数量/Number of Samples""代表量"等任何样品量信息，统一填入 sampleInfo.quantity。
 
 仅输出 JSON, 不要输出其他内容。
 
@@ -101,7 +147,16 @@
 
 ## 注意事项
 - 数值中可能含千分位逗号，需移除
-- 中文日期 "2026年4月15日" → "2026-04-15"
+- 日期格式统一化: 截断时间戳(如 "2025/5/15 13:51:29" → "2025-05-15"), 补零, 替换 `/` 为 `-`, 处理中文日期
 - 检测项目表格可能跨页，注意收集完整
+- COA 检测项可能因 PDF 转换被压缩到同一单元格内（以 `<br>` 堆叠），需按语义拆分为独立 testItem
 - COA 通常不包含 instruments/environment，ELN 包含
-- `batchSize` 表示批量，`representativeQuantity` 表示 COA 代表量，两者不能混用
+- `quantity` 统一存储样品量信息原文（批量/检品数量/代表量），不需区分类型
+- COA 中"记录编号/Record No." ≠ "报告单编号/Report No."，前者是模板编号后者才是唯一报告编号
+- ELN 中"记录编号" ≠ "ELN编号"，后者才是唯一标识
+- ELN 检测结果表格通常含"取样点编号"和"样品来源"列，提取为 sampleId 和 sampleSource
+- 若 ELN 无批号字段（"检品批号"），batchNo 可为 null，elnScope 默认 "multi-batch"
+- `resolvedBatchNo` 为 joint 模式专用：Phase 2 提取时始终设为 null；Phase 3.5 筛选成功后由 LLM 注入 COA 的 batchNo
+- 签名推断: 日期有值但姓名空缺时，推定为 PDF 图片签名丢失, 设 signatureMethod="image"
+- ELN 中 HTML `<table>` 标签需正确解析 colspan/rowspan
+- 中文操作符（"应不高于""应大于"等）需映射为 specOperator（"≤"">"等）
