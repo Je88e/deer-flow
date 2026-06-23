@@ -95,7 +95,17 @@ DEERFLOW_ROOTS="$(
 # the ".../deer-flow" root.
 _is_deerflow_pid() {
     local pid=$1 files root
-    files=$(lsof -p "$pid" 2>/dev/null) || return 1
+
+    # Daemon children inherit DEERFLOW_DAEMON_ROOT from run_service. Checking
+    # it (Linux only — macOS has no /proc) identifies processes like
+    # next-server that lsof misses, so the name/port reaps in stop_all can
+    # claim them.
+    if [ -r "/proc/$pid/environ" ] &&
+        tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | grep -Fxq "DEERFLOW_DAEMON_ROOT=$REPO_ROOT"; then
+        return 0
+    fi
+
+    files=$(lsof -b -w -p "$pid" 2>/dev/null) || return 1
     while IFS= read -r root; do
         [ -n "$root" ] || continue
         case "$files" in
@@ -112,7 +122,7 @@ _report_reclaimed_ports() {
     for port in 8001 3000 2026; do
         for pid in $(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null); do
             _is_deerflow_pid "$pid" || continue
-            files=$(lsof -p "$pid" 2>/dev/null)
+            files=$(lsof -b -w -p "$pid" 2>/dev/null)
             case "$files" in *"$REPO_ROOT"/*) continue ;; esac  # this worktree — normal
             owner=""
             while IFS= read -r root; do
@@ -423,7 +433,10 @@ run_service() {
 
     echo "Starting $name..."
     if $DAEMON_MODE; then
-        nohup sh -c "$cmd" > /dev/null 2>&1 &
+        # Tag the daemon so every descendant (pnpm → next → next-server)
+        # carries DEERFLOW_DAEMON_ROOT in its environment, letting
+        # _is_deerflow_pid recognize it at stop time.
+        nohup env DEERFLOW_DAEMON_ROOT="$REPO_ROOT" sh -c "$cmd" > /dev/null 2>&1 &
     else
         sh -c "$cmd" &
     fi

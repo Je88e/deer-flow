@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useMemo, useState } from "react";
 
 import { type PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ArtifactTrigger } from "@/components/workspace/artifacts";
 import {
   ChatBox,
@@ -29,6 +30,7 @@ import { useNotification } from "@/core/notification/hooks";
 import { useLocalSettings, useThreadSettings } from "@/core/settings";
 import {
   useThreads,
+  useThreadMetadata,
   useThreadStream,
   useThreadTokenUsage,
 } from "@/core/threads/hooks";
@@ -78,6 +80,10 @@ function ChatPageInner() {
     isNewThread || isMock ? undefined : threadId,
     { enabled: tokenUsageEnabled && !isMock },
   );
+  const threadMetadata = useThreadMetadata(threadId, {
+    enabled: !isNewThread && !isMock,
+    isMock,
+  });
   const backendTokenUsage = threadTokenUsageToTokenUsage(threadTokenUsage.data);
   const mountedRef = useRef(false);
   const { data: threads = [] } = useThreads();
@@ -101,12 +107,14 @@ function ChatPageInner() {
     thread,
     pendingUsageMessages,
     sendMessage,
+    regenerateMessage,
     isUploading,
     isHistoryLoading,
     hasMoreHistory,
     loadMoreHistory,
   } = useThreadStream({
     threadId: isNewThread ? undefined : threadId,
+    displayThreadId: threadId,
     context: settings.context,
     isMock,
     // onSend only animates the UI; do NOT flip `isNewThread` here — the
@@ -116,10 +124,10 @@ function ChatPageInner() {
       setIsWelcomeMode(false);
     },
     onStart: (createdThreadId) => {
-      setThreadId(createdThreadId);
-      setIsNewThread(false);
       // ! Important: Never use next.js router for navigation in this case, otherwise it will cause the thread to re-mount and lose all states. Use native history API instead.
       history.replaceState(null, "", `/workspace/chats/${createdThreadId}`);
+      setThreadId(createdThreadId);
+      setIsNewThread(false);
     },
     onFinish: (state) => {
       if (document.hidden || !document.hasFocus()) {
@@ -139,6 +147,33 @@ function ChatPageInner() {
     },
   });
 
+  const hasThreadMessages = thread.messages.length > 0;
+
+  useEffect(() => {
+    if (
+      !isNewThread &&
+      !isMock &&
+      threadMetadata.data === null &&
+      !threadMetadata.isLoading &&
+      !threadMetadata.isFetching &&
+      !isHistoryLoading &&
+      !hasMoreHistory &&
+      !hasThreadMessages
+    ) {
+      router.replace("/workspace/chats/new");
+    }
+  }, [
+    hasMoreHistory,
+    hasThreadMessages,
+    isHistoryLoading,
+    isMock,
+    isNewThread,
+    router,
+    threadMetadata.data,
+    threadMetadata.isFetching,
+    threadMetadata.isLoading,
+  ]);
+
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
       const sendPromise = sendMessage(threadId, message);
@@ -152,6 +187,11 @@ function ChatPageInner() {
   const handleStop = useCallback(async () => {
     await thread.stop();
   }, [thread]);
+  const handleRegenerate = useCallback(
+    (messageId: string, supersededMessageIds: string[]) =>
+      regenerateMessage(threadId, messageId, supersededMessageIds),
+    [regenerateMessage, threadId],
+  );
 
   const tokenUsageInlineMode = tokenUsageEnabled
     ? localSettings.tokenUsage.inlineMode
@@ -194,16 +234,17 @@ function ChatPageInner() {
         <div className="relative flex size-full min-h-0 justify-between">
           <header
             className={cn(
-              "absolute top-0 right-0 left-0 z-30 flex h-12 shrink-0 items-center px-4",
+              "absolute top-0 right-0 left-0 z-30 flex h-12 shrink-0 items-center gap-2 px-2 sm:px-4",
               isWelcomeMode
                 ? "bg-background/0 backdrop-blur-none"
                 : "bg-background/80 shadow-xs backdrop-blur",
             )}
           >
-            <div className="flex w-full items-center text-sm font-medium">
+            <SidebarTrigger className="md:hidden" />
+            <div className="flex min-w-0 flex-1 items-center text-sm font-medium">
               <ThreadTitle threadId={threadId} thread={thread} />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               {showAuditButton && (
                 <Tooltip content={t.pages.audits}>
                   <Button
@@ -247,18 +288,27 @@ function ChatPageInner() {
                 loadMoreHistory={loadMoreHistory}
                 isHistoryLoading={isHistoryLoading}
                 tokenUsageInlineMode={tokenUsageInlineMode}
+                canRegenerate={
+                  !isNewThread &&
+                  !isMock &&
+                  env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY !== "true" &&
+                  !isUploading &&
+                  !thread.isLoading
+                }
+                onRegenerateMessage={handleRegenerate}
               />
             </div>
             <div
               className={cn(
-                "right-0 bottom-0 left-0 z-30 flex justify-center px-4",
+                "right-0 bottom-0 left-0 z-30 flex justify-center px-3 sm:px-4",
                 isWelcomeMode ? "absolute" : "relative shrink-0 pb-4",
               )}
             >
               <div
                 className={cn(
                   "relative w-full",
-                  isWelcomeMode && "-translate-y-[calc(50vh-96px)]",
+                  isWelcomeMode &&
+                    "-translate-y-[calc(50vh-48px)] sm:-translate-y-[calc(50vh-96px)]",
                   isWelcomeMode
                     ? "max-w-(--container-width-sm)"
                     : "max-w-(--container-width-md)",
@@ -289,7 +339,7 @@ function ChatPageInner() {
                   <InputBox
                     className={cn(
                       "bg-background/5 w-full",
-                      isWelcomeMode && "-translate-y-4",
+                      isWelcomeMode && "-translate-y-2 sm:-translate-y-4",
                     )}
                     isWelcomeMode={isWelcomeMode}
                     threadId={threadId}
@@ -321,7 +371,7 @@ function ChatPageInner() {
                     aria-hidden="true"
                     className={cn(
                       "bg-background/5 h-32 w-full rounded-2xl",
-                      isWelcomeMode && "-translate-y-4",
+                      isWelcomeMode && "-translate-y-2 sm:-translate-y-4",
                     )}
                   />
                 )}
