@@ -64,3 +64,5 @@ config.yaml.bak
 .worktrees
 
 docker/nginx/ssl
+
+skills/custom/scout-audit/mcps/*.zip
