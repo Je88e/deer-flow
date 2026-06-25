@@ -4,7 +4,7 @@
 
 > **等级映射:** 严重 = `severe`, 中等 = `warning`, 一般 = `info` (与 report-schema.md 对应)
 
-### 确定性规则 (20条) — scout-rule-engine MCP 执行
+### 确定性规则 (20条) — 规则引擎执行 (`lib/rules.ts`，经 `scripts/run-rules.ts` 调用)
 
 | RuleID | 规则名称 | 输入 | 判定逻辑 | 适用 | 等级 (severity) |
 |--------|---------|------|---------|------|------|
@@ -175,7 +175,7 @@ function countSignificantDigits(numericStr):
 | X005 | 仪器使用一致 | COA.instruments + ELN.instruments | COA 引用的 instrumentNo 在 ELN instruments 中存在对应记录 | warning |
 
 > **执行约束:** X001-X005 仅在 `auditMode="joint"` 时由 Phase 5c 执行。若 ELN 经过 Phase 3.5 筛选，跨文档规则使用筛选后的 ELN 数据。
-> **实现方式:** X001-X005 由 LLM 在 Phase 5c 语义判断，不走 MCP 规则引擎。
+> **实现方式:** X001-X005 由 LLM 在 Phase 5c 语义判断，不走确定性规则引擎。
 
 ### B001 joint 模式多批次 ELN
 
@@ -188,7 +188,7 @@ Phase 3.5 筛选失败（filteredSampleCount = 0 或 filterMethod = "unavailable
 
 ## LIMS 依赖分类
 
-MCP 不可用时，以下分类决定哪些规则可以仅凭 docExtract 数据执行。
+limsData 不可用时，以下分类决定哪些规则可以仅凭 docExtract 数据执行。
 
 ### 可独立评估 (无需 limsData)
 

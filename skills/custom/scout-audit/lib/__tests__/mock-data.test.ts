@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest"
 import {
   getMockAllLimsData,
   getMockApprovalWorkflow,
-} from "../src/mock-data.ts"
+} from "../mock-data.ts"
 
 const VALID_ROLES = new Set(["tester", "reviewer", "approver", "release"])
 const VALID_STATUSES = new Set(["pending", "completed", "skipped"])
 
-describe("scout-lims-connector boundary fixtures", () => {
+describe("scout-audit lims mock boundary fixtures", () => {
   it("getMockApprovalWorkflow 对新增缺 approver 样本返回预期结构", () => {
     const workflow = getMockApprovalWorkflow("S004-missing-approver-step")
 

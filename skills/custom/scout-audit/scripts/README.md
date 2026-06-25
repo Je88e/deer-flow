@@ -118,6 +118,46 @@ npx tsx skills/custom/scout-audit/scripts/run-minimal-regression.ts
   - 模板、schema、脚本接口未同步
   - 回归夹具与当前 contract 不一致
 
+## `fetch-lims.ts`
+
+用途: Phase 3 LIMS 数据聚合。从 Phase 2 的 `docExtract` 推导查询键（`batchNo`/`reportNo`/`standardRef`/人员/仪器/定性项/日期），调用聚合数据源，输出 `limsData` JSON。对应逻辑操作 `fetch_all_lims_data`，数据源为 `lib/mock-data.ts`。
+
+```bash
+npx tsx skills/custom/scout-audit/scripts/fetch-lims.ts <docExtract.json> [output.json]
+```
+
+- Input
+  - `docExtract.json`（Phase 2 产物）
+- Output
+  - `limsData` JSON（默认 stdout；给 `output.json` 则写文件）
+- Exit code
+  - `0`: 成功
+  - 非 `0`: 必须停止并修复（文件缺失、JSON 非法、缺 `reportNo`/`batchNo` 等）
+- Common failures
+  - `docExtract.reportInfo.reportNo` 或 `sampleInfo.batchNo` 缺失
+  - 无 `testDate`/`reportDate` 可用于资质校验日期
+
+## `run-rules.ts`
+
+用途: Phase 4 确定性规则引擎。读取 Phase 2 `docExtract` + Phase 3 `limsData`，执行 20 条确定性规则，输出 `RuleResult[]`。对应逻辑操作 `run_all_rules`，实现为 `lib/rules.ts`。
+
+```bash
+npx tsx skills/custom/scout-audit/scripts/run-rules.ts <docExtract.json> <limsData.json> [output.json] [--doc-type ELN|COA] [--rule <id>]
+```
+
+- Input
+  - `docExtract.json`、`limsData.json`
+  - `--doc-type` 可选（默认取 `docExtract.docType`）
+  - `--rule <id>` 可选，仅执行单条规则
+- Output
+  - 20 条 `RuleResult`（或 `--rule` 时的单条）JSON（默认 stdout；给 `output.json` 则写文件）
+- Exit code
+  - `0`: 成功
+  - 非 `0`: 必须停止并修复
+- Common failures
+  - `docType` 无法确定
+  - 输入 JSON 非法或文件缺失
+
 ## Usage Rule
 
 - 任一脚本非零退出都必须停止。

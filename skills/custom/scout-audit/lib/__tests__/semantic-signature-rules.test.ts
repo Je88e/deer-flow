@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   evaluateS002,
   evaluateS003,
-} from "../src/semantic-signature-rules.ts"
+} from "../semantic-signature-rules.ts"
 
 function sign(user: string, account: string, timestamp = "2026-04-04T10:00:00"): {
   action: "sign"

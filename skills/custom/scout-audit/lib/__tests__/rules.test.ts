@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { runSingleRule } from "../src/rules.ts"
+import { runSingleRule } from "../rules.ts"
 
 function createDocExtract(overrides: Record<string, unknown> = {}) {
   return {
@@ -70,7 +70,7 @@ function createLimsData(overrides: Record<string, unknown> = {}) {
   }
 }
 
-describe("scout-rule-engine regression coverage", () => {
+describe("scout-audit rule engine regression coverage", () => {
   it("S001 在三角色完整签名时 PASS", () => {
     const result = runSingleRule("S001", createDocExtract(), createLimsData(), "COA")
 

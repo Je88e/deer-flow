@@ -5,12 +5,12 @@ import { mkdirSync, writeFileSync } from "fs"
 import { dirname, resolve } from "path"
 import { fileURLToPath } from "url"
 
-import { getMockAllLimsData } from "../mcps/scout-lims-connector/src/mock-data.js"
-import { runAllRules } from "../mcps/scout-rule-engine/src/rules.js"
+import { getMockAllLimsData } from "../lib/mock-data.js"
+import { runAllRules } from "../lib/rules.js"
 import {
   evaluateS002,
   evaluateS003,
-} from "../mcps/scout-rule-engine/src/semantic-signature-rules.js"
+} from "../lib/semantic-signature-rules.js"
 import {
   regressionScenarios,
   type RegressionCorrection,

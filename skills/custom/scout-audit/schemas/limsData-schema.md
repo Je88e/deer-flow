@@ -1,6 +1,6 @@
 # LimsData Schema — LIMS 外部数据
 
-> 通过 `scout-lims-connector` MCP 获取的外部数据。由 Phase 3 生成。
+> Phase 3 经 `scripts/fetch-lims.ts` 聚合的外部数据（逻辑操作 `fetch_all_lims_data`，数据源 `lib/mock-data.ts`）。
 
 ## 接口定义
 

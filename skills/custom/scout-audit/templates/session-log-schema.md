@@ -163,7 +163,7 @@ Markdown / 纯文本输入也必须保留 Phase 0，只是使用 `passthrough`:
     {
       "tool": "fetch_all_lims_data",
       "params": { "batchNo": "...", "reportNo": "..." },
-      "error": { "code": "MCP_UNAVAILABLE", "message": "connector offline" },
+      "error": { "code": "LIMS_UNAVAILABLE", "message": "lims data fetch failed" },
       "durationMs": 120
     }
   ]

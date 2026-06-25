@@ -1,0 +1,15 @@
+{
+  "name": "scout-audit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "GMP/NMPA/ICH compliance audit skill — deterministic rule engine and LIMS data as a local library (no MCP server).",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.0",
+    "vitest": "^3.2.4"
+  }
+}

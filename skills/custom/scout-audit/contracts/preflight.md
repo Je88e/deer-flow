@@ -18,8 +18,8 @@
 
 ## Capability
 
-- `scout-lims-connector` 必须可用，且优先走 `fetch_all_lims_data`。
-- `scout-rule-engine` 必须可用，主路径为 `run_all_rules`。
+- LIMS 数据获取必须可用：Phase 3 经 `scripts/fetch-lims.ts` 聚合 limsData（逻辑操作 `fetch_all_lims_data`，数据源 `lib/mock-data.ts`）。
+- 确定性规则引擎必须可用：Phase 4 经 `scripts/run-rules.ts` 执行 20 条确定性规则（逻辑操作 `run_all_rules`，实现 `lib/rules.ts`）。
 - 对 `.pdf` 输入，必须确认至少存在一种可用的 Markdown 获取路径；仅在必要时才回退到 `pdf` skill。
 - 若关键依赖不可用且无法给出结构化降级结果，必须停止，不得先进入 Phase 0 再补救。
 
