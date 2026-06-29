@@ -75,17 +75,7 @@ E002 仪器编号匹配:
 - 检查 docExtract.instruments 中仪器在 limsData.instrument.useLog 中
 - useLog.operator 与 docExtract.personnel 中的检测人一致
 
-S002 电子签名合规:
-- 仅检查 `limsData.auditTrail` 中 `action=sign` 的记录
-- 每条 sign 记录必须同时包含 `user`、`account`、`timestamp`
-- 如 `limsData.workflow` 存在，`status=completed` 的步骤数不能大于 sign 记录数
-- 不要因为账号名像通用账号就直接判 FAIL；没有黑名单规则
-
-S003 禁止代签:
-- 仅检查 `limsData.auditTrail` 中 `action=sign` 的记录
-- 同一批次内，每个 `account` 只能稳定对应一个 `user`
-- 同一批次内，每个 `user` 也只能稳定对应一个 `account`
-- 不要求 `user === account`；只要求映射一一稳定
+S002/S003 (电子签名合规 / 禁止代签): 判定逻辑（PASS/FAIL 条件表与判定约束）以 `rules/rule-map.md` §S002 与 §S003 为准，本提示不再重复
 
 D001 修改规范:
 - limsData.auditTrail 中 action=modify 的记录

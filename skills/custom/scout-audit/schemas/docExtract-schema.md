@@ -127,27 +127,6 @@ interface DocExtract {
   - FAIL 详情字段
   - 证据中的期望字段名
 
-## 提取注意事项
-
-1. **数值提取**: `"98.52%"` → `resultNumeric: 98.52, unit: "%"`
-2. **范围提取**: `"90.0%~110.0%"` → `specLower: 90.0, specUpper: 110.0, specOperator: "≥/≤"`
-3. **上限提取**: `"≤5.0%"` → `specUpper: 5.0, specOperator: "≤"`
-4. **检测限**: `"<0.025%"` → `resultNumeric: 0.025, unit: "%", isDetectionLimit: true` — 限值作为resultNumeric，标记isDetectionLimit
-5. **签名推断**: PDF→Markdown 转换后，若日期有值但姓名空缺，推定为图片签名(手写/印章)被转换丢失，设 `signatureMethod: "image"`；姓名+日期均空时视为缺失签名，不得设 `signatureMethod: "image"`
-6. **平行样**: 同一 itemName 出现多次时标记 isParallel=true, 用 parallelGroup 关联
-7. **有效数字**: 从标准规定推断 (如"90.0%" → 1位小数 → significantDigits: 3)
-8. **日期格式**: 统一转为 ISO 8601 (YYYY-MM-DD)，截断时间戳、补零、替换分隔符、处理中文日期
-9. **缺失签名**: `name/date` 均为空或仅凭空白占位时，视为缺失签名，不得伪造为 `signatureMethod: "image"`
-10. **样品量**: 文档中出现的"批量""检品数量""代表量"等样品量信息，统一写入 `sampleInfo.quantity` 字段
-11. **ELN 取样点**: 若 ELN 检测结果表格含"取样点编号"列，提取所有编号到 `sampleInfo.sampleIds[]`，每个 testItem 关联 `sampleId` 和 `sampleSource`
-12. **elnScope 检测**: ELN 文档必须检测数据范围 — 含多批次数据时设 `"multi-batch"`，否则 `"single-batch"`。若 ELN 不含批号字段无法判断批次归属，默认 `"multi-batch"`
-13. **resolvedBatchNo**: joint 模式专用。多批次 ELN 本身不含批号字段时 (batchNo=null)，若 Phase 3.5 筛选成功后注入 COA 的 batchNo，供 B001 规则引擎检查。Phase 2 提取时设为 null
-14. **ELN 双重结果列**: 若 ELN 表格同时含原始观察值列和报出结果列（值不同），`result` 取报出结果/结论值，`rawObservation` 取原始观察值。仅当确实存在双重列且值不同时才填写 `rawObservation`。
-15. **COA 表格拆分**: PDF 转换后 COA 检测项可能被压缩到同一单元格内（以 `<br>` 堆叠），需按语义拆分为独立 testItem；同一数据重复多列时需去重
-16. **中文操作符**: "应不高于"→≤, "应大于"→>, "应不低于"→≥, "X～Y"→≥/≤
-17. **HTML 表格**: ELN 可能使用 HTML `<table>` 标签，需正确解析 colspan/rowspan
-18. **样品量统一**: 文档中"批量""检品数量""代表量"等量信息统一填入 `quantity` 字段，不需区分类型，且不得再回写到旧字段名
-
 ## 字段 Nullable 条件
 
 | 字段 | COA nullable? | ELN nullable? | 条件说明 |

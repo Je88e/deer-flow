@@ -86,13 +86,13 @@
 }
 
 提取规则:
-1. 数值提取: "98.52%" → resultNumeric: 98.52, unit: "%"
+1. 数值提取: "98.52%" → resultNumeric: 98.52, unit: "%"（数值可能含千分位逗号，需先移除）
 2. 范围提取: "90.0%~110.0%" → specLower: 90.0, specUpper: 110.0, specOperator: "≥/≤"
 3. 上限提取: "≤5.0%" → specUpper: 5.0, specOperator: "≤"
 4. 检测限提取: "<0.025%" → resultNumeric: 0.025, unit: "%", isDetectionLimit: true（用限值作为resultNumeric）
 5. 平行样: 同一检测项目出现多个结果时, 标记 isParallel: true, 用 parallelGroup 关联
 6. 有效数字: 从标准规定推断 (如 "90.0%" → 1位小数 → significantDigits: 3)
-7. 日期格式: 统一转为 YYYY-MM-DD
+7. 日期格式: 统一转为 YYYY-MM-DD（截断时间戳如 "2025/5/15 13:51:29" → "2025-05-15"，补零，替换 `/` 为 `-`，处理中文日期）
 8. testType: 含数值→quantitative, 含选项列表→qualitative, 描述性→descriptive
 9. 签名处理 — 三种情况:
    a) 姓名和日期都有文本值 → name=提取值, date=提取值, signatureMethod=null
@@ -114,6 +114,7 @@
     多个检测项的"项目名+标准规定+结果"以 <br> 连续堆叠。必须识别此模式,
     按语义分组将每个检测项拆分为独立的 testItem 对象。典型模式:
     "应大于XXX<br>结果值<br>项目名<br>English Name" → itemName=项目名, specification=应大于XXX, result=结果值
+    （检测项表格可能跨页，COA/ELN 均须先收集完整再拆分）
 16. COA 重复列去重: PDF 转换后同一表格可能被重复渲染多次（如4列完全相同的数据），
     需识别并去重, 只保留一份检测项数据。
 17. 编号区分:
@@ -144,19 +145,3 @@
 文档内容:
 {markdown}
 ```
-
-## 注意事项
-- 数值中可能含千分位逗号，需移除
-- 日期格式统一化: 截断时间戳(如 "2025/5/15 13:51:29" → "2025-05-15"), 补零, 替换 `/` 为 `-`, 处理中文日期
-- 检测项目表格可能跨页，注意收集完整
-- COA 检测项可能因 PDF 转换被压缩到同一单元格内（以 `<br>` 堆叠），需按语义拆分为独立 testItem
-- COA 通常不包含 instruments/environment，ELN 包含
-- `quantity` 统一存储样品量信息原文（批量/检品数量/代表量），不需区分类型
-- COA 中"记录编号/Record No." ≠ "报告单编号/Report No."，前者是模板编号后者才是唯一报告编号
-- ELN 中"记录编号" ≠ "ELN编号"，后者才是唯一标识
-- ELN 检测结果表格通常含"取样点编号"和"样品来源"列，提取为 sampleId 和 sampleSource
-- 若 ELN 无批号字段（"检品批号"），batchNo 可为 null，elnScope 默认 "multi-batch"
-- `resolvedBatchNo` 为 joint 模式专用：Phase 2 提取时始终设为 null；Phase 3.5 筛选成功后由 LLM 注入 COA 的 batchNo
-- 签名推断: 日期有值但姓名空缺时，推定为 PDF 图片签名丢失, 设 signatureMethod="image"
-- ELN 中 HTML `<table>` 标签需正确解析 colspan/rowspan
-- 中文操作符（"应不高于""应大于"等）需映射为 specOperator（"≤"">"等）
