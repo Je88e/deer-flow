@@ -25,5 +25,5 @@
 ## Usage Notes
 
 - 仅用于 gate 失败时的 stop-signal contract。
-- 不替代 `results.json`、审核报告或 `session-log.jsonl`。
+- 不替代 `results.json`、审核报告。
 - 返回失败摘要时，必须明确说明未进入 Phase 0。

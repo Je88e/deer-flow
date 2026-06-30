@@ -3,7 +3,6 @@
 import {
   AlertCircleIcon,
   CheckCircle2Icon,
-  DownloadIcon,
   FileJsonIcon,
   FileTextIcon,
   FlaskConicalIcon,
@@ -149,15 +148,6 @@ function ArtifactActions({
       icon: FileTextIcon,
       label: "下载 audit-report.md",
     },
-    {
-      href: urlOfArtifact({
-        filepath: audit.files.sessionLogPath,
-        threadId,
-        download: true,
-      }),
-      icon: DownloadIcon,
-      label: "下载 session-log.jsonl",
-    },
   ];
 
   return (
@@ -284,7 +274,7 @@ export function AuditDashboard({
     return (
       <AuditEmpty
         title="该线程暂无审核结果"
-        description="当前线程下没有找到完整的 scout-audit 三件套输出文件。"
+        description="当前线程下没有找到完整的 scout-audit 两件套输出文件。"
       />
     );
   }
@@ -404,7 +394,6 @@ export function AuditDashboard({
             <TabsTrigger value="overview">总览</TabsTrigger>
             <TabsTrigger value="rules">规则结果</TabsTrigger>
             <TabsTrigger value="corrections">修正记录</TabsTrigger>
-            <TabsTrigger value="phases">Phase 日志</TabsTrigger>
             <TabsTrigger value="report">原始报告</TabsTrigger>
           </TabsList>
 
@@ -707,53 +696,6 @@ export function AuditDashboard({
                 </Card>
               ))
             )}
-          </TabsContent>
-
-          <TabsContent value="phases" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Phase 时间线</CardTitle>
-                <CardDescription>
-                  来自 session-log.jsonl 的结构化阶段记录
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {audit.phaseTimeline.map((phase) => {
-                  const phaseLabel =
-                    phase.name ?? phase.action ?? `Phase ${phase.phase}`;
-                  const timestamp =
-                    typeof phase.timestamp === "string"
-                      ? phase.timestamp
-                      : null;
-
-                  return (
-                    <div
-                      key={`${phase.phase}-${phaseLabel}`}
-                      className="flex gap-4"
-                    >
-                      <div className="flex w-14 shrink-0 flex-col items-center">
-                        <div className="bg-muted flex size-10 items-center justify-center rounded-full text-sm font-semibold">
-                          {phase.phase}
-                        </div>
-                      </div>
-                      <div className="min-w-0 flex-1 rounded-2xl border p-4">
-                        <div className="mb-2 space-y-1">
-                          <div className="font-medium">{phaseLabel}</div>
-                          {timestamp && (
-                            <div className="text-muted-foreground text-xs">
-                              {timestamp}
-                            </div>
-                          )}
-                        </div>
-                        <pre className="text-muted-foreground overflow-x-auto text-xs whitespace-pre-wrap">
-                          {JSON.stringify(phase, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="report" className="space-y-4">

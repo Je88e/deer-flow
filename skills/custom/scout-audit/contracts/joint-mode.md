@@ -29,10 +29,10 @@ Preflight Gate
 
 ## Phase 3.5 Fixed Slot
 
-- `3.5` 是 joint mode 的固定 session-log 槽位，不得省略、改名、移位或并入 `2b`。
+- `3.5` 是 joint mode 的固定 ELN 筛选槽位，不得省略、改名、移位或并入 `2b`。
 - `elnScope = "multi-batch"` 时，必须记录真实筛选结果。
 - `elnScope = "single-batch"` 时，也必须写显式 no-op / passthrough 记录。
-- `3.5` 的记录布局与输出模板分别以 `../templates/session-log-schema.md` 和 `../templates/phase-outputs.md` 为准。
+- `3.5` 的输出模板以 `../templates/phase-outputs.md` 为准。
 
 ## Phase 5c Joint-Only Rules
 
@@ -68,12 +68,10 @@ Preflight Gate
 - 输出命名固定为:
   - `outputs/{batchNo}-joint-results.json`
   - `outputs/{batchNo}-joint-audit-report.md`
-  - `outputs/{batchNo}-joint-session-log.jsonl`
 - 报告中的整改建议与修正记录必须显式带来源标签，例如 `COA - B002`、`ELN - S001`、`跨文档 - X003`。
 
 ## References
 
 - `../schemas/report-schema.md`
-- `../templates/session-log-schema.md`
 - `../templates/phase-outputs.md`
 - `../templates/report-template.md`

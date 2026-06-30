@@ -2,12 +2,10 @@ import { describe, expect, test } from "vitest";
 
 import {
   buildAuditViewModel,
-  parseSessionLog,
   pickAuditArtifacts,
 } from "@/core/scout-audit/parser";
 
 const artifactPaths = [
-  "/mnt/user-data/outputs/HLGF-I-26040404-session-log.jsonl",
   "/mnt/user-data/outputs/HLGF-I-26040404-audit-report.md",
   "/mnt/user-data/outputs/HLGF-I-26040404-results.json",
 ];
@@ -73,94 +71,13 @@ const resultsJson = JSON.stringify({
   },
 });
 
-const sessionLogJsonl = [
-  JSON.stringify({
-    phase: 0,
-    name: "pdfConvert",
-    timestamp: "2026-04-28T10:00:00+08:00",
-    input: { filePath: "/mnt/user-data/uploads/COA.md" },
-    output: { lineCount: 45, method: "direct-markdown" },
-  }),
-  JSON.stringify({
-    phase: 1,
-    name: "classify",
-    timestamp: "2026-04-28T10:00:05+08:00",
-    output: { docType: "COA", docTypeChinese: "检验报告/Test Report" },
-  }),
-  JSON.stringify({
-    phase: 7,
-    name: "summary",
-    timestamp: "2026-04-28T10:01:00+08:00",
-    mcpCallCount: 2,
-    overallResult: "PASS",
-    outputFiles: [
-      "outputs/HLGF-I-26040404-results.json",
-      "outputs/HLGF-I-26040404-audit-report.md",
-      "outputs/HLGF-I-26040404-session-log.jsonl",
-    ],
-  }),
-].join("\n");
-
 describe("pickAuditArtifacts", () => {
-  test("selects the complete scout-audit artifact trio by shared basename", () => {
+  test("selects the complete scout-audit artifact pair by shared basename", () => {
     expect(pickAuditArtifacts(artifactPaths)).toEqual({
       reportBaseName: "HLGF-I-26040404",
       resultsPath: "/mnt/user-data/outputs/HLGF-I-26040404-results.json",
       reportPath: "/mnt/user-data/outputs/HLGF-I-26040404-audit-report.md",
-      sessionLogPath:
-        "/mnt/user-data/outputs/HLGF-I-26040404-session-log.jsonl",
     });
-  });
-});
-
-describe("parseSessionLog", () => {
-  test("parses jsonl phase entries and sorts them by phase", () => {
-    expect(parseSessionLog(sessionLogJsonl)).toEqual([
-      {
-        input: { filePath: "/mnt/user-data/uploads/COA.md" },
-        name: "pdfConvert",
-        output: { lineCount: 45, method: "direct-markdown" },
-        phase: 0,
-        timestamp: "2026-04-28T10:00:00+08:00",
-      },
-      {
-        phase: 1,
-        name: "classify",
-        output: { docType: "COA", docTypeChinese: "检验报告/Test Report" },
-        timestamp: "2026-04-28T10:00:05+08:00",
-      },
-      {
-        phase: 7,
-        mcpCallCount: 2,
-        name: "summary",
-        outputFiles: [
-          "outputs/HLGF-I-26040404-results.json",
-          "outputs/HLGF-I-26040404-audit-report.md",
-          "outputs/HLGF-I-26040404-session-log.jsonl",
-        ],
-        overallResult: "PASS",
-        timestamp: "2026-04-28T10:01:00+08:00",
-      },
-    ]);
-  });
-
-  test("maps legacy action field to name", () => {
-    const legacy = [
-      JSON.stringify({
-        phase: 0,
-        action: "PDF to Markdown conversion",
-        status: "completed",
-      }),
-    ].join("\n");
-
-    expect(parseSessionLog(legacy)).toEqual([
-      {
-        action: "PDF to Markdown conversion",
-        name: "PDF to Markdown conversion",
-        phase: 0,
-        status: "completed",
-      },
-    ]);
   });
 });
 
@@ -170,7 +87,6 @@ describe("buildAuditViewModel", () => {
       artifactPaths,
       resultsContent: resultsJson,
       reportContent: "# Scout 合规审核报告",
-      sessionLogContent: sessionLogJsonl,
     });
 
     expect(viewModel.reportBaseName).toBe("HLGF-I-26040404");
@@ -194,7 +110,6 @@ describe("buildAuditViewModel", () => {
         ruleId: "C001",
       },
     ]);
-    expect(viewModel.phaseTimeline).toHaveLength(3);
     expect(viewModel.files.resultsPath).toBe(
       "/mnt/user-data/outputs/HLGF-I-26040404-results.json",
     );

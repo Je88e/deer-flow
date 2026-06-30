@@ -45,18 +45,15 @@ export function useScoutAudit({
         return null;
       }
 
-      const [resultsContent, reportContent, sessionLogContent] =
-        await Promise.all([
-          loadArtifactText({ filepath: files.resultsPath, threadId }),
-          loadArtifactText({ filepath: files.reportPath, threadId }),
-          loadArtifactText({ filepath: files.sessionLogPath, threadId }),
-        ]);
+      const [resultsContent, reportContent] = await Promise.all([
+        loadArtifactText({ filepath: files.resultsPath, threadId }),
+        loadArtifactText({ filepath: files.reportPath, threadId }),
+      ]);
 
       return buildAuditViewModel({
         artifactPaths,
         resultsContent,
         reportContent,
-        sessionLogContent,
       });
     },
   });

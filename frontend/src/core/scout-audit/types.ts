@@ -72,14 +72,6 @@ export interface ScoutAuditArtifactSet {
   reportBaseName: string;
   resultsPath: string;
   reportPath: string;
-  sessionLogPath: string;
-}
-
-export interface ScoutAuditPhaseEntry extends Record<string, unknown> {
-  phase: number;
-  name?: string;
-  action?: string;
-  timestamp?: string;
 }
 
 export interface ScoutAuditRuleGroup {
@@ -131,7 +123,6 @@ export interface ScoutAuditViewModel {
   summaryCards: ScoutAuditSummaryCard[];
   ruleGroups: ScoutAuditRuleGroup[];
   corrections: ScoutAuditCorrection[];
-  phaseTimeline: ScoutAuditPhaseEntry[];
   /** "joint" for multi-document audits; undefined defaults to "single" */
   auditMode?: "single" | "joint";
   /** Per-document results for joint mode */

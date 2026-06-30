@@ -119,9 +119,6 @@ Phase 6 完成。全部 {totalRules} 条规则已评估。
 ```
 审核结果已保存至 outputs/{reportNo}-results.json
 审核报告已生成并保存至 outputs/{reportNo}-audit-report.md
-会话日志已保存至 outputs/{reportNo}-session-log.jsonl
-报告脚本: exitCode={reportExitCode}, warnings={reportWarningCount}
-日志校验: result={validationResult}, exitCode={validationExitCode}
 ```
 
 ---
@@ -250,7 +247,4 @@ Phase 6 完成。全部 {totalRules} 条规则已评估 (COA 32 + ELN 32 + 5 跨
 ```
 联合审核结果已保存至 outputs/{batchNo}-joint-results.json
 联合审核报告已保存至 outputs/{batchNo}-joint-audit-report.md
-联合会话日志已保存至 outputs/{batchNo}-joint-session-log.jsonl
-报告脚本: exitCode={reportExitCode}, warnings={reportWarningCount}
-日志校验: result={validationResult}, exitCode={validationExitCode}
 ```

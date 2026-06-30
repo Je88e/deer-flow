@@ -6,7 +6,6 @@ import type {
   ScoutAuditCorrection,
   ScoutAuditHeader,
   ScoutAuditMetadata,
-  ScoutAuditPhaseEntry,
   ScoutAuditResults,
   ScoutAuditResultsFile,
   ScoutAuditRuleGroup,
@@ -18,7 +17,6 @@ import type {
 
 const RESULTS_SUFFIX = "-results.json";
 const REPORT_SUFFIX = "-audit-report.md";
-const SESSION_LOG_SUFFIX = "-session-log.jsonl";
 
 const RULE_GROUP_LABELS: Record<string, string> = {
   B: "基本信息",
@@ -82,85 +80,17 @@ export function pickAuditArtifacts(
 
     const reportBaseName = candidate.slice(0, -RESULTS_SUFFIX.length);
     const reportPath = `${reportBaseName}${REPORT_SUFFIX}`;
-    const sessionLogPath = `${reportBaseName}${SESSION_LOG_SUFFIX}`;
 
-    if (
-      artifactPaths.includes(reportPath) &&
-      artifactPaths.includes(sessionLogPath)
-    ) {
+    if (artifactPaths.includes(reportPath)) {
       return {
         reportBaseName: reportBaseName.split("/").at(-1) ?? reportBaseName,
         resultsPath: candidate,
         reportPath,
-        sessionLogPath,
       };
     }
   }
 
   return null;
-}
-
-export function parseSessionLog(content: string): ScoutAuditPhaseEntry[] {
-  return content
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line, index) => {
-      try {
-        const parsed = JSON.parse(line) as unknown;
-        return normalizePhaseEntry(parsed);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        throw new Error(
-          `Failed to parse session-log.jsonl at line ${index + 1}: ${message}`,
-        );
-      }
-    })
-    .sort(
-      (left, right) =>
-        (left.phase ?? Number.POSITIVE_INFINITY) -
-        (right.phase ?? Number.POSITIVE_INFINITY),
-    );
-}
-
-function normalizePhaseEntry(entry: unknown): ScoutAuditPhaseEntry {
-  if (!entry || typeof entry !== "object") {
-    return { phase: Number.POSITIVE_INFINITY };
-  }
-
-  const record = entry as Record<string, unknown>;
-  const phaseValue = record.phase;
-  const phase =
-    typeof phaseValue === "number"
-      ? phaseValue
-      : typeof phaseValue === "string"
-        ? Number(phaseValue)
-        : Number.POSITIVE_INFINITY;
-
-  const name =
-    typeof record.name === "string"
-      ? record.name
-      : typeof record.action === "string"
-        ? record.action
-        : undefined;
-
-  const timestamp =
-    typeof record.timestamp === "string" ? record.timestamp : undefined;
-
-  const normalized: ScoutAuditPhaseEntry = {
-    ...record,
-    phase,
-  };
-
-  if (name) {
-    normalized.name = name;
-  }
-
-  if (timestamp) {
-    normalized.timestamp = timestamp;
-  }
-
-  return normalized;
 }
 
 function countByStatus(
@@ -382,12 +312,10 @@ export function buildAuditViewModel({
   artifactPaths,
   resultsContent,
   reportContent,
-  sessionLogContent,
 }: {
   artifactPaths: string[];
   resultsContent: string;
   reportContent: string;
-  sessionLogContent: string;
 }): ScoutAuditViewModel {
   const files = pickAuditArtifacts(artifactPaths);
   if (!files) {
@@ -417,7 +345,6 @@ export function buildAuditViewModel({
       summaryCards: buildSummaryCards(joint.results),
       ruleGroups: [],
       corrections: joint.results.corrections ?? [],
-      phaseTimeline: parseSessionLog(sessionLogContent),
       auditMode: "joint",
       documentResults: joint.documentResults,
       crossDocumentRuleGroups: joint.crossDocumentRuleGroups,
@@ -448,7 +375,6 @@ export function buildAuditViewModel({
     summaryCards: buildSummaryCards(results),
     ruleGroups: buildRuleGroups(results.ruleResults),
     corrections,
-    phaseTimeline: parseSessionLog(sessionLogContent),
     auditMode: "single",
   };
 }

@@ -34,7 +34,6 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(SCRIPT_DIR, "../../../..")
 const DEFAULT_OUTPUT_DIR = resolve(REPO_ROOT, "docs/reports/regression-outputs/outputs")
 const GENERATE_REPORT_SCRIPT = resolve(SCRIPT_DIR, "generate-report.ts")
-const VALIDATE_SESSION_LOG_SCRIPT = resolve(SCRIPT_DIR, "validate-session-log.ts")
 const SEMANTIC_RULE_IDS = [
   "N002",
   "E001",
@@ -59,7 +58,6 @@ function printHelp(): void {
       "Runs fixture-driven scout-audit regressions and generates:",
       "- {reportNo}-results.json",
       "- {reportNo}-audit-report.md",
-      "- {reportNo}-session-log.jsonl",
       "",
       "Examples:",
       "  npx tsx skills/custom/scout-audit/scripts/run-minimal-regression.ts",
@@ -232,31 +230,6 @@ function sortResults(results: RegressionRuleResult[]): RegressionRuleResult[] {
   })
 }
 
-function countLimsSources(limsData: JsonRecord): number {
-  return Object.values(limsData).filter((value) => {
-    if (Array.isArray(value)) return value.length > 0
-    return value !== null && value !== undefined
-  }).length
-}
-
-function phaseTimestamp(baseMs: number, secondsOffset: number): string {
-  return new Date(baseMs + secondsOffset * 1000).toISOString()
-}
-
-function relativeOutputFiles(reportNo: string): string[] {
-  return [
-    `outputs/${reportNo}-results.json`,
-    `outputs/${reportNo}-audit-report.md`,
-    `outputs/${reportNo}-session-log.jsonl`,
-  ]
-}
-
-function inferFileType(filePath: string): string {
-  if (filePath.endsWith(".pdf")) return "pdf"
-  if (filePath.endsWith(".md") || filePath.endsWith(".markdown")) return "markdown"
-  return "text"
-}
-
 function runCliScript(scriptPath: string, args: string[]): string {
   const options = {
     cwd: REPO_ROOT,
@@ -404,9 +377,6 @@ function main(): void {
 
     const resultsPath = resolve(outputDir, `${reportNo}-results.json`)
     const reportPath = resolve(outputDir, `${reportNo}-audit-report.md`)
-    const sessionLogPath = resolve(outputDir, `${reportNo}-session-log.jsonl`)
-    const outputFiles = relativeOutputFiles(reportNo)
-    const [relativeResultsPath, relativeReportPath, relativeSessionLogPath] = outputFiles
 
     const resultsJson = {
       docType: scenario.docType,
@@ -432,125 +402,6 @@ function main(): void {
     writeFileSync(resultsPath, `${JSON.stringify(resultsJson, null, 2)}\n`, "utf-8")
     runCliScript(GENERATE_REPORT_SCRIPT, [resultsPath, reportPath])
 
-    const phaseBaseMs = Date.now()
-    const phase4Summary = summarize(deterministicResults, 0).summary
-    const sessionRows = [
-      {
-        phase: 0,
-        name: "pdfConvert",
-        timestamp: phaseTimestamp(phaseBaseMs, 0),
-        input: {
-          filePath: scenario.sourceFilePath,
-          fileType: inferFileType(scenario.sourceFilePath),
-        },
-        output: {
-          lineCount: scenario.markdownText.split(/\r?\n/).length,
-          method: scenario.sourceFilePath.endsWith(".pdf") ? "historical-markdown" : "fixture-markdown",
-          mode: scenario.sourceFilePath.endsWith(".pdf") ? "convert" : "passthrough",
-        },
-      },
-      {
-        phase: 1,
-        name: "classify",
-        timestamp: phaseTimestamp(phaseBaseMs, 1),
-        output: {
-          docType: scenario.docType,
-          docTypeChinese: scenario.docType === "COA" ? "检验报告/Test Report" : "原始记录/ELN",
-        },
-      },
-      {
-        phase: 2,
-        name: "docExtract",
-        timestamp: phaseTimestamp(phaseBaseMs, 2),
-        data: scenario.docExtract,
-      },
-      {
-        phase: 3,
-        name: "limsData",
-        timestamp: phaseTimestamp(phaseBaseMs, 3),
-        method: "aggregated",
-        dependencyStatus: "available",
-        calls: [
-          {
-            tool: "fetch_all_lims_data",
-            params: request,
-            response: limsData,
-            durationMs: 1,
-          },
-        ],
-      },
-      {
-        phase: 4,
-        name: "deterministicRules",
-        timestamp: phaseTimestamp(phaseBaseMs, 4),
-        input: {
-          docType: scenario.docType,
-          testItemCount: asArray(docExtract.testItems ?? [], `${scenario.id}.docExtract.testItems`).length,
-          limsDataSources: countLimsSources(limsData),
-          executionMode: "rule-engine",
-        },
-        output: {
-          passCount: phase4Summary.passCount,
-          failCount: phase4Summary.failCount,
-          skipCount: phase4Summary.skipCount,
-          results: deterministicResults,
-        },
-      },
-      {
-        phase: 5,
-        name: "semanticRules",
-        timestamp: phaseTimestamp(phaseBaseMs, 5),
-        results: semanticResults,
-      },
-      {
-        phase: 6,
-        name: "merge",
-        timestamp: phaseTimestamp(phaseBaseMs, 6),
-        input: {
-          deterministicCount: deterministicResults.length,
-          semanticCount: semanticResults.length,
-        },
-        output: {
-          totalRules: mergedResults.length,
-          passCount: correctedSummary.summary.passCount,
-          failCount: correctedSummary.summary.failCount,
-          skipCount: correctedSummary.summary.skipCount,
-          overallResult: correctedOverallResult,
-          corrections: scenario.corrections,
-        },
-      },
-      {
-        phase: 7,
-        name: "summary",
-        timestamp: phaseTimestamp(phaseBaseMs, 7),
-        mcpCallCount: 2,
-        overallResult: correctedOverallResult,
-        dependencyStatus: {
-          lims: "available",
-          ruleEngine: "available",
-        },
-        reportGeneration: {
-          command: `npx tsx ${GENERATE_REPORT_SCRIPT} ${relativeResultsPath} ${relativeReportPath}`,
-          exitCode: 0,
-          warnings: [],
-          outputPath: reportPath,
-        },
-        sessionLogValidation: {
-          command: `npx tsx ${VALIDATE_SESSION_LOG_SCRIPT} ${relativeSessionLogPath} ${relativeResultsPath}`,
-          exitCode: 0,
-          result: "OK",
-        },
-        outputFiles,
-      },
-    ]
-
-    writeFileSync(
-      sessionLogPath,
-      `${sessionRows.map((row) => JSON.stringify(row)).join("\n")}\n`,
-      "utf-8"
-    )
-    runCliScript(VALIDATE_SESSION_LOG_SCRIPT, [sessionLogPath, resultsPath])
-
     manifest.push({
       id: scenario.id,
       reportNo,
@@ -558,7 +409,6 @@ function main(): void {
       summary: correctedSummary.summary,
       resultsPath,
       reportPath,
-      sessionLogPath,
     })
   }
 

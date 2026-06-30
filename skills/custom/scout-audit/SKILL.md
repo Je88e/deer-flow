@@ -27,13 +27,13 @@ description: Use when a user provides or references a lab COA (检验报告) or 
 ## Do Not Use
 
 - 输入不是 COA/ELN 审核场景，例如 SOP、方案、偏差报告、普通总结。
-- 输入其实是已生成的 `results.json`、审核报告或 `session-log.jsonl`。
+- 输入其实是已生成的 `results.json` 或审核报告。
 - 缺少可用的 `reportNo` / `batchNo`，无法建立审核锚点。
 - 关键依赖不可用且无法给出结构化降级结果。
 
 ## Admission Rules
 
-- Preflight gate 必须先于 Phase 0；gate 不计入正式 phase，也不写入 `session-log.jsonl`。
+- Preflight gate 必须先于 Phase 0；gate 不计入正式 phase。
 - 必须先完成 eligibility、capability、mode detection 与 failure policy 检查。
 - `single`
   - 1 个 COA 或 ELN 文档
@@ -85,8 +85,8 @@ Preflight Gate
 - `joint` 不得省略、改名、移位或并回 `3.5` / `5c`。
 - Phase 0 只允许 `convert` 或 `passthrough`；Markdown / 纯文本不得伪装成 PDF 转换。
 - 字段级 canonical 约束以 `schemas/docExtract-schema.md` 为准。
-- 交付顺序固定为 `results.json` -> 审核报告 -> `session-log` 校验。
-- 任一脚本非零退出、结构校验失败、覆盖确认缺失或三件套不完整，都必须停止。
+- 交付顺序固定为 `results.json` -> 审核报告。
+- 任一脚本非零退出、结构校验失败、覆盖确认缺失或两件套不完整，都必须停止。
 - 所有 FAIL、SKIP、correction、dependency degradation 与脚本执行结果都必须落在结构化产物中，不能只留在自然语言总结里。
 
 ## Delivery Rules
@@ -100,7 +100,7 @@ Preflight Gate
 - Contracts: `contracts/preflight.md`, `contracts/joint-mode.md`, `contracts/delivery.md`
 - Rules: `rules/rule-map.md`
 - Schemas: `schemas/docExtract-schema.md`, `schemas/limsData-schema.md`, `schemas/report-schema.md`, `schemas/gate-failure-schema.md`
-- Templates: `templates/phase-outputs.md`, `templates/session-log-schema.md`, `templates/report-template.md`
+- Templates: `templates/phase-outputs.md`, `templates/report-template.md`
 - Prompts: `prompts/classify.md`, `prompts/extract.md`, `prompts/semantic-audit.md`
 - Scripts: `scripts/README.md`
 - Governance: `docs/operator-guardrails.md`, `docs/sync-matrix.md`

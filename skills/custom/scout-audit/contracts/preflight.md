@@ -2,7 +2,7 @@
 
 ## Purpose
 
-定义进入 Phase 0 之前必须完成的准入检查。Preflight gate 不是正式 phase，不写入 `session-log.jsonl`，但它决定审核是否允许开始。
+定义进入 Phase 0 之前必须完成的准入检查。Preflight gate 不是正式 phase，但它决定审核是否允许开始。
 
 ## Eligibility
 
@@ -10,7 +10,6 @@
 - 以下对象不得作为原始输入再次审核:
   - `results.json`
   - 审核报告
-  - `session-log.jsonl`
 - 非 COA/ELN 审核场景必须直接停止，例如 SOP、方案、偏差报告、普通总结或改写任务。
 - 审核锚点必须可建立:
   - `single` 需要可用的 `reportNo`
@@ -47,11 +46,10 @@
 ## Overwrite Confirmation
 
 - 若预期输出文件已存在，必须先停下征求用户确认。
-- 未获得覆盖确认前，不允许继续写入任何三件套产物。
+- 未获得覆盖确认前，不允许继续写入任何两件套产物。
 
 ## References
 
 - `../schemas/gate-failure-schema.md`
 - `../schemas/docExtract-schema.md`
-- `../templates/session-log-schema.md`
 - `../docs/operator-guardrails.md`
