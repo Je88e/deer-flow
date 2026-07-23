@@ -2,11 +2,12 @@
 
 import asyncio
 import atexit
+import html
 import logging
 import os
 import threading
 import uuid
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine, Mapping
 from concurrent.futures import Future, ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeoutError
 from contextvars import Context, copy_context
@@ -22,6 +23,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.errors import GraphRecursionError
 
 from deerflow.agents.thread_state import SandboxState, ThreadDataState, ThreadState
+from deerflow.authz.principal import normalize_authz_attributes
 from deerflow.config import get_app_config
 from deerflow.config.app_config import AppConfig
 from deerflow.models import create_chat_model
@@ -408,6 +410,8 @@ class SubagentExecutor:
         oauth_id: str | None = None,
         run_id: str | None = None,
         channel_user_id: str | None = None,
+        is_internal: bool = False,
+        authz_attributes: Mapping[str, Any] | None = None,
         deerflow_trace_id: str | None = None,
     ):
         """Initialize the executor.
@@ -459,6 +463,11 @@ class SubagentExecutor:
         # chats share one thread across senders, so delegated bash commands
         # must export the dispatching turn's id, not none at all.
         self.channel_user_id = channel_user_id
+        # Authorization identity propagated from the parent runtime context.
+        # is_internal is written unconditionally (including False) so the
+        # subagent's GuardrailMiddleware sees the same provenance as the lead.
+        self.is_internal = is_internal
+        self.authz_attributes = normalize_authz_attributes(authz_attributes)
         self.deerflow_trace_id = deerflow_trace_id
 
         self._base_tools = _filter_tools(
@@ -605,7 +614,10 @@ class SubagentExecutor:
                 content = await asyncio.to_thread(skill.skill_file.read_text, encoding="utf-8")
                 content = content.strip()
                 if content:
-                    messages.append(SystemMessage(content=f'<skill name="{skill.name}">\n{content}\n</skill>'))
+                    # name/body are untrusted (installable ``.skill`` archive); escape
+                    # both so the body cannot forge a framework tag, matching the
+                    # slash-activation sibling (name quote=True attribute, body quote=False).
+                    messages.append(SystemMessage(content=f'<skill name="{html.escape(skill.name, quote=True)}">\n{html.escape(content, quote=False)}\n</skill>'))
                     logger.info(f"[trace={self.trace_id}] Subagent {self.config.name} loaded skill: {skill.name}")
             except Exception:
                 logger.debug(f"[trace={self.trace_id}] Failed to read skill {skill.name}", exc_info=True)
@@ -724,7 +736,11 @@ class SubagentExecutor:
             collector_caller = f"subagent:{self.config.name}"
             collector = SubagentTokenCollector(caller=collector_caller)
 
-            # Build config with thread_id for sandbox access and recursion limit
+            # Do not put checkpoint coordinates (thread_id/checkpoint_ns/etc.)
+            # in the child config. LangGraph inherits those coordinates from
+            # the ambient parent run so this execution keeps its subgraph
+            # namespace. Business consumers receive thread_id via ``context``
+            # below instead.
             run_config: RunnableConfig = {
                 "recursion_limit": self.config.max_turns,
                 "callbacks": [collector],
@@ -763,7 +779,6 @@ class SubagentExecutor:
 
             context: dict[str, Any] = {}
             if self.thread_id:
-                run_config["configurable"] = {"thread_id": self.thread_id}
                 context["thread_id"] = self.thread_id
             if self.app_config is not None:
                 context["app_config"] = self.app_config
@@ -778,6 +793,10 @@ class SubagentExecutor:
             context["run_id"] = self.run_id
             if self.channel_user_id:
                 context["channel_user_id"] = self.channel_user_id
+            # Authorization identity: is_internal written unconditionally
+            # (including False); attributes copied again on write-back.
+            context["is_internal"] = self.is_internal
+            context["authz_attributes"] = dict(self.authz_attributes)
             if self.deerflow_trace_id:
                 context[DEERFLOW_TRACE_METADATA_KEY] = self.deerflow_trace_id
             context["is_subagent"] = True
