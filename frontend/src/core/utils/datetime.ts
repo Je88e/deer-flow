@@ -15,9 +15,6 @@ function getDateFnsLocale(locale: Locale) {
 }
 
 export function formatTimeAgo(date: Date | string | number, locale?: Locale) {
-  if (!date || Number.isNaN(parsed.getTime())) {
-    return "";
-  }
   const effectiveLocale =
     locale ??
     (getLocaleFromCookie() as Locale | null) ??
