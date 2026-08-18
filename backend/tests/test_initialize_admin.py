@@ -52,7 +52,9 @@ def client(_setup_auth):
     # Do NOT use TestClient as a context manager — that would trigger the
     # full lifespan which requires config.yaml. The auth endpoints work
     # without the lifespan (persistence engine is set up by _setup_auth).
-    yield TestClient(app)
+    # Auth cookies are scoped to Path=/leadagent (plan §6.3); drive requests
+    # under that base path so the TestClient cookie jar sends them back.
+    yield TestClient(app, base_url="http://testserver/leadagent", root_path="/leadagent")
 
 
 def _init_payload(**extra):

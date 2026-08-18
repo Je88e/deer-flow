@@ -915,7 +915,9 @@ def test_login_remember_me_true_keeps_access_and_csrf_max_age_in_lockstep_on_loc
 
 def test_change_password_preserves_session_only_preference():
     _setup_config()
-    client = TestClient(_make_auth_app(), base_url="https://deerflow.example")
+    # Auth cookies are scoped to Path=/leadagent (plan §6.3); drive the flow
+    # under that base path so the TestClient cookie jar sends them back.
+    client = TestClient(_make_auth_app(), base_url="https://deerflow.example/leadagent", root_path="/leadagent")
     email = _unique_email("change-password-session")
     client.post("/api/v1/auth/register", json={"email": email, "password": "Tr0ub4dor3a"})
     client.post(
@@ -941,7 +943,9 @@ def test_change_password_preserves_session_only_preference():
 
 def test_change_password_reissues_access_and_csrf_in_lockstep_when_preference_changes():
     _setup_config()
-    client = TestClient(_make_auth_app(), base_url="https://deerflow.example")
+    # Auth cookies are scoped to Path=/leadagent (plan §6.3); drive the flow
+    # under that base path so the TestClient cookie jar sends them back.
+    client = TestClient(_make_auth_app(), base_url="https://deerflow.example/leadagent", root_path="/leadagent")
     email = _unique_email("change-password-persistent")
     client.post("/api/v1/auth/register", json={"email": email, "password": "Tr0ub4dor3a"})
     client.post(

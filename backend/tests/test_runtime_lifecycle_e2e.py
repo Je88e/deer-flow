@@ -326,6 +326,18 @@ def isolated_app_with_title(isolated_deer_flow_home: Path, monkeypatch: pytest.M
     return create_app()
 
 
+def _gateway_client(app):
+    """TestClient driven under the /leadagent base path (plan §6.3).
+
+    Auth cookies are scoped to Path=/leadagent; issuing requests under that
+    prefix lets the TestClient cookie jar carry them, exactly like the WIT
+    Shell deployment does.
+    """
+    from starlette.testclient import TestClient
+
+    return TestClient(app, base_url="http://testserver/leadagent", root_path="/leadagent")
+
+
 def _register_user(client, *, email: str = "runtime-e2e@example.com") -> str:
     response = client.post(
         "/api/v1/auth/register",
@@ -516,7 +528,6 @@ def _stream_item_for_mode(stream_mode: Any, state: dict[str, Any]) -> Any:
 
 def test_stream_run_completes_and_persists_runtime_state(isolated_app):
     """A streaming run should traverse the real runtime and leave state behind."""
-    from starlette.testclient import TestClient
 
     controller = _RunController()
     factory = _make_agent_factory(
@@ -527,7 +538,7 @@ def test_stream_run_completes_and_persists_runtime_state(isolated_app):
 
     with (
         patch("app.gateway.services.resolve_agent_factory", return_value=factory),
-        TestClient(isolated_app) as client,
+        _gateway_client(isolated_app) as client,
     ):
         csrf_token = _register_user(client)
         thread_id = _create_thread(client, csrf_token)
@@ -569,7 +580,6 @@ def test_stream_run_completes_and_persists_runtime_state(isolated_app):
 
 def test_stream_run_executes_real_lead_agent_setup_agent_business_path(isolated_app, isolated_deer_flow_home: Path):
     """A runtime stream should execute real lead-agent business code and tools."""
-    from starlette.testclient import TestClient
 
     agent_name = "runtime-business-agent"
 
@@ -578,7 +588,7 @@ def test_stream_run_executes_real_lead_agent_setup_agent_business_path(isolated_
             "deerflow.agents.lead_agent.agent.create_chat_model",
             new=_build_fake_setup_agent_model(agent_name),
         ),
-        TestClient(isolated_app) as client,
+        _gateway_client(isolated_app) as client,
     ):
         csrf_token = _register_user(client, email="business-e2e@example.com")
         auth_user_id = client.get("/api/v1/auth/me").json()["id"]
@@ -629,7 +639,6 @@ def test_stream_run_executes_real_lead_agent_setup_agent_business_path(isolated_
 
 def test_cancel_interrupt_stops_running_background_run(isolated_app):
     """HTTP cancel?action=interrupt should stop the worker and persist interruption."""
-    from starlette.testclient import TestClient
 
     controller = _RunController()
     factory = _make_agent_factory(
@@ -641,7 +650,7 @@ def test_cancel_interrupt_stops_running_background_run(isolated_app):
 
     with (
         patch("app.gateway.services.resolve_agent_factory", return_value=factory),
-        TestClient(isolated_app) as client,
+        _gateway_client(isolated_app) as client,
     ):
         csrf_token = _register_user(client, email="interrupt-e2e@example.com")
         thread_id = _create_thread(client, csrf_token)
@@ -672,7 +681,6 @@ def test_cancel_interrupt_stops_running_background_run(isolated_app):
 
 def test_cancel_interrupt_generates_missing_title_from_checkpoint(isolated_app_with_title):
     """Interrupted first-turn runs should still persist an automatic thread title."""
-    from starlette.testclient import TestClient
 
     controller = _RunController()
     factory = _make_agent_factory(
@@ -685,7 +693,7 @@ def test_cancel_interrupt_generates_missing_title_from_checkpoint(isolated_app_w
 
     with (
         patch("app.gateway.services.resolve_agent_factory", return_value=factory),
-        TestClient(isolated_app_with_title) as client,
+        _gateway_client(isolated_app_with_title) as client,
     ):
         csrf_token = _register_user(client, email="interrupt-title-e2e@example.com")
         thread_id = _create_thread(client, csrf_token)
@@ -717,7 +725,6 @@ def test_cancel_interrupt_generates_missing_title_from_checkpoint(isolated_app_w
 
 def test_cancel_wait_false_generates_title_from_graph_input_before_checkpoint(isolated_app_with_title):
     """Fire-and-forget cancel should title early interruptions before checkpoint."""
-    from starlette.testclient import TestClient
 
     controller = _RunController()
     factory = _make_agent_factory(
@@ -730,7 +737,7 @@ def test_cancel_wait_false_generates_title_from_graph_input_before_checkpoint(is
 
     with (
         patch("app.gateway.services.resolve_agent_factory", return_value=factory),
-        TestClient(isolated_app_with_title) as client,
+        _gateway_client(isolated_app_with_title) as client,
     ):
         csrf_token = _register_user(client, email="interrupt-title-early-e2e@example.com")
         thread_id = _create_thread(client, csrf_token)
@@ -813,7 +820,6 @@ async def test_sse_consumer_disconnect_cancels_inflight_run():
 
 def test_cancel_rollback_restores_pre_run_checkpoint(isolated_app):
     """HTTP cancel?action=rollback should restore the checkpoint captured before run start."""
-    from starlette.testclient import TestClient
 
     controller = _RunController()
     factory = _make_agent_factory(
@@ -825,7 +831,7 @@ def test_cancel_rollback_restores_pre_run_checkpoint(isolated_app):
 
     with (
         patch("app.gateway.services.resolve_agent_factory", return_value=factory),
-        TestClient(isolated_app) as client,
+        _gateway_client(isolated_app) as client,
     ):
         csrf_token = _register_user(client, email="rollback-e2e@example.com")
         thread_id = _create_thread(client, csrf_token)

@@ -31,7 +31,7 @@ from app.gateway.auth.oidc_state import (
     get_state_cookie,
     set_state_cookie,
 )
-from app.gateway.auth.session_cookie import ACCESS_TOKEN_COOKIE_NAME, SESSION_PERSISTENCE_COOKIE_NAME, set_session_cookie
+from app.gateway.auth.session_cookie import ACCESS_TOKEN_COOKIE_NAME, AUTH_COOKIE_PATH, SESSION_PERSISTENCE_COOKIE_NAME, set_session_cookie
 from app.gateway.auth.session_cookie_state import SKIP_AUTH_CSRF_COOKIE_STATE_ATTR
 from app.gateway.auth.user_provisioning import get_or_provision_oidc_user
 from app.gateway.csrf_middleware import CSRF_COOKIE_NAME, _request_origin, auth_csrf_cookie_settings, generate_csrf_token, is_secure_request
@@ -373,9 +373,9 @@ async def register(request: Request, response: Response, body: RegisterRequest):
 async def logout(request: Request, response: Response):
     """Logout current user by clearing the cookie."""
     is_https = is_secure_request(request)
-    response.delete_cookie(key=ACCESS_TOKEN_COOKIE_NAME, secure=is_https, samesite="lax")
-    response.delete_cookie(key=CSRF_COOKIE_NAME, secure=is_https, samesite="strict")
-    response.delete_cookie(key=SESSION_PERSISTENCE_COOKIE_NAME, secure=is_https, samesite="lax")
+    response.delete_cookie(key=ACCESS_TOKEN_COOKIE_NAME, secure=is_https, samesite="lax", path=AUTH_COOKIE_PATH)
+    response.delete_cookie(key=CSRF_COOKIE_NAME, secure=is_https, samesite="strict", path=AUTH_COOKIE_PATH)
+    response.delete_cookie(key=SESSION_PERSISTENCE_COOKIE_NAME, secure=is_https, samesite="lax", path=AUTH_COOKIE_PATH)
     setattr(request.state, SKIP_AUTH_CSRF_COOKIE_STATE_ATTR, True)
     return MessageResponse(message="Successfully logged out")
 
@@ -594,6 +594,7 @@ def _set_csrf_cookie(response: Response, request: Request) -> None:
         httponly=False,  # Must be JS-readable for Double Submit Cookie pattern
         secure=secure,
         samesite="strict",
+        path=AUTH_COOKIE_PATH,
         # Persist for the same lifetime as the access_token (see _set_session_cookie)
         # so the double-submit pair is evicted together, never leaving a logged-in
         # session whose csrf_token was dropped (e.g. iOS Safari PWA termination).

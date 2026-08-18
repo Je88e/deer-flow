@@ -15,7 +15,13 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp
 
 from app.gateway.auth.config import get_auth_config
-from app.gateway.auth.session_cookie_state import SESSION_COOKIE_ISSUED_STATE_ATTR, SESSION_COOKIE_MAX_AGE_STATE_ATTR, SESSION_COOKIE_SECURE_STATE_ATTR, SKIP_AUTH_CSRF_COOKIE_STATE_ATTR
+from app.gateway.auth.session_cookie_state import (
+    AUTH_COOKIE_PATH,
+    SESSION_COOKIE_ISSUED_STATE_ATTR,
+    SESSION_COOKIE_MAX_AGE_STATE_ATTR,
+    SESSION_COOKIE_SECURE_STATE_ATTR,
+    SKIP_AUTH_CSRF_COOKIE_STATE_ATTR,
+)
 from app.gateway.auth_disabled import is_auth_disabled
 from app.gateway.request_path import get_request_route_path
 
@@ -255,7 +261,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 httponly=False,  # Must be JS-readable for Double Submit Cookie pattern
                 secure=secure,
                 samesite=samesite,
-                path="/",
+                path=AUTH_COOKIE_PATH,
                 # Match the access_token cookie's lifetime (auth.py::_set_session_cookie)
                 # so the double-submit pair never diverges. A session-only csrf_token is
                 # evicted when iOS Safari terminates a home-screen PWA while the persistent

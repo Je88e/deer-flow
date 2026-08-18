@@ -10,6 +10,7 @@ from fastapi import Request, Response
 
 from app.gateway.auth.config import get_auth_config
 from app.gateway.auth.session_cookie_state import (
+    AUTH_COOKIE_PATH,
     SESSION_COOKIE_ISSUED_STATE_ATTR,
     SESSION_COOKIE_MAX_AGE_STATE_ATTR,
     SESSION_COOKIE_SECURE_STATE_ATTR,
@@ -97,6 +98,7 @@ def set_session_cookie(response: Response, request: Request, token: str, *, reme
         # samesite="lax",
         samesite=samesite,
         max_age=policy.max_age,
+        path=AUTH_COOKIE_PATH,
     )
     response.set_cookie(
         key=SESSION_PERSISTENCE_COOKIE_NAME,
@@ -106,6 +108,7 @@ def set_session_cookie(response: Response, request: Request, token: str, *, reme
         # samesite="lax",
         samesite=samesite,
         max_age=policy.max_age,
+        path=AUTH_COOKIE_PATH,
     )
     setattr(request.state, SESSION_COOKIE_MAX_AGE_STATE_ATTR, policy.max_age)
     setattr(request.state, SESSION_COOKIE_SECURE_STATE_ATTR, policy.secure)

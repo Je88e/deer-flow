@@ -231,12 +231,14 @@ def test_real_http_create_agent_lands_in_authenticated_user_dir(
 
     from starlette.testclient import TestClient
 
+    # Auth cookies are scoped to Path=/leadagent (plan §6.3); drive the wire
+    # path under that base path so the TestClient cookie jar sends them back.
     with (
         patch(
             "deerflow.agents.lead_agent.agent.create_chat_model",
             new=_build_fake_create_chat_model(agent_name),
         ),
-        TestClient(isolated_app) as client,
+        TestClient(isolated_app, base_url="http://testserver/leadagent", root_path="/leadagent") as client,
     ):
         # --- 1. Register & auto-login ---
         register = client.post(

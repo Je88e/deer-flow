@@ -140,7 +140,9 @@ def drive_gateway(app, *, prompt: str, context: dict) -> list[dict]:
     """
     from starlette.testclient import TestClient
 
-    with TestClient(app) as client:
+    # Auth cookies are scoped to Path=/leadagent (plan §6.3); drive the wire
+    # path under that base path so the TestClient cookie jar sends them back.
+    with TestClient(app, base_url="http://testserver/leadagent", root_path="/leadagent") as client:
         reg = client.post(
             "/api/v1/auth/register",
             json={"email": f"e2e-{uuid.uuid4().hex[:8]}@example.com", "password": "very-strong-password-123"},
