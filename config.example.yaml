@@ -2574,6 +2574,34 @@ authorization:
 #         # Security features (enabled by default):
 #         pkce_enabled: true               # PKCE (S256) for authorization code flow
 #         nonce_enabled: true              # Nonce validation in ID tokens
+#
+# WIT Shell iframe integration (docs/dev/deerflow-shell-integration-plan.md §3.1/§3.3):
+# when DeerFlow is embedded in the WIT Shell under /leadagent, the iframe frontend
+# exchanges a Shell-injected Keycloak ID token for a DeerFlow session via
+# POST /api/v1/auth/token-exchange. The provider entry below drives both that
+# exchange (issuer / client_id) and standalone login; wit-shell needs a Keycloak
+# audience mapper appending `deerflow` to the ID token's `aud` for the exchange
+# to validate. Session/CSRF cookies are scoped to Path=/leadagent (plan §6.3).
+#
+# auth:
+#   oidc:
+#     enabled: true
+#     frontend_base_url: "/leadagent"  # iframe 基路径
+#     providers:
+#       keycloak:
+#         display_name: "WIT SSO"
+#         issuer: "https://keycloak.wit.example.com/realms/wit"
+#         client_id: "deerflow"
+#         client_secret: "$KEYCLOAK_CLIENT_SECRET"
+#         redirect_uri: "https://wit.example.com/leadagent/api/v1/auth/callback/keycloak"
+#         scopes: ["openid", "email", "profile"]
+#         pkce_enabled: true
+#         nonce_enabled: true
+#         token_endpoint_auth_method: "client_secret_post"
+#         auto_create_users: true
+#         require_verified_email: true
+#         allowed_email_domains: ["wit.example.com"]
+#         admin_emails: ["admin@wit.example.com"]
 
 # --- Plugins ----------------------------------------------------------------
 # Extension packages, loaded once at startup in the order listed here. Each

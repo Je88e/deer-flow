@@ -118,6 +118,25 @@ enum UserScope:
 
 当前实现允许在没有 admin 时注册普通用户，但 `setup-status` 仍会返回 `needs_setup=true`，因为 admin 仍不存在。这是当前产品策略边界：如果后续要求“必须先初始化 admin 才能注册普通用户”，需要在 `/register` 增加 admin-exists gate。
 
+### WIT Shell token-exchange（嵌入场景）
+
+`POST /api/v1/auth/token-exchange` 供 WIT Shell iframe 内的前端把 Shell 注入的
+Keycloak ID token 换成 DeerFlow session（`docs/dev/deerflow-shell-integration-plan.md` §3.1）：
+
+- 请求体 `{"token": "<Keycloak ID token JWT>", "provider": "keycloak"}`。
+- 复用 OIDC callback 的验证与供给路径：`OIDCService.discover` →
+  `OIDCService.validate_id_token`（nonce 传 `None`，nonce 属于签发方 wit-shell 的
+  防重放上下文；签名 / iss / aud / exp 校验保留）→ `get_or_provision_oidc_user` →
+  `create_access_token`。
+- 纯 API 调用：无浏览器重定向、无 state cookie；CSRFMiddleware 按 login/register
+  同类处理（首次调用免 double-submit、仍校验 Origin），并在 POST 响应上设置
+  `csrf_token` cookie。
+- 验证失败返回 401（`token_invalid`）；provider 未配置/未知返回 400；SSO 未启用返回 404。
+
+认证 cookie 家族（`access_token` / `csrf_token` / `deerflow_session_persistent`）的
+`Path` 固定为 `/leadagent`（静态常量 `AUTH_COOKIE_PATH`，plan §6.3），对包括 Gateway
+直连 `:8001` 在内的所有部署形态生效。
+
 ### 改密码与 reset setup
 
 `POST /api/v1/auth/change-password` 需要当前密码和新密码：
@@ -155,6 +174,7 @@ enum UserScope:
 - `/api/v1/auth/setup-status`
 - `/api/v1/auth/initialize`
 - `/api/v1/auth/providers`
+- `/api/v1/auth/token-exchange`（凭据是请求体内的 Keycloak ID token）
 - `/api/v1/auth/oauth/` (所有子路径)
 - `/api/v1/auth/callback/` (所有子路径)
 
@@ -180,7 +200,7 @@ DeerFlow 使用 Double Submit Cookie：
 - `DELETE`
 - `PATCH`
 
-auth bootstrap 端点（login/register/initialize/logout）不要求 double-submit token，因为首次调用时浏览器还没有 token；但这些端点会校验 browser `Origin`，拒绝 hostile Origin，避免 login CSRF / session fixation。
+auth bootstrap 端点（login/register/initialize/logout/token-exchange）不要求 double-submit token，因为首次调用时浏览器还没有 token；但这些端点会校验 browser `Origin`，拒绝 hostile Origin，避免 login CSRF / session fixation。
 
 ## 用户隔离
 
