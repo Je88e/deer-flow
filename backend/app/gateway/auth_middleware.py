@@ -9,8 +9,10 @@ owner filtering works automatically via the sentinel pattern.
 Fine-grained permission checks remain in authz.py decorators.
 """
 
+import logging
 from collections.abc import Callable
 
+import jwt
 from fastapi import HTTPException, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
@@ -27,7 +29,16 @@ from app.gateway.auth_disabled import (
 from app.gateway.authz import AuthContext, resolve_route_permissions
 from app.gateway.internal_auth import INTERNAL_AUTH_HEADER_NAME, get_internal_user, is_valid_internal_auth_token
 from app.gateway.request_path import get_request_route_path
+from deerflow.config.auth_config import OIDCProviderConfig
 from deerflow.runtime.user_context import reset_current_user, set_current_user
+
+logger = logging.getLogger(__name__)
+
+# Marker stamped on requests authenticated through the Authorization header
+# (``request.state.auth_scheme``). Distinct from ``auth_source``, which stays
+# "session" for Bearer logins so every downstream resolver treats them exactly
+# like cookie sessions.
+AUTH_SCHEME_BEARER = "bearer"
 
 # Paths that never require authentication.
 _PUBLIC_PATH_PREFIXES: tuple[str, ...] = (
@@ -66,15 +77,127 @@ def _is_public(path: str) -> bool:
     return any(path.startswith(prefix) for prefix in _PUBLIC_PATH_PREFIXES)
 
 
+def get_bearer_token(request: Request) -> str | None:
+    """Extract the raw token from an ``Authorization: Bearer <token>`` header.
+
+    Returns ``None`` when the header is absent, carries a different auth
+    scheme, or has an empty credential. The scheme comparison is
+    case-insensitive per RFC 7235.
+    """
+    authorization = request.headers.get("Authorization")
+    if not authorization:
+        return None
+    scheme, separator, credential = authorization.partition(" ")
+    if not separator or scheme.lower() != "bearer":
+        return None
+    credential = credential.strip()
+    return credential or None
+
+
+def _match_bearer_oidc_provider(issuer: str | None) -> tuple[str, OIDCProviderConfig] | None:
+    """Select the configured OIDC provider whose issuer matches ``iss``.
+
+    Trailing-slash differences are tolerated (the same normalization
+    ``OIDCService.discover`` applies); anything else must match exactly. The
+    strict ``iss`` equality inside JWT validation backstops the selection, so
+    a merely-similar issuer can never authenticate.
+    """
+    if not issuer or not isinstance(issuer, str):
+        return None
+    from deerflow.config.app_config import get_app_config
+
+    oidc_config = get_app_config().auth.oidc
+    if not oidc_config.enabled:
+        return None
+    normalized = issuer.rstrip("/")
+    for provider_id, provider_config in oidc_config.providers.items():
+        if provider_config.issuer.rstrip("/") == normalized:
+            return provider_id, provider_config
+    return None
+
+
+def _bearer_rejected(message: str) -> HTTPException:
+    """401 for a presented-but-invalid Bearer credential (token_invalid)."""
+    return HTTPException(
+        status_code=401,
+        detail=AuthErrorResponse(code=AuthErrorCode.TOKEN_INVALID, message=message).model_dump(),
+    )
+
+
+async def get_user_from_bearer_token(token: str):
+    """Resolve an ``Authorization: Bearer`` OIDC access token to a ``User``.
+
+    Direct-Bearer authentication for the micro-frontend deployment (plan
+    §3.4): the token's ``iss`` selects the configured provider, the signature
+    / ``iss`` / ``exp`` are verified offline against the provider's JWKS with
+    the relaxed access-token audience matrix (``azp == client_id`` or
+    ``client_id ∈ aud``), and the identity resolves through the same
+    ``get_or_provision_oidc_user`` path as the OIDC callback and token
+    exchange. Raises ``HTTPException`` 401 (``token_invalid``) when no
+    provider matches the issuer or validation fails; provisioning denials
+    keep their own status codes, mirroring the cookie branch.
+    """
+    try:
+        unverified = jwt.decode(token, options={"verify_signature": False})
+    except jwt.PyJWTError:
+        raise _bearer_rejected("Bearer token is malformed") from None
+
+    matched = _match_bearer_oidc_provider(unverified.get("iss"))
+    if matched is None:
+        raise _bearer_rejected("Bearer token issuer does not match a configured SSO provider")
+    provider_id, provider_config = matched
+
+    from app.gateway.auth.oidc import OIDCError
+    from app.gateway.routers.auth import _get_oidc_service
+
+    service = _get_oidc_service()
+    overrides = {
+        "authorization_endpoint": provider_config.authorization_endpoint,
+        "token_endpoint": provider_config.token_endpoint,
+        "userinfo_endpoint": provider_config.userinfo_endpoint,
+        "jwks_uri": provider_config.jwks_uri,
+    }
+    try:
+        metadata = await service.discover(provider_config.issuer, overrides)
+    except OIDCError as exc:
+        logger.warning("Bearer authentication could not resolve OIDC metadata for provider %s: %s", provider_id, exc)
+        raise _bearer_rejected("Bearer token could not be validated against its issuer") from exc
+
+    try:
+        claims = await service.validate_access_token(metadata, provider_config.client_id, token)
+    except OIDCError as exc:
+        logger.warning("Bearer authentication rejected an access token for provider %s: %s", provider_id, exc)
+        raise _bearer_rejected("Access token validation failed") from exc
+
+    from app.gateway.auth.oidc import OIDCIdentity
+    from app.gateway.auth.user_provisioning import get_or_provision_oidc_user
+    from app.gateway.deps import get_local_provider
+
+    identity = OIDCIdentity(
+        provider=provider_id,
+        subject=claims["sub"],
+        email=claims.get("email") or "",
+        email_verified=claims.get("email_verified") is True,
+        name=claims.get("name"),
+        claims=claims,
+    )
+    result = await get_or_provision_oidc_user(provider_id, provider_config, identity, get_local_provider())
+    return result["user"]
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
     """Strict auth gate: reject requests without a valid session.
 
     Two-stage check for non-public paths:
 
-    1. Cookie presence — return 401 NOT_AUTHENTICATED if missing
-    2. JWT validation via ``get_optional_user_from_request`` — return 401
+    1. Credential presence (priority: internal > bearer > cookie) — return
+       401 NOT_AUTHENTICATED if missing
+    2. Strict validation of the presented credential — return 401
        TOKEN_INVALID if the token is absent, malformed, expired, or the
-       signed user does not exist / is stale
+       signed user does not exist / is stale. A Bearer credential is
+       validated offline against the OIDC provider's JWKS
+       (``get_user_from_bearer_token``); an invalid one never falls back to
+       the session cookie.
 
     On success, stamps ``request.state.user`` and the
     ``deerflow.runtime.user_context`` contextvar so that repository-layer
@@ -109,11 +232,26 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         auth_source = AUTH_SOURCE_SESSION
         access_token = request.cookies.get("access_token")
+        bearer_token = get_bearer_token(request)
 
-        # Non-public path: require session cookie
+        # Non-public path: require credentials (priority: internal > bearer > cookie)
         if internal_user is not None:
             user = internal_user
             auth_source = AUTH_SOURCE_INTERNAL
+        elif bearer_token is not None:
+            # Direct-Bearer branch (micro-frontend deployment, plan §3.4): a
+            # presented Bearer credential is validated strictly — an invalid
+            # token is a 401, never a silent fallback to the session cookie.
+            # Success keeps auth_source at "session" so every downstream
+            # resolver treats the request exactly like a cookie session.
+            try:
+                user = await get_user_from_bearer_token(bearer_token)
+                request.state.auth_scheme = AUTH_SCHEME_BEARER
+            except HTTPException as exc:
+                if not is_auth_disabled():
+                    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+                user = get_auth_disabled_user()
+                auth_source = AUTH_SOURCE_AUTH_DISABLED
         elif access_token:
             # Strict JWT validation: reject junk/expired tokens with 401
             # right here instead of silently passing through. This closes

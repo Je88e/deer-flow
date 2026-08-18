@@ -23,6 +23,7 @@ from app.gateway.auth.session_cookie_state import (
     SKIP_AUTH_CSRF_COOKIE_STATE_ATTR,
 )
 from app.gateway.auth_disabled import is_auth_disabled
+from app.gateway.auth_middleware import get_bearer_token
 from app.gateway.request_path import get_request_route_path
 
 CSRF_COOKIE_NAME = "csrf_token"
@@ -232,7 +233,16 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Cross-site auth request denied."},
             )
 
-        if should_check_csrf(request) and not _is_auth:
+        # Requests presenting ``Authorization: Bearer`` credentials are exempt
+        # from the double-submit check: a browser cannot attach the
+        # Authorization header to a cross-site request (fetch/XHR carrying it
+        # triggers a CORS preflight that hostile origins cannot pass; HTML
+        # forms cannot set headers at all), and AuthMiddleware fail-closes an
+        # invalid Bearer token to 401 before any route runs — so the exemption
+        # can never turn into an auth bypass. Keyed on the presented
+        # credential rather than an auth-success marker because
+        # CSRFMiddleware runs before AuthMiddleware in the stack.
+        if should_check_csrf(request) and not _is_auth and get_bearer_token(request) is None:
             cookie_token = request.cookies.get(CSRF_COOKIE_NAME)
             header_token = request.headers.get(CSRF_HEADER_NAME)
 

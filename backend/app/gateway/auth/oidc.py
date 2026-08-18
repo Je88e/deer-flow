@@ -270,6 +270,71 @@ class OIDCService:
 
     # ── ID token validation ────────────────────────────────────────────────
 
+    async def _decode_and_verify(
+        self,
+        metadata: OIDCMetadata,
+        token: str,
+        *,
+        audience: str | None,
+        verify_audience: bool = True,
+        required_claims: tuple[str, ...] = ("exp", "iss", "sub", "aud"),
+        token_label: str = "Token",
+    ) -> dict[str, Any]:
+        """Shared signature / issuer / expiry verification for OIDC JWTs.
+
+        Loads the JWKS, enforces the asymmetric algorithm allowlist, resolves
+        the signing key (with one JWKS refresh on a ``kid`` miss for key
+        rotation), and decodes the token with issuer / expiry / issued-at
+        verification. ``validate_id_token`` layers PyJWT's strict
+        single-audience check on top (``audience=client_id``);
+        ``validate_access_token`` disables it here and applies its relaxed
+        azp/aud matrix on the returned claims instead.
+        """
+        jwks_data = await self._load_jwks(metadata.jwks_uri)
+
+        # Resolve the signing key from the JWKS using the token's kid header
+        jwt_header = jwt.get_unverified_header(token)
+        kid = jwt_header.get("kid")
+        alg = jwt_header.get("alg", "RS256")
+
+        allowed_algorithms = ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512"]
+        if alg not in allowed_algorithms:
+            raise OIDCValidationError(f"{token_label} uses unsupported algorithm '{alg}'")
+
+        # Resolve signing key, refetching JWKS once on kid miss for key rotation
+        signing_key = await self._resolve_signing_key(jwks_data, kid, alg, metadata.jwks_uri)
+        if signing_key is None:
+            jwks_data = await self._load_jwks(metadata.jwks_uri, force_refresh=True)
+            signing_key = await self._resolve_signing_key(jwks_data, kid, alg, metadata.jwks_uri)
+            if signing_key is None:
+                raise OIDCValidationError(f"No matching JWK found for kid={kid} after JWKS refresh")
+
+        options: dict[str, Any] = {
+            "verify_exp": True,
+            "verify_iat": True,
+            "require": list(required_claims),
+        }
+        if not verify_audience:
+            options["verify_aud"] = False
+
+        try:
+            return jwt.decode(
+                token,
+                key=signing_key,
+                algorithms=allowed_algorithms,
+                audience=audience,
+                issuer=metadata.issuer,
+                options=options,
+            )
+        except jwt.ExpiredSignatureError:
+            raise OIDCValidationError(f"{token_label} has expired")
+        except jwt.InvalidIssuerError:
+            raise OIDCValidationError(f"{token_label} has an invalid issuer")
+        except jwt.InvalidAudienceError:
+            raise OIDCValidationError(f"{token_label} has an invalid audience")
+        except jwt.PyJWTError as exc:
+            raise OIDCValidationError(f"{token_label} validation failed: {exc}") from exc
+
     async def validate_id_token(
         self,
         metadata: OIDCMetadata,
@@ -282,46 +347,12 @@ class OIDCService:
         Validates: signature (via JWKS), issuer, audience, expiration,
         issued-at, and nonce (if provided).
         """
-        jwks_data = await self._load_jwks(metadata.jwks_uri)
-
-        # Resolve the signing key from the JWKS using the token's kid header
-        jwt_header = jwt.get_unverified_header(id_token)
-        kid = jwt_header.get("kid")
-        alg = jwt_header.get("alg", "RS256")
-
-        allowed_algorithms = ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512"]
-        if alg not in allowed_algorithms:
-            raise OIDCValidationError(f"ID token uses unsupported algorithm '{alg}'")
-
-        # Resolve signing key, refetching JWKS once on kid miss for key rotation
-        signing_key = await self._resolve_signing_key(jwks_data, kid, alg, metadata.jwks_uri)
-        if signing_key is None:
-            jwks_data = await self._load_jwks(metadata.jwks_uri, force_refresh=True)
-            signing_key = await self._resolve_signing_key(jwks_data, kid, alg, metadata.jwks_uri)
-            if signing_key is None:
-                raise OIDCValidationError(f"No matching JWK found for kid={kid} after JWKS refresh")
-
-        try:
-            claims = jwt.decode(
-                id_token,
-                key=signing_key,
-                algorithms=allowed_algorithms,
-                audience=client_id,
-                issuer=metadata.issuer,
-                options={
-                    "verify_exp": True,
-                    "verify_iat": True,
-                    "require": ["exp", "iss", "sub", "aud"],
-                },
-            )
-        except jwt.ExpiredSignatureError:
-            raise OIDCValidationError("ID token has expired")
-        except jwt.InvalidIssuerError:
-            raise OIDCValidationError("ID token has an invalid issuer")
-        except jwt.InvalidAudienceError:
-            raise OIDCValidationError("ID token has an invalid audience")
-        except jwt.PyJWTError as exc:
-            raise OIDCValidationError(f"ID token validation failed: {exc}") from exc
+        claims = await self._decode_and_verify(
+            metadata,
+            id_token,
+            audience=client_id,
+            token_label="ID token",
+        )
 
         # Validate nonce if expected
         if nonce is not None:
@@ -331,6 +362,36 @@ class OIDCService:
             if not _constant_time_compare(nonce, token_nonce):
                 raise OIDCValidationError("ID token nonce does not match")
 
+        return claims
+
+    # ── Access token validation (direct Bearer authentication) ─────────────
+
+    async def validate_access_token(
+        self,
+        metadata: OIDCMetadata,
+        client_id: str,
+        access_token: str,
+    ) -> dict[str, Any]:
+        """Validate an OIDC access token presented as a Bearer credential.
+
+        Enforces the same signature / issuer / expiry rules as
+        ``validate_id_token`` but relaxes the audience binding to the
+        access-token convention: ``azp == client_id`` OR ``client_id ∈ aud``
+        (access tokens are frequently minted for several audiences, or carry
+        only ``azp``). The two validators are not interchangeable: ID tokens
+        go through the token-exchange flow, access tokens through this
+        variant (docs/dev/deerflow-shell-integration-plan.md §3.4).
+        """
+        claims = await self._decode_and_verify(
+            metadata,
+            access_token,
+            audience=None,
+            verify_audience=False,
+            required_claims=("exp", "iss", "sub"),
+            token_label="Access token",
+        )
+        if not _access_token_bound_to_client(claims, client_id):
+            raise OIDCValidationError("Access token audience does not match the configured client")
         return claims
 
     # ── UserInfo ────────────────────────────────────────────────────────────
@@ -431,3 +492,20 @@ class OIDCService:
 def _constant_time_compare(a: str, b: str) -> bool:
     """Constant-time string comparison."""
     return secrets.compare_digest(a, b)
+
+
+def _access_token_bound_to_client(claims: dict[str, Any], client_id: str) -> bool:
+    """Relaxed audience binding for access tokens.
+
+    ``azp == client_id`` (the client the token was issued to) OR
+    ``client_id ∈ aud`` (the client is an intended audience). The claims come
+    from a signature-verified decode, so neither can be attacker-supplied.
+    """
+    if claims.get("azp") == client_id:
+        return True
+    aud = claims.get("aud")
+    if isinstance(aud, str):
+        return aud == client_id
+    if isinstance(aud, list):
+        return client_id in aud
+    return False

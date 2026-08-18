@@ -359,6 +359,128 @@ async def test_oidc_discover_accepts_issuer_with_trailing_slash_difference(monke
     await service.close()
 
 
+def _access_token_metadata():
+    return OIDCMetadata(
+        issuer="https://issuer.example.com",
+        authorization_endpoint="https://issuer.example.com/auth",
+        token_endpoint="https://issuer.example.com/token",
+        userinfo_endpoint=None,
+        jwks_uri="https://issuer.example.com/jwks",
+    )
+
+
+def _stub_jwt_layer(monkeypatch, claims: dict, captured: dict | None = None):
+    """Bypass JWKS/crypto so the claims-level validation logic runs in isolation."""
+    service = OIDCService()
+
+    async def load_jwks(jwks_uri, force_refresh=False):
+        return {"keys": []}
+
+    async def resolve_signing_key(jwks_data, kid, algorithm, jwks_uri):
+        return "signing-key"
+
+    def decode(token, *args, **kwargs):
+        if captured is not None:
+            captured.update(kwargs)
+        return claims
+
+    monkeypatch.setattr(service, "_load_jwks", load_jwks)
+    monkeypatch.setattr(service, "_resolve_signing_key", resolve_signing_key)
+    monkeypatch.setattr("app.gateway.auth.oidc.jwt.get_unverified_header", lambda token: {"kid": "kid", "alg": "RS256"})
+    monkeypatch.setattr("app.gateway.auth.oidc.jwt.decode", decode)
+    return service
+
+
+@pytest.mark.asyncio
+async def test_oidc_validate_access_token_accepts_azp_without_aud(monkeypatch):
+    """Access tokens may bind to the client via azp alone (Keycloak style)."""
+    service = _stub_jwt_layer(
+        monkeypatch,
+        {"iss": "https://issuer.example.com", "sub": "subject", "azp": "deer-flow", "exp": 9999999999},
+    )
+
+    claims = await service.validate_access_token(_access_token_metadata(), "deer-flow", "access-token")
+
+    assert claims["sub"] == "subject"
+    await service.close()
+
+
+@pytest.mark.asyncio
+async def test_oidc_validate_access_token_accepts_client_id_in_aud_list(monkeypatch):
+    """Access tokens may bind via client_id membership in the aud list."""
+    service = _stub_jwt_layer(
+        monkeypatch,
+        {"iss": "https://issuer.example.com", "sub": "subject", "aud": ["wit-shell", "deer-flow"], "exp": 9999999999},
+    )
+
+    claims = await service.validate_access_token(_access_token_metadata(), "deer-flow", "access-token")
+
+    assert claims["sub"] == "subject"
+    await service.close()
+
+
+@pytest.mark.asyncio
+async def test_oidc_validate_access_token_accepts_single_string_aud(monkeypatch):
+    service = _stub_jwt_layer(
+        monkeypatch,
+        {"iss": "https://issuer.example.com", "sub": "subject", "aud": "deer-flow", "exp": 9999999999},
+    )
+
+    claims = await service.validate_access_token(_access_token_metadata(), "deer-flow", "access-token")
+
+    assert claims["sub"] == "subject"
+    await service.close()
+
+
+@pytest.mark.asyncio
+async def test_oidc_validate_access_token_rejects_unbound_audience(monkeypatch):
+    """Neither azp nor aud carries the client → reject."""
+    service = _stub_jwt_layer(
+        monkeypatch,
+        {"iss": "https://issuer.example.com", "sub": "subject", "azp": "other-client", "aud": ["account"], "exp": 9999999999},
+    )
+
+    with pytest.raises(OIDCValidationError, match="audience"):
+        await service.validate_access_token(_access_token_metadata(), "deer-flow", "access-token")
+
+    await service.close()
+
+
+@pytest.mark.asyncio
+async def test_oidc_validate_access_token_skips_jwt_aud_enforcement(monkeypatch):
+    """The relaxed matrix owns the audience decision; jwt.decode must not 401
+    a multi-audience access token before the matrix can accept it."""
+    captured: dict = {}
+    service = _stub_jwt_layer(
+        monkeypatch,
+        {"iss": "https://issuer.example.com", "sub": "subject", "aud": ["wit-shell", "deer-flow"], "exp": 9999999999},
+        captured=captured,
+    )
+
+    await service.validate_access_token(_access_token_metadata(), "deer-flow", "access-token")
+
+    assert captured.get("audience") is None
+    assert captured.get("options", {}).get("verify_aud") is False
+    await service.close()
+
+
+@pytest.mark.asyncio
+async def test_oidc_validate_id_token_keeps_strict_audience_enforcement(monkeypatch):
+    """The shared verification helper must not relax validate_id_token."""
+    captured: dict = {}
+    service = _stub_jwt_layer(
+        monkeypatch,
+        {"iss": "https://issuer.example.com", "sub": "subject", "aud": "deer-flow", "exp": 9999999999},
+        captured=captured,
+    )
+
+    await service.validate_id_token(_access_token_metadata(), "deer-flow", "id-token")
+
+    assert captured.get("audience") == "deer-flow"
+    assert captured.get("options", {}).get("verify_aud") is not False
+    await service.close()
+
+
 def _redirect_request(headers: dict, scheme: str = "http", netloc: str = "localhost:8001"):
     from unittest.mock import MagicMock
 
