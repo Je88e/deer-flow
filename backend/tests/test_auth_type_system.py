@@ -103,6 +103,12 @@ def test_csrf_exempts_register():
     assert is_auth_endpoint(req) is True
 
 
+def test_csrf_exempts_token_exchange():
+    """WIT Shell iframe exchange is a first-call auth bootstrap (no double-submit yet)."""
+    req = _FakeRequest("/api/v1/auth/token-exchange")
+    assert is_auth_endpoint(req) is True
+
+
 def test_csrf_does_not_exempt_old_login_path():
     """Old /api/v1/auth/login (without /local) should NOT be exempt."""
     req = _FakeRequest("/api/v1/auth/login")

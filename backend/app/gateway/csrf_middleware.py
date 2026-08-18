@@ -72,6 +72,10 @@ _AUTH_EXEMPT_PATHS: frozenset[str] = frozenset(
         "/api/v1/auth/logout",
         "/api/v1/auth/register",
         "/api/v1/auth/initialize",
+        # WIT Shell iframe exchange: first-call POST from the embedded frontend
+        # carries no double-submit cookie yet. Treated like login/register —
+        # exempt from the double-submit check but still origin-checked below.
+        "/api/v1/auth/token-exchange",
     }
 )
 

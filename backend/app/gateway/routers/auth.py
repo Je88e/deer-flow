@@ -20,7 +20,7 @@ from app.gateway.auth import (
 )
 from app.gateway.auth.config import get_auth_config
 from app.gateway.auth.errors import AuthErrorCode, AuthErrorResponse
-from app.gateway.auth.oidc import OIDCError, OIDCService
+from app.gateway.auth.oidc import OIDCError, OIDCIdentity, OIDCService
 from app.gateway.auth.oidc_state import (
     OIDCStatePayload,
     compute_code_challenge,
@@ -871,3 +871,92 @@ def validate_next_param(next_param: str | None) -> str | None:
     if ":" in next_param:
         return None
     return next_param
+
+
+# ── Token Exchange (WIT Shell iframe SSO) ───────────────────────────────
+
+
+class TokenExchangeRequest(BaseModel):
+    """Request model for the WIT Shell ID-token exchange.
+
+    The embedded frontend POSTs the Keycloak ID token it received from the
+    Shell iframe bridge; the Gateway validates it offline (JWKS) and issues a
+    DeerFlow session (docs/dev/deerflow-shell-integration-plan.md §3.1).
+    """
+
+    token: str
+    provider: str
+
+
+@router.post("/token-exchange", response_model=LoginResponse)
+async def token_exchange(request: Request, response: Response, body: TokenExchangeRequest):
+    """Exchange a Shell-injected Keycloak ID token for a DeerFlow session.
+
+    Pure-API counterpart of the OIDC callback: same discovery + ID-token
+    validation and the same provisioning path (``get_or_provision_oidc_user``),
+    but called from the iframe's JS instead of a browser redirect, so there is
+    no state cookie and no frontend redirect. CSRFMiddleware treats the route
+    like login/register — no double-submit token on first call, hostile
+    browser origins still rejected — and sets the csrf_token cookie on this
+    POST response like it does for local login.
+
+    The nonce check is skipped on purpose: the ID token's ``nonce`` belongs to
+    the issuing wit-shell authorization-code flow, which DeerFlow never sees;
+    signature / iss / aud / exp validation remains fully enforced.
+    """
+    from deerflow.config.app_config import get_app_config
+
+    app_config = get_app_config()
+    oidc_config = app_config.auth.oidc
+
+    if not oidc_config.enabled:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SSO authentication is not enabled")
+
+    if not _OIDC_PROVIDER_KEY_RE.match(body.provider):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid provider ID")
+
+    provider_config = oidc_config.providers.get(body.provider)
+    if not provider_config:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Unknown SSO provider: {body.provider}")
+
+    overrides = {
+        "authorization_endpoint": provider_config.authorization_endpoint,
+        "token_endpoint": provider_config.token_endpoint,
+        "userinfo_endpoint": provider_config.userinfo_endpoint,
+        "jwks_uri": provider_config.jwks_uri,
+    }
+    service = _get_oidc_service()
+    try:
+        metadata = await service.discover(provider_config.issuer, overrides)
+    except OIDCError as exc:
+        logger.error("OIDC discovery failed for provider %s during token exchange: %s", body.provider, exc)
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to connect to SSO provider") from exc
+
+    try:
+        claims = await service.validate_id_token(metadata, provider_config.client_id, body.token, nonce=None)
+    except OIDCError as exc:
+        logger.warning("Token exchange rejected an invalid ID token for %s: %s", body.provider, exc)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=AuthErrorResponse(code=AuthErrorCode.TOKEN_INVALID, message="Identity token validation failed").model_dump(),
+        ) from exc
+
+    identity = OIDCIdentity(
+        provider=body.provider,
+        subject=claims["sub"],
+        email=claims.get("email") or "",
+        email_verified=claims.get("email_verified") is True,
+        name=claims.get("name"),
+        claims=claims,
+    )
+
+    result = await get_or_provision_oidc_user(body.provider, provider_config, identity, get_local_provider())
+    user = result["user"]
+
+    token = create_access_token(str(user.id), token_version=user.token_version)
+    _set_session_cookie(response, token, request)
+
+    return LoginResponse(
+        expires_in=get_auth_config().token_expiry_days * 24 * 3600,
+        needs_setup=user.needs_setup,
+    )

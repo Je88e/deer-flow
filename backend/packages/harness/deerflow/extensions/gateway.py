@@ -39,6 +39,9 @@ _HOST_PUBLIC_EXACT_PATHS = frozenset(
         "/api/v1/auth/setup-status",
         "/api/v1/auth/initialize",
         "/api/v1/auth/providers",
+        # WIT Shell iframe exchange: public credential is the body's ID token
+        # (mirrors app.gateway.auth_middleware._PUBLIC_EXACT_PATHS).
+        "/api/v1/auth/token-exchange",
     }
 )
 _HOST_CSRF_EXEMPT_EXACT_PATHS = frozenset({"/api/v1/auth/me"})
