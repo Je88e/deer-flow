@@ -137,6 +137,28 @@ Keycloak ID token 换成 DeerFlow session（`docs/dev/deerflow-shell-integration
 `Path` 固定为 `/leadagent`（静态常量 `AUTH_COOKIE_PATH`，plan §6.3），对包括 Gateway
 直连 `:8001` 在内的所有部署形态生效。
 
+### 纯 Bearer 直验（微前端标准形态）
+
+除 cookie 外，请求可携带 `Authorization: Bearer <jwt>`（Keycloak access token）直接
+认证（plan §3.4，与 token-exchange 并存：ID token 走 token-exchange，access token 走
+本分支）。实现于 `auth_middleware.py::get_user_from_bearer_token`：
+
+- 凭证优先级 **internal > bearer > cookie**；Bearer 已出示但验证失败返回 401
+  （`token_invalid`），绝不回退到 cookie。
+- 按 JWT 的 `iss` 选择已配置的 OIDC provider（`auth.oidc.providers`，斜杠归一化的
+  精确匹配；无匹配 → 401），然后离线验证：`OIDCService.discover`（复用 5 分钟
+  metadata 缓存与端点 overrides）→ `OIDCService.validate_access_token`（签名 / iss /
+  exp 与 ID token 共用同一套校验；aud 放宽为 `azp == client_id` **或**
+  `client_id ∈ aud`）→ `get_or_provision_oidc_user`。
+- 验证成功后走与 session 完全相同的 user stamp 路径（`request.state.user` +
+  user_context contextvar，`auth_source` 保持 `session`，下游 users/{user_id} 隔离
+  零改动），并额外标记 `request.state.auth_scheme = "bearer"` 供观测。
+- CSRF：CSRFMiddleware 对携带 Bearer 凭证的请求豁免 double-submit 检查（浏览器无法
+  在跨站请求上附带 Authorization header；无效 Bearer 仍会被 AuthMiddleware 以 401
+  拒绝）。豁免基于"已出示 Bearer 凭证"而非下游成功标记，因为 CSRFMiddleware 在
+  中间件栈中先于 AuthMiddleware 执行；auth 端点的 Origin 校验不受影响。
+- 无请求携带 Bearer header 时该分支休眠（Phase 1 默认无流量）。
+
 ### 改密码与 reset setup
 
 `POST /api/v1/auth/change-password` 需要当前密码和新密码：
