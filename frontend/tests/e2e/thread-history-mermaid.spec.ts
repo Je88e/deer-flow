@@ -85,7 +85,7 @@ test("historical run messages preview labelled dotted Mermaid arrows", async ({
     }),
   );
 
-  await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+  await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
 
   await expect(page.getByLabel("Mermaid chart")).toBeVisible({
     timeout: 15_000,

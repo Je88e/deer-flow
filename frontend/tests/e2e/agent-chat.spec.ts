@@ -24,7 +24,7 @@ test.describe("Agent chat", () => {
   test("agent gallery page loads and shows agents", async ({ page }) => {
     mockLangGraphAPI(page, { agents: MOCK_AGENTS });
 
-    await page.goto("/workspace/agents");
+    await page.goto("/leadagent/workspace/agents");
 
     // The agent card should appear with the agent name
     await expect(page.getByText("test-agent")).toBeVisible({
@@ -37,7 +37,7 @@ test.describe("Agent chat", () => {
   }) => {
     mockLangGraphAPI(page, { agents: MOCK_AGENTS });
 
-    await page.goto("/workspace/agents/test-agent/chats/new");
+    await page.goto("/leadagent/workspace/agents/test-agent/chats/new");
 
     // The prompt input textarea should be visible
     const textarea = page.getByPlaceholder(/how can i assist you/i);
@@ -50,17 +50,17 @@ test.describe("Agent chat", () => {
   test("keeps new-chat drafts isolated between agents", async ({ page }) => {
     mockLangGraphAPI(page, { agents: MOCK_AGENTS });
 
-    await page.goto("/workspace/agents/test-agent/chats/new");
+    await page.goto("/leadagent/workspace/agents/test-agent/chats/new");
     const firstAgentInput = page.getByPlaceholder(/how can i assist you/i);
     await expect(firstAgentInput).toBeVisible({ timeout: 15_000 });
     await firstAgentInput.fill("Draft for the first agent");
 
-    await page.goto("/workspace/agents/second-agent/chats/new");
+    await page.goto("/leadagent/workspace/agents/second-agent/chats/new");
     const secondAgentInput = page.getByPlaceholder(/how can i assist you/i);
     await expect(secondAgentInput).toHaveValue("");
     await secondAgentInput.fill("Draft for the second agent");
 
-    await page.goto("/workspace/agents/test-agent/chats/new");
+    await page.goto("/leadagent/workspace/agents/test-agent/chats/new");
     await expect(page.getByPlaceholder(/how can i assist you/i)).toHaveValue(
       "Draft for the first agent",
     );
@@ -69,7 +69,7 @@ test.describe("Agent chat", () => {
   test("agent chat page shows agent badge", async ({ page }) => {
     mockLangGraphAPI(page, { agents: MOCK_AGENTS });
 
-    await page.goto("/workspace/agents/test-agent/chats/new");
+    await page.goto("/leadagent/workspace/agents/test-agent/chats/new");
 
     // The agent badge should display in the header (scoped to header to avoid
     // matching the welcome area which also shows the agent name)
@@ -144,7 +144,7 @@ test.describe("Agent chat", () => {
 
       const featuresLoaded = page.waitForResponse(
         (response) =>
-          new URL(response.url()).pathname === "/api/features" &&
+          new URL(response.url()).pathname === "/leadagent/api/features" &&
           response.status() === 200,
       );
       await page.goto(
@@ -188,7 +188,7 @@ test.describe("Agent chat", () => {
       features: { browserControlEnabled: true },
     });
 
-    await page.goto("/workspace/agents/browser-agent/chats/new");
+    await page.goto("/leadagent/workspace/agents/browser-agent/chats/new");
     await expect(page.getByPlaceholder(/how can i assist you/i)).toBeVisible({
       timeout: 15_000,
     });
@@ -254,7 +254,9 @@ test.describe("Agent chat", () => {
       },
     );
 
-    await page.goto(`/workspace/agents/test-agent/chats/${MOCK_THREAD_ID}`);
+    await page.goto(
+      `/leadagent/workspace/agents/test-agent/chats/${MOCK_THREAD_ID}`,
+    );
     await expect(page.getByText(aiMessage.content)).toBeVisible({
       timeout: 15_000,
     });
@@ -412,7 +414,9 @@ test.describe("Agent chat", () => {
       },
     );
 
-    await page.goto(`/workspace/agents/test-agent/chats/${MOCK_THREAD_ID}`);
+    await page.goto(
+      `/leadagent/workspace/agents/test-agent/chats/${MOCK_THREAD_ID}`,
+    );
     await expect(page.getByText("Original agent question")).toBeVisible({
       timeout: 15_000,
     });

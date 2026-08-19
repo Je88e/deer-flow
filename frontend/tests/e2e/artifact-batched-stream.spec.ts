@@ -177,7 +177,7 @@ test("assembles streamed write-file argument deltas in the artifact preview", as
   });
 
   try {
-    await page.goto(`/workspace/chats/${THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${THREAD_ID}`);
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -225,7 +225,7 @@ test("does not open an artifact for a file tool call without a path", async ({
     ],
   });
 
-  await page.goto(`/workspace/chats/${MISSING_PATH_THREAD_ID}`);
+  await page.goto(`/leadagent/workspace/chats/${MISSING_PATH_THREAD_ID}`);
 
   const writeFileStep = page.getByText("Write file", { exact: true });
   await expect(writeFileStep).toBeVisible({ timeout: 15_000 });

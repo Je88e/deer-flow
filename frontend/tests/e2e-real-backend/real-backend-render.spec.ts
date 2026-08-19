@@ -87,7 +87,7 @@ test.describe("real backend render (replay, no API key)", () => {
       );
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 30_000 });

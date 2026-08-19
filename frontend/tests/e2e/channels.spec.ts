@@ -97,7 +97,7 @@ test.describe("IM channels", () => {
     mockLangGraphAPI(page);
     mockChannelsAPI(page);
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const sidebar = page.locator("[data-sidebar='sidebar']");
     await expect(sidebar.getByText("Channels")).toBeVisible({
@@ -227,7 +227,7 @@ test.describe("IM channels", () => {
 
     void page.route("**/api/channels/slack/connect", (route) => route.abort());
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const sidebar = page.locator("[data-sidebar='sidebar']");
     await expect(sidebar.getByText("Slack")).toBeVisible({ timeout: 15_000 });
@@ -297,7 +297,7 @@ test.describe("IM channels", () => {
       },
     );
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const sidebar = page.locator("[data-sidebar='sidebar']");
     await expect(sidebar.getByText("Slack")).toBeVisible({ timeout: 15_000 });
@@ -389,7 +389,7 @@ test.describe("IM channels", () => {
       });
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const sidebar = page.locator("[data-sidebar='sidebar']");
     await expect(sidebar.getByText("Slack")).toBeVisible({ timeout: 15_000 });
@@ -441,7 +441,7 @@ test.describe("IM channels", () => {
       },
     ]);
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const sidebar = page.locator("[data-sidebar='sidebar']");
     await expect(sidebar.getByText("Feishu")).toBeVisible({ timeout: 15_000 });

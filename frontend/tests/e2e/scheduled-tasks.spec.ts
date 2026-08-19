@@ -28,7 +28,7 @@ test("scheduled tasks page is reachable from sidebar", async ({ page }) => {
     ],
   });
 
-  await page.goto("/workspace/chats/new");
+  await page.goto("/leadagent/workspace/chats/new");
   await page.getByRole("link", { name: /scheduled tasks/i }).click();
   await page.waitForURL("**/workspace/scheduled-tasks");
   await expect(page).toHaveURL(/workspace\/scheduled-tasks/);
@@ -68,7 +68,7 @@ test("thread page links to filtered scheduled tasks", async ({ page }) => {
     ],
   });
 
-  await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+  await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
   await page
     .locator("header")
     .getByRole("link", { name: /scheduled tasks/i })
@@ -79,7 +79,7 @@ test("thread page links to filtered scheduled tasks", async ({ page }) => {
 test("user can create a scheduled task from the page", async ({ page }) => {
   mockLangGraphAPI(page, { threads: [], scheduledTasks: [] });
 
-  await page.goto("/workspace/scheduled-tasks");
+  await page.goto("/leadagent/workspace/scheduled-tasks");
   const createForm = page.getByTestId("scheduled-task-create-form");
   await createForm.getByRole("button", { name: "One-time" }).click();
   await createForm.getByLabel("Run at").fill("2026-07-02T09:00");
@@ -120,7 +120,7 @@ test("user can pause a scheduled task from the detail pane", async ({
     ],
   });
 
-  await page.goto("/workspace/scheduled-tasks");
+  await page.goto("/leadagent/workspace/scheduled-tasks");
   const detail = page.getByTestId("scheduled-task-detail");
   await detail.getByRole("button", { name: "Pause" }).click();
   await expect(page.getByTestId("scheduled-task-item-task-1")).toBeVisible();
@@ -153,7 +153,7 @@ test("trigger shows a run entry in the detail pane", async ({ page }) => {
     ],
   });
 
-  await page.goto("/workspace/scheduled-tasks");
+  await page.goto("/leadagent/workspace/scheduled-tasks");
   await page.getByRole("button", { name: "Trigger now" }).click();
   await expect(page.getByTestId("scheduled-task-runs")).toContainText("1 run");
   await expect(
@@ -204,7 +204,7 @@ test("detail pane falls back to a visible task after filters hide the selected t
     ],
   });
 
-  await page.goto("/workspace/scheduled-tasks");
+  await page.goto("/leadagent/workspace/scheduled-tasks");
   await page.getByTestId("scheduled-task-item-task-paused").click();
   await expect(
     page.getByTestId("scheduled-task-detail").getByText("Paused task"),

@@ -92,7 +92,7 @@ test.describe("Artifacts panel resize", () => {
         },
       ],
     });
-    await page.goto(`/workspace/chats/${THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${THREAD_ID}`);
   });
 
   test("the divider resizes the artifacts panel", async ({ page }) => {

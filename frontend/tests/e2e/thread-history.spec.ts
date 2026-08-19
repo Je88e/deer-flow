@@ -27,7 +27,7 @@ test.describe("Thread history", () => {
   test("sidebar shows existing threads", async ({ page }) => {
     mockLangGraphAPI(page, { threads: THREADS });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     // Both thread titles should appear in the sidebar
     await expect(page.getByText("First conversation")).toBeVisible({
@@ -39,7 +39,7 @@ test.describe("Thread history", () => {
   test("clicking a thread in sidebar navigates to it", async ({ page }) => {
     mockLangGraphAPI(page, { threads: THREADS });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     // Wait for sidebar to populate
     const firstThread = page.getByText("First conversation");
@@ -58,7 +58,7 @@ test.describe("Thread history", () => {
   }) => {
     mockLangGraphAPI(page, { threads: THREADS });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const sidebar = page.locator("[data-sidebar='sidebar']");
     const firstThreadItem = sidebar
@@ -86,7 +86,7 @@ test.describe("Thread history", () => {
     mockLangGraphAPI(page, { threads: THREADS });
 
     // Navigate directly to an existing thread
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
 
     // The historical AI response should be displayed
     await expect(
@@ -120,7 +120,7 @@ test.describe("Thread history", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(page.getByText("Long history answer 999")).toBeVisible({
       timeout: 15_000,
     });
@@ -270,7 +270,7 @@ test.describe("Thread history", () => {
       },
     );
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect
       .poll(() => cursorPageRequestCount, { timeout: 15_000 })
       .toBeGreaterThan(0);
@@ -361,7 +361,7 @@ test.describe("Thread history", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(page.getByText("Final result")).toBeVisible({
       timeout: 15_000,
     });
@@ -412,7 +412,7 @@ test.describe("Thread history", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(page.getByText("Second answer")).toBeVisible({
       timeout: 15_000,
     });
@@ -443,7 +443,7 @@ test.describe("Thread history", () => {
   }) => {
     mockLangGraphAPI(page, { threads: THREADS });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(
       page.getByText("Response in thread First conversation"),
     ).toBeVisible({ timeout: 15_000 });
@@ -498,7 +498,7 @@ test.describe("Thread history", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${SVG_PROMPT_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${SVG_PROMPT_THREAD_ID}`);
     await expect(page.getByText(SVG_PROMPT_MARKER)).toBeVisible({
       timeout: 15_000,
     });
@@ -552,7 +552,7 @@ test.describe("Thread history", () => {
       metadataOnlyStream,
     );
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
     await textarea.fill(
@@ -580,7 +580,7 @@ test.describe("Thread history", () => {
   }) => {
     mockLangGraphAPI(page);
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
     await textarea.fill("Message that must disappear in the next new chat");
@@ -627,7 +627,7 @@ test.describe("Thread history", () => {
       return route.fallback();
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
     await textarea.fill("What should disappear after deletion?");
@@ -655,7 +655,7 @@ test.describe("Thread history", () => {
     await expect(page.getByText("Hello from DeerFlow!")).toHaveCount(0);
     await expect(page.getByPlaceholder(/how can i assist you/i)).toBeVisible();
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await page.waitForURL("**/workspace/chats/new");
     await expect(page.getByText("Hello from DeerFlow!")).toHaveCount(0);
     await expect(page.getByPlaceholder(/how can i assist you/i)).toBeVisible();
@@ -728,7 +728,7 @@ test.describe("Thread history", () => {
       },
     );
 
-    await page.goto(`/showcase/${DEMO_THREAD_ID}`);
+    await page.goto(`/leadagent/showcase/${DEMO_THREAD_ID}`);
 
     await expect(
       page.getByText("What might be the trends and opportunities in 2026?"),
@@ -740,7 +740,7 @@ test.describe("Thread history", () => {
   });
 
   test("public showcase rejects unknown thread IDs", async ({ page }) => {
-    const response = await page.goto("/showcase/not-a-bundled-demo");
+    const response = await page.goto("/leadagent/showcase/not-a-bundled-demo");
 
     expect(response?.status()).toBe(404);
   });
@@ -748,7 +748,7 @@ test.describe("Thread history", () => {
   test("chats list page shows all threads", async ({ page }) => {
     mockLangGraphAPI(page, { threads: THREADS });
 
-    await page.goto("/workspace/chats");
+    await page.goto("/leadagent/workspace/chats");
 
     // Both threads should be listed in the main content area
     const main = page.locator("main");
@@ -778,7 +778,7 @@ test.describe("Thread history", () => {
       ],
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const sidebarThread = page.locator(
       `a[href='/workspace/chats/${MOCK_THREAD_ID}']`,
@@ -786,7 +786,7 @@ test.describe("Thread history", () => {
     await expect(sidebarThread).toBeVisible({ timeout: 15_000 });
     await expect(sidebarThread.getByLabel("Feishu channel")).toBeVisible();
 
-    await page.goto("/workspace/chats");
+    await page.goto("/leadagent/workspace/chats");
 
     const mainThread = page
       .locator("main")

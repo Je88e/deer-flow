@@ -55,7 +55,7 @@ test.describe("auth setup-status recovery", () => {
       registration_enabled: true,
     });
 
-    await page.goto("/login");
+    await page.goto("/leadagent/login");
 
     await expect(page.getByText(SERVICE_UNAVAILABLE_TITLE)).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign In" })).toBeEnabled();
@@ -82,7 +82,7 @@ test.describe("auth setup-status recovery", () => {
       needs_setup: true,
     });
 
-    await page.goto("/setup");
+    await page.goto("/leadagent/setup");
 
     await expect(page.getByText(SERVICE_UNAVAILABLE_TITLE)).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();

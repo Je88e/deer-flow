@@ -54,7 +54,7 @@ test.describe("Subtask card", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await page.reload();
 
     await expect(page.getByText(STOPPED_TASK_DESCRIPTION)).toBeVisible({

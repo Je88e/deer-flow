@@ -744,7 +744,7 @@ test.describe("Side chat", () => {
     await page.route("**/api/langgraph/runs/stream", fulfillSidecarRunStream);
     await page.route("**/runs/stream", fulfillSidecarRunStream);
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(
       page.getByText("Build it as a side conversation."),
     ).toBeVisible({ timeout: 15_000 });
@@ -1037,13 +1037,13 @@ test.describe("Side chat", () => {
       "<referenced_message",
     );
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID_2}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID_2}`);
     await expect(page.getByText("Switch target.")).toBeVisible({
       timeout: 15_000,
     });
     await expect(page.getByTestId("sidecar-header-trigger")).toBeHidden();
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(
       page.getByText("Build it as a side conversation."),
     ).toBeVisible({ timeout: 15_000 });
@@ -1116,7 +1116,7 @@ test.describe("Side chat", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
 
     await expect(
       page.getByText("What tradeoffs should we consider?"),
@@ -1189,7 +1189,7 @@ test.describe("Side chat", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(
       page.getByText("Build it as a side conversation."),
     ).toBeVisible({ timeout: 15_000 });
@@ -1252,7 +1252,7 @@ test.describe("Side chat", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(
       page.getByText("Build it as a side conversation."),
     ).toBeVisible({ timeout: 15_000 });
@@ -1329,7 +1329,7 @@ test.describe("Side chat", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(
       page.getByText("Build it as a side conversation."),
     ).toBeVisible({ timeout: 15_000 });
@@ -1424,7 +1424,7 @@ test.describe("Side chat", () => {
       return route.fallback();
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(
       page.getByText("Build it as a side conversation."),
     ).toBeVisible({ timeout: 15_000 });
@@ -1525,7 +1525,7 @@ test.describe("Side chat", () => {
       }
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(
       page.getByText("Build it as a side conversation."),
     ).toBeVisible({ timeout: 15_000 });

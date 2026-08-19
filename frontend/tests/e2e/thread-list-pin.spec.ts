@@ -31,7 +31,7 @@ test("sidebar recent chats can be pinned and unpinned", async ({ page }) => {
     ],
   });
 
-  await page.goto("/workspace/chats/new");
+  await page.goto("/leadagent/workspace/chats/new");
 
   await expect(page.getByText("Newest chat")).toBeVisible({ timeout: 15_000 });
   await expect
@@ -81,7 +81,7 @@ test("server-side search keeps old pinned chats in the first page", async ({
     ],
   });
 
-  await page.goto("/workspace/chats/new");
+  await page.goto("/leadagent/workspace/chats/new");
 
   await expect(page.getByText("Old pinned chat")).toBeVisible({
     timeout: 15_000,

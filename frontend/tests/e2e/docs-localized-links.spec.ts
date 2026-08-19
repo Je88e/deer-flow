@@ -4,7 +4,7 @@ test.describe("Localized documentation links", () => {
   test("keeps English card navigation in the English docs", async ({
     page,
   }) => {
-    await page.goto("/en/docs/introduction/core-concepts");
+    await page.goto("/leadagent/en/docs/introduction/core-concepts");
 
     const card = page.locator("a.nextra-card", { hasText: "Why DeerFlow" });
     await expect(card).toHaveAttribute(
@@ -20,7 +20,7 @@ test.describe("Localized documentation links", () => {
   test("keeps Chinese card navigation in the Chinese docs", async ({
     page,
   }) => {
-    await page.goto("/zh/docs/introduction/core-concepts");
+    await page.goto("/leadagent/zh/docs/introduction/core-concepts");
 
     const card = page.locator("a.nextra-card", { hasText: "Harness 与应用" });
     await expect(card).toHaveAttribute(
@@ -34,7 +34,7 @@ test.describe("Localized documentation links", () => {
   });
 
   test("localizes regular Markdown links", async ({ page }) => {
-    await page.goto("/en/docs/application/workspace-usage");
+    await page.goto("/leadagent/en/docs/application/workspace-usage");
 
     const link = page
       .locator("main")
@@ -55,7 +55,7 @@ test.describe("Localized documentation links", () => {
   test("excludes non-documentation app routes from the docs navigation", async ({
     page,
   }) => {
-    await page.goto("/en/docs");
+    await page.goto("/leadagent/en/docs");
 
     const invalidDocsLinks = page.locator(
       ["auth", "blog", "login", "setup", "workspace"]
@@ -68,7 +68,7 @@ test.describe("Localized documentation links", () => {
   test("uses valid repository links for documentation feedback and edits", async ({
     page,
   }) => {
-    await page.goto("/en/docs/application/quick-start");
+    await page.goto("/leadagent/en/docs/application/quick-start");
 
     await expect(
       page.getByRole("link", { name: "Question? Give us feedback" }),

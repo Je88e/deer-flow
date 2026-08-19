@@ -10,7 +10,7 @@ test.describe("Browser feature flag", () => {
       threads: [{ thread_id: MOCK_THREAD_ID, title: "Browser Enabled" }],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
 
     await expect(page.getByTestId("browser-trigger")).toBeVisible({
       timeout: 15_000,
@@ -28,7 +28,7 @@ test.describe("Browser feature flag", () => {
     const featuresResponse = page.waitForResponse((response) =>
       response.url().includes("/api/features"),
     );
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     const features = (await (await featuresResponse).json()) as {
       browser_control?: { enabled?: boolean };
     };

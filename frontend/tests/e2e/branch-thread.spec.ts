@@ -65,7 +65,7 @@ test.describe("Branch from turn", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
 
     const historicalTurn = page
       .locator("[data-assistant-turn]")

@@ -96,7 +96,7 @@ test.describe("Workspace changes", () => {
       },
     );
 
-    await page.goto(`/workspace/chats/${THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${THREAD_ID}`);
 
     await expect(page.getByText("Edited 2 files")).toBeVisible({
       timeout: 15_000,
@@ -200,7 +200,7 @@ test.describe("Workspace changes", () => {
       },
     );
 
-    await page.goto(`/workspace/chats/${THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${THREAD_ID}`);
 
     await expect(page.getByText("Edited 1 file")).toBeVisible({
       timeout: 15_000,

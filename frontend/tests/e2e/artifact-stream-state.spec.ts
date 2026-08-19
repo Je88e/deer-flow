@@ -126,7 +126,7 @@ test("keeps artifact trigger after stream values omit artifacts", async ({
     return streamWithoutArtifacts(route);
   });
 
-  await page.goto(`/workspace/chats/${THREAD_ID}`);
+  await page.goto(`/leadagent/workspace/chats/${THREAD_ID}`);
 
   const artifactTrigger = page.getByRole("button", { name: /artifacts/i });
   await expect(artifactTrigger).toBeVisible({ timeout: 15_000 });

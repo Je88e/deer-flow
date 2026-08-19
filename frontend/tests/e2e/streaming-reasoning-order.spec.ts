@@ -138,7 +138,7 @@ test("renders reasoning above the answer text while the turn is streaming", asyn
   );
 
   try {
-    await page.goto(`/workspace/chats/${STREAMING_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${STREAMING_THREAD_ID}`);
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -169,7 +169,7 @@ test("renders reasoning above the answer text after the turn settles", async ({
     ],
   });
 
-  await page.goto(`/workspace/chats/${SETTLED_THREAD_ID}`);
+  await page.goto(`/leadagent/workspace/chats/${SETTLED_THREAD_ID}`);
 
   // The settled turn renders as an assistant bubble, whose reasoning
   // disclosure is labelled "Reasoning".

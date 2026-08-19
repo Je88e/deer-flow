@@ -66,7 +66,7 @@ test.describe("Streaming message actions", () => {
     });
 
     try {
-      await page.goto("/workspace/chats/new");
+      await page.goto("/leadagent/workspace/chats/new");
       const textarea = page.getByPlaceholder(/how can i assist you/i);
       await expect(textarea).toBeVisible({ timeout: 15_000 });
 
@@ -100,7 +100,7 @@ test.describe("Chat workspace", () => {
   });
 
   test("new chat page loads with input box", async ({ page }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -108,7 +108,7 @@ test.describe("Chat workspace", () => {
   });
 
   test("shows the localized AI disclaimer", async ({ page }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
     await page.evaluate(() => {
       document.cookie = "locale=zh-CN; path=/; SameSite=Lax";
     });
@@ -120,7 +120,7 @@ test.describe("Chat workspace", () => {
   });
 
   test("can type a message in the input box", async ({ page }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -132,7 +132,7 @@ test.describe("Chat workspace", () => {
   test("restores a draft after reload and clears it after sending", async ({
     page,
   }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -156,7 +156,7 @@ test.describe("Chat workspace", () => {
   test("restores a repeated draft that matches the last sent prompt", async ({
     page,
   }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -183,7 +183,7 @@ test.describe("Chat workspace", () => {
   test("restores a selected slash skill draft after reload", async ({
     page,
   }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -237,7 +237,7 @@ test.describe("Chat workspace", () => {
       return handleRunStream(route);
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -294,7 +294,7 @@ test.describe("Chat workspace", () => {
       return handleRunStream(route);
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -372,7 +372,7 @@ test.describe("Chat workspace", () => {
       return handleRunStream(route);
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -416,7 +416,7 @@ test.describe("Chat workspace", () => {
       }),
     );
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -455,7 +455,7 @@ test.describe("Chat workspace", () => {
       });
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -504,7 +504,7 @@ test.describe("Chat workspace", () => {
       return handleRunStream(route);
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -547,7 +547,7 @@ test.describe("Chat workspace", () => {
       return handleRunStream(route);
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -626,7 +626,7 @@ test.describe("Chat workspace", () => {
       }),
     );
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -665,7 +665,7 @@ test.describe("Chat workspace", () => {
 
   test("goal command sets a goal and starts an agent run", async ({ page }) => {
     let streamCalls = 0;
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
     await page.route("**/runs/stream", (route) => {
       streamCalls += 1;
       return route.fallback();
@@ -690,7 +690,7 @@ test.describe("Chat workspace", () => {
   test("goal command keeps the welcome header clear of the goal status", async ({
     page,
   }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -733,7 +733,7 @@ test.describe("Chat workspace", () => {
   test("uses arrow keys to navigate skill suggestions before prompt history", async ({
     page,
   }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -774,7 +774,7 @@ test.describe("Chat workspace", () => {
   test("keeps Shift+Enter as newline while skill suggestions are visible", async ({
     page,
   }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -795,7 +795,7 @@ test.describe("Chat workspace", () => {
   test("does not suggest skills for slash text away from the prompt start", async ({
     page,
   }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -816,7 +816,7 @@ test.describe("Chat workspace", () => {
       return handleRunStream(route);
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -860,7 +860,7 @@ test.describe("Chat workspace", () => {
       return handleRunStream(route);
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -930,7 +930,7 @@ test.describe("Chat workspace", () => {
       return handleRunStream(route);
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -1013,7 +1013,7 @@ test.describe("Chat workspace", () => {
       return handleRunStream(route);
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -1050,7 +1050,7 @@ test.describe("Chat workspace", () => {
   test("shows gateway upload limits on the attachment entry point", async ({
     page,
   }) => {
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const addAttachments = page.getByTestId("add-attachments-button");
     await expect(addAttachments).toBeVisible({ timeout: 15_000 });
@@ -1080,7 +1080,7 @@ test.describe("Chat workspace", () => {
       }),
     );
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
     const addAttachments = page.getByTestId("add-attachments-button");
     await addAttachments.hover();
     await expect(page.getByRole("tooltip")).toContainText("5 B");
@@ -1120,7 +1120,7 @@ test.describe("Chat workspace", () => {
       }),
     );
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
     const addAttachments = page.getByTestId("add-attachments-button");
     await addAttachments.hover();
     await expect(page.getByRole("tooltip")).toContainText("5 B");
@@ -1189,7 +1189,7 @@ test.describe("Chat workspace", () => {
       });
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });
@@ -1243,7 +1243,7 @@ test.describe("Chat workspace", () => {
       return handleRunStream(route);
     });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const textarea = page.getByPlaceholder(/how can i assist you/i);
     await expect(textarea).toBeVisible({ timeout: 15_000 });

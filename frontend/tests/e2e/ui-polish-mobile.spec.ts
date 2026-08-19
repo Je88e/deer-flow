@@ -9,7 +9,7 @@ test.describe("UI polish mobile regressions", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     mockLangGraphAPI(page);
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     await page.getByRole("button", { name: /toggle sidebar/i }).click();
 
@@ -34,7 +34,7 @@ test.describe("UI polish mobile regressions", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await page.getByTestId("artifact-trigger").click();
 
     await expect(
@@ -50,7 +50,7 @@ test.describe("UI polish mobile regressions", () => {
     page,
   }) => {
     mockLangGraphAPI(page);
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const readRing = () =>
       page.evaluate(() =>

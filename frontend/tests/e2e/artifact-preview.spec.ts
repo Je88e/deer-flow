@@ -102,7 +102,7 @@ test.describe("Artifact preview stability", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${IN_PROGRESS_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${IN_PROGRESS_THREAD_ID}`);
 
     await expect(page.getByText(ARTIFACT_PATH)).toBeVisible({
       timeout: 15_000,
@@ -132,7 +132,7 @@ test.describe("Artifact preview stability", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${COMPLETE_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${COMPLETE_THREAD_ID}`);
 
     await expect(page.getByText(ARTIFACT_PATH)).toBeVisible({
       timeout: 15_000,
@@ -162,7 +162,7 @@ test.describe("Artifact preview stability", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MARKDOWN_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MARKDOWN_THREAD_ID}`);
 
     await expect(page.getByText(MARKDOWN_ARTIFACT_PATH)).toBeVisible({
       timeout: 15_000,
@@ -206,7 +206,7 @@ test.describe("Artifact preview stability", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${MARKDOWN_ANCHOR_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MARKDOWN_ANCHOR_THREAD_ID}`);
 
     await expect(page.getByText(MARKDOWN_ARTIFACT_PATH)).toBeVisible({
       timeout: 15_000,
@@ -255,7 +255,7 @@ test.describe("Artifact preview stability", () => {
       ],
     });
 
-    await page.goto(`/workspace/chats/${JSON_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${JSON_THREAD_ID}`);
 
     await expect(page.getByText(JSON_ARTIFACT_PATH)).toBeVisible({
       timeout: 15_000,
@@ -308,7 +308,7 @@ test.describe("Artifact preview stability", () => {
       },
     );
 
-    await page.goto(`/workspace/chats/${LARGE_JSON_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${LARGE_JSON_THREAD_ID}`);
     await expect(page.getByText("large-report.json").first()).toBeVisible({
       timeout: 15_000,
     });
@@ -356,7 +356,7 @@ test.describe("Artifact preview stability", () => {
         }),
     );
 
-    await page.goto(`/workspace/chats/${PRESENTED_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${PRESENTED_THREAD_ID}`);
 
     // The file card in the message list shows the basename only.
     await expect(page.getByText("presented-report.md")).toBeVisible({
@@ -406,7 +406,7 @@ test.describe("Artifact preview stability", () => {
         }),
     );
 
-    await page.goto(`/workspace/chats/${PERSISTED_PANEL_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${PERSISTED_PANEL_THREAD_ID}`);
     await expect(page.getByText("presented-report.md")).toBeVisible({
       timeout: 15_000,
     });
@@ -448,7 +448,7 @@ test.describe("Artifact preview stability", () => {
         }),
     );
 
-    await page.goto(`/workspace/chats/${PDF_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${PDF_THREAD_ID}`);
 
     await expect(page.getByText(PDF_ARTIFACT_PATH)).toBeVisible({
       timeout: 15_000,

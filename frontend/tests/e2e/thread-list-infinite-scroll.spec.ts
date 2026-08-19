@@ -33,7 +33,7 @@ test.describe("Thread list infinite scroll (issue #3482)", () => {
   }) => {
     mockLangGraphAPI(page, { threads: THREADS });
 
-    await page.goto("/workspace/chats");
+    await page.goto("/leadagent/workspace/chats");
 
     const main = page.locator("main");
 
@@ -58,7 +58,7 @@ test.describe("Thread list infinite scroll (issue #3482)", () => {
   }) => {
     mockLangGraphAPI(page, { threads: THREADS });
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     // The 50th thread (end of first page) appears in the sidebar.
     await expect(page.getByText(FIRST_PAGE_LAST).first()).toBeVisible({
@@ -93,7 +93,7 @@ test.describe("Thread list infinite scroll (issue #3482)", () => {
 
     mockLangGraphAPI(page, { threads: THREADS });
 
-    await page.goto("/workspace/chats");
+    await page.goto("/leadagent/workspace/chats");
 
     // Wait for the first page to render so we have a baseline count.
     await expect(page.locator("main").getByText(FIRST_PAGE_LAST)).toBeVisible({

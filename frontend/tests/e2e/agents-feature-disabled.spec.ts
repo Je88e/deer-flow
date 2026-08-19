@@ -30,7 +30,7 @@ test.describe("Agents feature disabled", () => {
       }),
     );
 
-    await page.goto("/workspace/agents");
+    await page.goto("/leadagent/workspace/agents");
 
     // The disabled message renders and directs the user to an administrator
     // (en-US or zh-CN copy) without leaking backend config details.
@@ -74,7 +74,7 @@ test.describe("Agents feature disabled", () => {
     );
 
     // First visit observes a definitive "disabled" and persists it.
-    await page.goto("/workspace/agents");
+    await page.goto("/leadagent/workspace/agents");
     await expect(
       page.getByText(/contact your administrator|联系管理员/i),
     ).toBeVisible({ timeout: 15_000 });
@@ -84,7 +84,7 @@ test.describe("Agents feature disabled", () => {
     // last-known "disabled" value is sticky.
     featuresUp = false;
     agentRequests.length = 0;
-    await page.goto("/workspace/agents");
+    await page.goto("/leadagent/workspace/agents");
     await expect(
       page.getByText(/contact your administrator|联系管理员/i),
     ).toBeVisible({ timeout: 15_000 });

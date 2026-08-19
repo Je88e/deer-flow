@@ -57,7 +57,7 @@ test.describe("User message plain-text rendering", () => {
   test("pasted source code renders verbatim as one block", async ({ page }) => {
     mockLangGraphAPI(page, threadWithMessages(C_SOURCE));
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(page.getByText("ack")).toBeVisible({ timeout: 15_000 });
 
     // The pasted file must not be split into Markdown code-block widgets.
@@ -77,7 +77,7 @@ test.describe("User message plain-text rendering", () => {
     const message = "this costs $5 and $10 in total";
     mockLangGraphAPI(page, threadWithMessages(message));
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(page.getByText("ack")).toBeVisible({ timeout: 15_000 });
 
     await expect(page.locator(".is-user")).toContainText(message);
@@ -90,7 +90,7 @@ test.describe("User message plain-text rendering", () => {
     const pageErrors = collectPageErrors(page);
     mockLangGraphAPI(page, threadWithMessages("> ".repeat(3000) + "hi"));
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(page.getByText("ack")).toBeVisible({ timeout: 15_000 });
 
     expect(pageErrors).toEqual([]);
@@ -106,7 +106,7 @@ test.describe("User message plain-text rendering", () => {
       threadWithMessages("hello", "> ".repeat(3000) + "deep"),
     );
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(page.getByText("hello")).toBeVisible({ timeout: 15_000 });
 
     expect(pageErrors).toEqual([]);
@@ -128,7 +128,7 @@ test.describe("User message plain-text rendering", () => {
       threadWithMessages("hello", "- " + "> ".repeat(3000) + "deep-list"),
     );
 
-    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
     await expect(page.getByText("hello")).toBeVisible({ timeout: 15_000 });
 
     expect(pageErrors).toEqual([]);

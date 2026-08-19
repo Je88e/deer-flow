@@ -6,7 +6,7 @@ test.describe("Sidebar navigation", () => {
   test("sidebar contains Chats and Agents nav links", async ({ page }) => {
     mockLangGraphAPI(page);
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     // Sidebar uses data-sidebar="menu-button" with asChild rendering on <Link>
     const sidebar = page.locator("[data-sidebar='sidebar']");
@@ -19,7 +19,7 @@ test.describe("Sidebar navigation", () => {
   test("Agents link navigates to agents page", async ({ page }) => {
     mockLangGraphAPI(page);
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const sidebar = page.locator("[data-sidebar='sidebar']");
     const agentsLink = sidebar.locator("a[href='/workspace/agents']");
@@ -42,7 +42,7 @@ test.describe("Sidebar navigation", () => {
       }),
     );
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const sidebar = page.locator("[data-sidebar='sidebar']");
     // Chats remains a real link; Agents is no longer a navigable link.
@@ -80,7 +80,7 @@ test.describe("Sidebar navigation", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     mockLangGraphAPI(page);
 
-    await page.goto("/workspace/chats/new");
+    await page.goto("/leadagent/workspace/chats/new");
 
     const viewportWidth = page.viewportSize()?.width ?? 390;
     const expectInsideViewport = async (

@@ -79,7 +79,7 @@ test.describe("multi-run thread renders chronologically (replay, no API key)", (
     expect(seed.status(), await seed.text()).toBe(200);
 
     // Load the thread fresh — triggers useThreadHistory's per-run reload path.
-    await page.goto(`/workspace/chats/${threadId}`);
+    await page.goto(`/leadagent/workspace/chats/${threadId}`);
 
     const alpha = page.getByText(ALPHA, { exact: false });
     const omega = page.getByText(OMEGA, { exact: false });

@@ -97,7 +97,7 @@ test("record write/read-file run through the real frontend", async ({
       JSON.stringify({ context: { mode: "ultra" } }),
     );
   });
-  await page.goto("/workspace/chats/new");
+  await page.goto("/leadagent/workspace/chats/new");
 
   const textarea = page.getByPlaceholder(/how can i assist you/i);
   await expect(textarea).toBeVisible({ timeout: 30_000 });
