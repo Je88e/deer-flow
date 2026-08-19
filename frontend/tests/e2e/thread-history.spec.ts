@@ -593,9 +593,14 @@ test.describe("Thread history", () => {
     // A newly created chat changes the URL with history.replaceState so the
     // active stream is not remounted. Reproduce that history-only transition:
     // the canonical pathname becomes the UUID while useParams can stay "new".
-    await page.evaluate((threadId) => {
-      history.replaceState(null, "", `/workspace/chats/${threadId}`);
-    }, MOCK_THREAD_ID);
+    // The app writes the basePath-prefixed URL (chat-page onStart), so the
+    // simulation passes BASE explicitly (evaluate closures are not serialized).
+    await page.evaluate(
+      ([threadId, base]) => {
+        history.replaceState(null, "", `${base}/workspace/chats/${threadId}`);
+      },
+      [MOCK_THREAD_ID, BASE] as const,
+    );
 
     const newChatLink = page.locator(
       `[data-sidebar='sidebar'] a[href='${BASE}/workspace/chats/new']`,

@@ -57,7 +57,7 @@ import {
   threadTokenUsageToTokenUsage,
 } from "@/core/threads/token-usage";
 import { textOfMessage } from "@/core/threads/utils";
-import { env } from "@/env";
+import { basePath, env } from "@/env";
 import { cn } from "@/lib/utils";
 
 import { ChatBox } from "./chat-box";
@@ -154,7 +154,13 @@ function ChatPageInner() {
     },
     onStart: (createdThreadId) => {
       // ! Important: Never use next.js router for navigation in this case, otherwise it will cause the thread to re-mount and lose all states. Use native history API instead.
-      history.replaceState(null, "", `/workspace/chats/${createdThreadId}`);
+      // The native history API is not covered by Next's basePath — write the
+      // prefixed URL so refresh/deep-link keeps resolving under /leadagent.
+      history.replaceState(
+        null,
+        "",
+        `${basePath()}/workspace/chats/${createdThreadId}`,
+      );
       setThreadId(createdThreadId);
       setIsNewThread(false);
     },
