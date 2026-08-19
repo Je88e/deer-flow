@@ -2,6 +2,7 @@ import { describe, expect, it } from "@rstest/core";
 
 import {
   EMBED_SEARCH_PARAM,
+  embedHref,
   isEmbedSearchValue,
 } from "@/components/embed/embed-mode";
 
@@ -30,5 +31,19 @@ describe("isEmbedSearchValue", () => {
 
   it("pins the search parameter name", () => {
     expect(EMBED_SEARCH_PARAM).toBe("embed");
+  });
+});
+
+describe("embedHref", () => {
+  it("appends the embed parameter to a bare route path", () => {
+    expect(embedHref("/workspace/chats/abc")).toBe(
+      "/workspace/chats/abc?embed=true",
+    );
+  });
+
+  it("joins with & when the path already carries a query", () => {
+    expect(embedHref("/workspace/chats/abc?mock=true")).toBe(
+      "/workspace/chats/abc?mock=true&embed=true",
+    );
   });
 });

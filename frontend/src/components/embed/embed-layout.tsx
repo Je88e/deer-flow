@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { EmbedThreadList } from "./embed-thread-list";
+
 /**
  * Layout shell for EMBED mode (`?embed=true`).
  *
@@ -9,13 +11,14 @@ import type { ReactNode } from "react";
  * context singletons. The workspace sidebar is hidden separately by the
  * sidebar itself, which reads the same `embed` URL parameter.
  *
- * `children` is the single slot: chat content flows through it today, and
- * the embedded thread list mounts as a sibling column inside this shell in
- * the follow-up integration task.
+ * `children` carries the chat content; `EmbedThreadList` renders as a
+ * collapsible sibling column so the iframe keeps lightweight thread
+ * management without the full sidebar.
  */
 export function EmbedLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex size-full min-h-0" data-embed-layout="true">
+      <EmbedThreadList />
       {children}
     </div>
   );

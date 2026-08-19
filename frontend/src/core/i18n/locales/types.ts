@@ -446,6 +446,8 @@ export interface Translations {
     pinChat: string;
     unpinChat: string;
     pinChatFailed: string;
+    deleteChatFailed: string;
+    noChats: string;
   };
 
   // Sidecar

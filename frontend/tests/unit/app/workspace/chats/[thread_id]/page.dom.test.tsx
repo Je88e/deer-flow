@@ -19,6 +19,13 @@ rs.mock("@/components/workspace/chats/chat-page", () => ({
   },
 }));
 
+// Task 5 mounts the EMBED thread panel inside EmbedLayout. This suite pins
+// the page's embed-branch decision, so stub the panel rather than dragging
+// its hooks and i18n provider requirements into every case.
+rs.mock("@/components/embed/embed-thread-list", () => ({
+  EmbedThreadList: () => <div data-testid="embed-thread-list" />,
+}));
+
 afterEach(() => {
   delete (globalThis as { __chatPageProbe?: () => ReactNode }).__chatPageProbe;
   cleanup();

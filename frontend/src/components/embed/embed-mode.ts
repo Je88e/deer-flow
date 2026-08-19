@@ -18,3 +18,15 @@ export function isEmbedSearchValue(
   const first = Array.isArray(value) ? value[0] : value;
   return first === "true";
 }
+
+/**
+ * Append the EMBED search parameter to an internal route path.
+ *
+ * Every in-embed navigation (thread switch, new chat, delete redirect) must go
+ * through this helper: dropping the parameter would leave the iframe's
+ * `/workspace/chats/...` route and re-render the standalone layout.
+ */
+export function embedHref(path: string): string {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}${EMBED_SEARCH_PARAM}=true`;
+}
