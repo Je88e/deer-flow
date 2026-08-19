@@ -40,9 +40,12 @@ test.describe("multi-run thread renders chronologically (replay, no API key)", (
     // Register through the frontend origin (same-origin proxy) so the auth
     // cookies are stored for localhost and forwarded to the gateway via the
     // next.config rewrite — never cross-origin from the browser.
-    const reg = await context.request.post(`${APP}/api/v1/auth/register`, {
-      data: { email, password: "very-strong-password-123" },
-    });
+    const reg = await context.request.post(
+      `${APP}/leadagent/api/v1/auth/register`,
+      {
+        data: { email, password: "very-strong-password-123" },
+      },
+    );
     expect(reg.status(), await reg.text()).toBe(201);
 
     const cookies = await context.cookies();
@@ -52,30 +55,33 @@ test.describe("multi-run thread renders chronologically (replay, no API key)", (
     // Seed two runs in one thread: run-1 (ALPHA) older, run-2 (OMEGA) newer, so
     // the real backend's list_by_thread returns them newest-first. No checkpoint
     // is seeded — that is the #3352 precondition.
-    const seed = await context.request.post(`${APP}/api/test-only/seed-runs`, {
-      headers: { "X-CSRF-Token": csrf! },
-      data: {
-        thread_id: threadId,
-        runs: [
-          {
-            run_id: `${threadId}-r1`,
-            created_at: "2026-01-01T00:00:00+00:00",
-            messages: [
-              { role: "human", content: ALPHA, id: `${threadId}-a-h` },
-              { role: "ai", content: "ALPHA reply", id: `${threadId}-a-a` },
-            ],
-          },
-          {
-            run_id: `${threadId}-r2`,
-            created_at: "2026-01-01T00:01:00+00:00",
-            messages: [
-              { role: "human", content: OMEGA, id: `${threadId}-o-h` },
-              { role: "ai", content: "OMEGA reply", id: `${threadId}-o-a` },
-            ],
-          },
-        ],
+    const seed = await context.request.post(
+      `${APP}/leadagent/api/test-only/seed-runs`,
+      {
+        headers: { "X-CSRF-Token": csrf! },
+        data: {
+          thread_id: threadId,
+          runs: [
+            {
+              run_id: `${threadId}-r1`,
+              created_at: "2026-01-01T00:00:00+00:00",
+              messages: [
+                { role: "human", content: ALPHA, id: `${threadId}-a-h` },
+                { role: "ai", content: "ALPHA reply", id: `${threadId}-a-a` },
+              ],
+            },
+            {
+              run_id: `${threadId}-r2`,
+              created_at: "2026-01-01T00:01:00+00:00",
+              messages: [
+                { role: "human", content: OMEGA, id: `${threadId}-o-h` },
+                { role: "ai", content: "OMEGA reply", id: `${threadId}-o-a` },
+              ],
+            },
+          ],
+        },
       },
-    });
+    );
     expect(seed.status(), await seed.text()).toBe(200);
 
     // Load the thread fresh — triggers useThreadHistory's per-run reload path.

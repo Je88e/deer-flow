@@ -1,13 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { mockLangGraphAPI, THREAD_PINNED_METADATA_KEY } from "./utils/mock-api";
+import { BASE } from "./utils/paths";
 
 const NEWEST_THREAD_ID = "00000000-0000-0000-0000-000000000901";
 const OLDER_THREAD_ID = "00000000-0000-0000-0000-000000000902";
 
 async function recentChatTitles(page: Page) {
   return page
-    .locator('a[data-sidebar="menu-button"][href^="/workspace/chats/"]')
+    .locator(`a[data-sidebar="menu-button"][href^="${BASE}/workspace/chats/"]`)
     .evaluateAll((links) =>
       links
         .map((link) => link.textContent?.replace(/\s+/g, " ").trim() ?? "")
@@ -40,7 +41,7 @@ test("sidebar recent chats can be pinned and unpinned", async ({ page }) => {
 
   const olderItem = page
     .locator(
-      `a[data-sidebar="menu-button"][href="/workspace/chats/${OLDER_THREAD_ID}"]`,
+      `a[data-sidebar="menu-button"][href="${BASE}/workspace/chats/${OLDER_THREAD_ID}"]`,
     )
     .locator("xpath=..");
   await olderItem.hover();

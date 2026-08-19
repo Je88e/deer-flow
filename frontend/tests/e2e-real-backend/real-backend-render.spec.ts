@@ -69,9 +69,12 @@ test.describe("real backend render (replay, no API key)", () => {
     // the browser context (host-scoped to localhost, shared across ports), so
     // the frontend's SDK (credentials:include + X-CSRF-Token) authenticates.
     const email = `e2e-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
-    const resp = await context.request.post(`${APP}/api/v1/auth/register`, {
-      data: { email, password: "very-strong-password-123" },
-    });
+    const resp = await context.request.post(
+      `${APP}/leadagent/api/v1/auth/register`,
+      {
+        data: { email, password: "very-strong-password-123" },
+      },
+    );
     expect(resp.status(), await resp.text()).toBe(201);
   });
 

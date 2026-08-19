@@ -5,6 +5,7 @@ import {
   MOCK_THREAD_ID_2,
   mockLangGraphAPI,
 } from "./utils/mock-api";
+import { BASE } from "./utils/paths";
 
 test.describe("Branch from turn", () => {
   test("creates a new chat branch from a completed assistant turn", async ({
@@ -101,7 +102,7 @@ test.describe("Branch from turn", () => {
     );
     await expect(page.getByText("Final answer")).toBeVisible();
     const branchThreadLink = page.locator(
-      `a[href="/workspace/chats/${MOCK_THREAD_ID_2}"]`,
+      `a[href="${BASE}/workspace/chats/${MOCK_THREAD_ID_2}"]`,
     );
     await expect(branchThreadLink).toContainText("Original chat");
     await expect(branchThreadLink).not.toContainText("Branch:");

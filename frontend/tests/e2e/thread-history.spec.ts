@@ -5,6 +5,7 @@ import {
   MOCK_THREAD_ID,
   MOCK_THREAD_ID_2,
 } from "./utils/mock-api";
+import { BASE } from "./utils/paths";
 
 const THREADS = [
   {
@@ -504,7 +505,7 @@ test.describe("Thread history", () => {
     });
 
     await page
-      .locator("[data-sidebar='sidebar'] a[href='/workspace/chats/new']")
+      .locator(`[data-sidebar='sidebar'] a[href='${BASE}/workspace/chats/new']`)
       .click();
     await page.waitForURL("**/workspace/chats/new");
 
@@ -567,7 +568,7 @@ test.describe("Thread history", () => {
     await expect(page.getByText(OPTIMISTIC_PROMPT_MARKER)).toHaveCount(0);
 
     await page
-      .locator("[data-sidebar='sidebar'] a[href='/workspace/chats/new']")
+      .locator(`[data-sidebar='sidebar'] a[href='${BASE}/workspace/chats/new']`)
       .click();
     await page.waitForURL("**/workspace/chats/new");
 
@@ -597,7 +598,7 @@ test.describe("Thread history", () => {
     }, MOCK_THREAD_ID);
 
     const newChatLink = page.locator(
-      "[data-sidebar='sidebar'] a[href='/workspace/chats/new']",
+      `[data-sidebar='sidebar'] a[href='${BASE}/workspace/chats/new']`,
     );
     await expect(page).toHaveURL(
       new RegExp(`/workspace/chats/${MOCK_THREAD_ID}$`),
@@ -781,7 +782,7 @@ test.describe("Thread history", () => {
     await page.goto("/leadagent/workspace/chats/new");
 
     const sidebarThread = page.locator(
-      `a[href='/workspace/chats/${MOCK_THREAD_ID}']`,
+      `a[href='${BASE}/workspace/chats/${MOCK_THREAD_ID}']`,
     );
     await expect(sidebarThread).toBeVisible({ timeout: 15_000 });
     await expect(sidebarThread.getByLabel("Feishu channel")).toBeVisible();
@@ -790,7 +791,7 @@ test.describe("Thread history", () => {
 
     const mainThread = page
       .locator("main")
-      .locator(`a[href='/workspace/chats/${MOCK_THREAD_ID}']`);
+      .locator(`a[href='${BASE}/workspace/chats/${MOCK_THREAD_ID}']`);
     await expect(mainThread.getByText("Feishu conversation")).toBeVisible({
       timeout: 15_000,
     });

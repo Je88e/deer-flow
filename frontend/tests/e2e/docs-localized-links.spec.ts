@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { BASE } from "./utils/paths";
+
 test.describe("Localized documentation links", () => {
   test("keeps English card navigation in the English docs", async ({
     page,
@@ -9,7 +11,7 @@ test.describe("Localized documentation links", () => {
     const card = page.locator("a.nextra-card", { hasText: "Why DeerFlow" });
     await expect(card).toHaveAttribute(
       "href",
-      "/en/docs/introduction/why-deerflow",
+      `${BASE}/en/docs/introduction/why-deerflow`,
     );
 
     await card.click();
@@ -25,7 +27,7 @@ test.describe("Localized documentation links", () => {
     const card = page.locator("a.nextra-card", { hasText: "Harness 与应用" });
     await expect(card).toHaveAttribute(
       "href",
-      "/zh/docs/introduction/harness-vs-app",
+      `${BASE}/zh/docs/introduction/harness-vs-app`,
     );
 
     await card.click();
@@ -42,7 +44,7 @@ test.describe("Localized documentation links", () => {
       .first();
     await expect(link).toHaveAttribute(
       "href",
-      "/en/docs/application/agents-and-threads",
+      `${BASE}/en/docs/application/agents-and-threads`,
     );
 
     await link.click();
@@ -59,7 +61,7 @@ test.describe("Localized documentation links", () => {
 
     const invalidDocsLinks = page.locator(
       ["auth", "blog", "login", "setup", "workspace"]
-        .map((root) => `a[href^="/en/docs/${root}"]`)
+        .map((root) => `a[href^="${BASE}/en/docs/${root}"]`)
         .join(", "),
     );
     await expect(invalidDocsLinks).toHaveCount(0);
