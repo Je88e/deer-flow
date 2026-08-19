@@ -26,6 +26,15 @@ rs.mock("@/components/embed/embed-thread-list", () => ({
   EmbedThreadList: () => <div data-testid="embed-thread-list" />,
 }));
 
+// Task 6 wraps the EMBED shell in EmbedAuthGate (bridge handshake +
+// token-exchange). Same reason as above: its i18n/bridge requirements do
+// not belong in this branch-decision suite, so stub it as a pass-through.
+rs.mock("@/components/embed/embed-auth-gate", () => ({
+  EmbedAuthGate: ({ children }: { children: ReactNode }) => (
+    <div data-testid="embed-auth-gate">{children}</div>
+  ),
+}));
+
 afterEach(() => {
   delete (globalThis as { __chatPageProbe?: () => ReactNode }).__chatPageProbe;
   cleanup();

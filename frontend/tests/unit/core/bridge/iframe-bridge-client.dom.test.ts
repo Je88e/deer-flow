@@ -297,6 +297,25 @@ describe("waitForToken", () => {
       rs.useRealTimers();
     }
   });
+
+  test("ignorePending drops a cached unconsumed token and waits for the next", async () => {
+    const client = newClient();
+    authTokenMessage(SHELL_ORIGIN, "token-stale");
+
+    const pending = client.waitForToken({ ignorePending: true });
+    authTokenMessage(SHELL_ORIGIN, "token-fresh");
+
+    await expect(pending).resolves.toMatchObject({ token: "token-fresh" });
+  });
+
+  test("ignorePending is a no-op when nothing is cached", async () => {
+    const client = newClient();
+
+    const pending = client.waitForToken({ ignorePending: true });
+    authTokenMessage(SHELL_ORIGIN, "token-only");
+
+    await expect(pending).resolves.toMatchObject({ token: "token-only" });
+  });
 });
 
 describe("onLogout", () => {

@@ -1,3 +1,4 @@
+import { EmbedAuthGate } from "@/components/embed/embed-auth-gate";
 import { EmbedLayout } from "@/components/embed/embed-layout";
 import { isEmbedSearchValue } from "@/components/embed/embed-mode";
 import { EmbedModeProvider } from "@/components/embed/embed-mode-provider";
@@ -19,9 +20,14 @@ export default async function WorkspaceChatPage({
   if (isEmbedded) {
     return (
       <EmbedModeProvider embedded>
-        <EmbedLayout>
-          <ChatPage />
-        </EmbedLayout>
+        {/* The gate wraps the whole EMBED shell (thread panel included) so
+            the shell's queries only fire once the session cookie from
+            token-exchange is in place. */}
+        <EmbedAuthGate>
+          <EmbedLayout>
+            <ChatPage />
+          </EmbedLayout>
+        </EmbedAuthGate>
       </EmbedModeProvider>
     );
   }

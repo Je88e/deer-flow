@@ -72,6 +72,15 @@ export interface IframeBridgeClientOptions {
   shellOrigin?: string;
 }
 
+export interface WaitForTokenOptions {
+  /**
+   * Drop any token that arrived before this call and wait for the next
+   * AUTH_TOKEN. The renewal path sets this so a stale unconsumed token is
+   * never replayed into token-exchange (Task 3 review Minor③).
+   */
+  ignorePending?: boolean;
+}
+
 export class IframeBridgeClient {
   private readonly timeoutMs: number;
   private readonly shellOrigin: string;
@@ -127,12 +136,18 @@ export class IframeBridgeClient {
    * token has already arrived since the last wait. Rejects with
    * {@link BridgeTimeoutError} after the timeout or
    * {@link BridgeNotEmbeddedError} outside an iframe.
+   *
+   * `ignorePending` (used by the 401 renewal path, core/auth/embed-auth.ts)
+   * drops any cached unconsumed token first so a stale one is never replayed
+   * — only a token arriving after this call resolves the wait.
    */
-  waitForToken(): Promise<AuthTokenPayload> {
+  waitForToken(options: WaitForTokenOptions = {}): Promise<AuthTokenPayload> {
     if (!this.embedded) {
       return Promise.reject(new BridgeNotEmbeddedError());
     }
-    if (this.pendingToken) {
+    if (options.ignorePending) {
+      this.pendingToken = null;
+    } else if (this.pendingToken) {
       const token = this.pendingToken;
       this.pendingToken = null;
       return Promise.resolve(token);
