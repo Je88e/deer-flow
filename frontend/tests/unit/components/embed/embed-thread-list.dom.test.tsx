@@ -120,17 +120,21 @@ function makeThread(threadId: string, title: string): AgentThread {
 function setup(
   options: {
     pathname?: string;
+    /** Committed browser URL; defaults to `pathname`. Pass a different value to simulate ChatPage's history.replaceState leaving the Next hooks stale. */
+    browserPathname?: string;
     threads?: AgentThread[];
     isLoading?: boolean;
   } = {},
 ) {
   const holders = globalThis as TestHolders;
+  const pathname = options.pathname ?? "/workspace/chats/t1";
   holders.__embedNav = {
-    pathname: options.pathname ?? "/workspace/chats/t1",
+    pathname,
     threadId: options.pathname?.split("/").pop() ?? "t1",
     push: rs.fn(),
     replace: rs.fn(),
   };
+  window.history.replaceState(null, "", options.browserPathname ?? pathname);
   holders.__embedList = {
     threads: options.threads ?? [
       makeThread("t1", "Alpha"),
@@ -155,6 +159,9 @@ function setup(
 
 beforeEach(() => {
   rs.clearAllMocks();
+  // The component reads the committed browser URL; keep it neutral between
+  // tests so a previous test's replaceState cannot leak into the next one.
+  window.history.replaceState(null, "", "/");
 });
 
 afterEach(cleanup);
@@ -230,6 +237,81 @@ describe("EmbedThreadList", () => {
     expect(holders.__embedNav!.replace).toHaveBeenCalledWith(
       "/workspace/chats/new?embed=true",
     );
+  });
+
+  it("deleting a just-created thread resets the chat and redirects even while Next hooks are stale", () => {
+    // ChatPage's onStart commits new threads with history.replaceState, which
+    // does not notify the Next router: useParams/usePathname still report
+    // /new while window.location already points at the created thread.
+    const holders = setup({
+      pathname: "/workspace/chats/new",
+      browserPathname: "/workspace/chats/t1",
+      threads: [makeThread("t1", "Alpha"), makeThread("t2", "Beta")],
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[0]!);
+    expect(holders.__embedList!.deleteThread).toHaveBeenCalledTimes(1);
+    const call = holders.__embedList!.deleteThread.mock.calls[0]?.[0];
+    expect(call.onRemoteDeleted).toBeInstanceOf(Function);
+    expect(resetThreadChatAfterDelete).toHaveBeenCalledWith({
+      deletedThreadId: "t1",
+      nextPath: "/workspace/chats/new",
+      force: true,
+    });
+    expect(holders.__embedNav!.replace).toHaveBeenCalledWith(
+      "/workspace/chats/new?embed=true",
+    );
+  });
+
+  it("deleting the newest thread while sitting on /new resets the chat and redirects", () => {
+    // Shared-flow branch: on /new the panel draft has no thread id, so
+    // deleting the newest (first) thread is still treated as the open chat.
+    const holders = setup({
+      pathname: "/workspace/chats/new",
+      browserPathname: "/workspace/chats/new",
+      threads: [makeThread("t1", "Alpha"), makeThread("t2", "Beta")],
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[0]!);
+    expect(resetThreadChatAfterDelete).toHaveBeenCalledWith({
+      deletedThreadId: "t1",
+      nextPath: "/workspace/chats/new",
+      force: true,
+    });
+    expect(holders.__embedNav!.replace).toHaveBeenCalledWith(
+      "/workspace/chats/new?embed=true",
+    );
+    // Sanity: an older thread stays a background delete in the same state.
+    cleanup();
+    const holders2 = setup({
+      pathname: "/workspace/chats/new",
+      browserPathname: "/workspace/chats/new",
+      threads: [makeThread("t1", "Alpha"), makeThread("t2", "Beta")],
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[1]!);
+    expect(holders2.__embedList!.deleteThread).toHaveBeenCalledWith({
+      threadId: "t2",
+      onRemoteDeleted: undefined,
+    });
+    expect(resetThreadChatAfterDelete).not.toHaveBeenCalledWith({
+      deletedThreadId: "t2",
+      nextPath: "/workspace/chats/new",
+      force: true,
+    });
+  });
+
+  it("highlights the thread the browser URL points at when Next hooks are stale", () => {
+    setup({
+      pathname: "/workspace/chats/new",
+      browserPathname: "/workspace/chats/t1",
+      threads: [makeThread("t1", "Alpha"), makeThread("t2", "Beta")],
+    });
+    expect(
+      screen
+        .getByRole("button", { name: "Alpha" })
+        .getAttribute("aria-current"),
+    ).toBe("page");
+    expect(
+      screen.getByRole("button", { name: "Beta" }).getAttribute("aria-current"),
+    ).toBeNull();
   });
 
   it("surfaces a delete failure as a toast", async () => {

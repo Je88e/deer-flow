@@ -33,6 +33,12 @@ export function EmbedThreadList() {
   const pathname = usePathname();
   const { thread_id: activeThreadId } = useParams<{ thread_id?: string }>();
   const [collapsed, setCollapsed] = useState(false);
+  // Render-time value reads the committed browser URL, like useThreadChat:
+  // ChatPage commits newly created threads with `history.replaceState`,
+  // which leaves Next's useParams/usePathname one thread behind, so the
+  // hook values alone would misjudge the active thread right after creation.
+  const currentPathname =
+    typeof window === "undefined" ? pathname : window.location.pathname;
 
   const {
     threads,
@@ -78,10 +84,21 @@ export function EmbedThreadList() {
 
   const handleDelete = useCallback(
     (thread: AgentThread) => {
+      // Same trap RecentChatList guards against: ChatPage's `onStart`
+      // commits newly created threads with native `history.replaceState`,
+      // which does not update Next's useParams/usePathname. Read the
+      // committed browser URL so a just-created thread still counts as the
+      // open thread, and also cover sitting on /new while deleting the
+      // newest thread.
+      const currentPathname =
+        typeof window === "undefined" ? pathname : window.location.pathname;
+      const threadPath = pathOfThread(thread);
       const nextPath = pathOfThread("new");
       const isCurrentThread =
         thread.thread_id === activeThreadId ||
-        pathOfThread(thread) === pathname;
+        threadPath === currentPathname ||
+        (currentPathname === nextPath &&
+          threads[0]?.thread_id === thread.thread_id);
       void deleteThread({
         threadId: thread.thread_id,
         onRemoteDeleted: isCurrentThread
@@ -98,7 +115,14 @@ export function EmbedThreadList() {
         toast.error(getMutationErrorMessage(error, t.chats.deleteChatFailed));
       });
     },
-    [activeThreadId, deleteThread, pathname, router, t.chats.deleteChatFailed],
+    [
+      activeThreadId,
+      deleteThread,
+      pathname,
+      router,
+      t.chats.deleteChatFailed,
+      threads,
+    ],
   );
 
   if (collapsed) {
@@ -147,7 +171,7 @@ export function EmbedThreadList() {
           <EmbedThreadItem
             key={thread.thread_id}
             thread={thread}
-            isActive={pathOfThread(thread) === pathname}
+            isActive={pathOfThread(thread) === currentPathname}
             onSelect={handleSelect}
             onTogglePinned={handleTogglePinned}
             onDelete={handleDelete}
