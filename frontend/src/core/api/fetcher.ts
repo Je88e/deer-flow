@@ -1,4 +1,5 @@
 import { buildLoginUrl } from "@/core/auth/types";
+import { basePath } from "@/env";
 
 import { UnauthorizedError } from "./errors";
 
@@ -83,7 +84,16 @@ export async function fetch(
   });
 
   if (res.status === 401) {
-    window.location.href = buildLoginUrl(window.location.pathname);
+    // Hard navigation (no Next router): apply the base path manually, and
+    // strip it from the return path so the post-login redirect stays a
+    // router-relative path (the router re-applies the base path itself).
+    const base = basePath();
+    const currentPath = window.location.pathname;
+    const returnPath =
+      base && currentPath.startsWith(base)
+        ? currentPath.slice(base.length) || "/"
+        : currentPath;
+    window.location.href = `${base}${buildLoginUrl(returnPath)}`;
     throw new UnauthorizedError();
   }
 

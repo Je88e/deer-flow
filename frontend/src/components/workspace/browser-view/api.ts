@@ -43,13 +43,13 @@ export async function navigateBrowser(
  */
 export function browserStreamURL(threadId: string, seedUrl?: string): string {
   const base = getBackendBaseURL();
-  const origin =
-    base && base.length > 0
-      ? base
-      : typeof window !== "undefined"
-        ? window.location.origin
-        : "";
-  const wsOrigin = origin.replace(/^http/i, "ws");
+  // `base` is either an absolute backend URL (split-origin deployment) or a
+  // same-origin path prefix ("" on root deployments, the base path otherwise);
+  // anchor the latter on the current origin before swapping the scheme.
+  const httpOrigin = base.startsWith("http")
+    ? base
+    : `${typeof window !== "undefined" ? window.location.origin : ""}${base}`;
+  const wsOrigin = httpOrigin.replace(/^http/i, "ws");
   const query = new URLSearchParams();
   query.set("frame_format", "binary");
   if (seedUrl) query.set("seed", seedUrl);

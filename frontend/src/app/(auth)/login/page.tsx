@@ -22,6 +22,7 @@ import {
 } from "@/core/auth/setup";
 import { parseAuthError } from "@/core/auth/types";
 import { useI18n } from "@/core/i18n/hooks";
+import { apiBase, basePath } from "@/env";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -121,7 +122,7 @@ export default function LoginPage() {
   useEffect(() => {
     let cancelled = false;
 
-    void fetch("/api/v1/auth/providers")
+    void fetch(`${apiBase()}/v1/auth/providers`)
       .then((r) => r.json())
       .then(
         (data: {
@@ -155,8 +156,8 @@ export default function LoginPage() {
 
     try {
       const endpoint = isLogin
-        ? "/api/v1/auth/login/local"
-        : "/api/v1/auth/register";
+        ? `${apiBase()}/v1/auth/login/local`
+        : `${apiBase()}/v1/auth/register`;
       const body = isLogin
         ? new URLSearchParams({
             password,
@@ -204,7 +205,12 @@ export default function LoginPage() {
   return (
     <div className="bg-background relative flex min-h-screen items-center justify-center overflow-x-hidden overflow-y-auto">
       <FlickeringGrid
-        className="absolute inset-0 z-0 mask-[url(/images/deer.svg)] mask-size-[100vw] mask-center mask-no-repeat md:mask-size-[72vh]"
+        className="absolute inset-0 z-0 mask-size-[100vw] mask-center mask-no-repeat md:mask-size-[72vh]"
+        style={{
+          // CSS url() is not covered by Next's basePath — prefix manually.
+          WebkitMaskImage: `url(${basePath()}/images/deer.svg)`,
+          maskImage: `url(${basePath()}/images/deer.svg)`,
+        }}
         squareSize={4}
         gridGap={4}
         color={actualTheme === "dark" ? "white" : "black"}
@@ -334,7 +340,7 @@ export default function LoginPage() {
                 className="w-full"
                 disabled={loading}
                 onClick={() => {
-                  window.location.href = `/api/v1/auth/oauth/${provider.id}?next=${encodeURIComponent(redirectPath)}&remember_me=${String(rememberMe)}`;
+                  window.location.href = `${apiBase()}/v1/auth/oauth/${provider.id}?next=${encodeURIComponent(redirectPath)}&remember_me=${String(rememberMe)}`;
                 }}
               >
                 {t.login.continueWith(provider.display_name)}

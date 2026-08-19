@@ -1,3 +1,5 @@
+import { apiBase } from "@/env";
+
 import { AUTH_REQUEST_TIMEOUT_MS } from "./constants";
 import { parseAuthError } from "./types";
 
@@ -21,7 +23,7 @@ export async function fetchSetupStatus(): Promise<SetupStatusResponse> {
   const timeout = setTimeout(() => controller.abort(), AUTH_REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch("/api/v1/auth/setup-status", {
+    const response = await fetch(`${apiBase()}/v1/auth/setup-status`, {
       ...setupStatusFetchInit,
       signal: controller.signal,
     });

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { resolveAuthNextPath } from "@/core/auth/next-path";
+import { apiBase } from "@/env";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -20,7 +21,9 @@ export default function AuthCallbackPage() {
     const next = resolveAuthNextPath(searchParams.get("next"));
 
     try {
-      const res = await fetch("/api/v1/auth/me", { credentials: "include" });
+      const res = await fetch(`${apiBase()}/v1/auth/me`, {
+        credentials: "include",
+      });
 
       if (res.ok) {
         setStatus("success");

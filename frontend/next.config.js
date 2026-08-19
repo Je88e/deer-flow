@@ -15,8 +15,20 @@ import nextra from "nextra";
 
 const withNextra = nextra({});
 
+// Fixed base path for the single-build deployment (plan §6.2): one build
+// artifact serves both the standalone and the Shell-embedded editions, with
+// the standalone entry at host/leadagent (root redirects there).
+const basePath = "/leadagent";
+
 /** @type {import("next").NextConfig} */
 const config = {
+  basePath,
+  // Inline the base path into client bundles so helpers like
+  // `apiBase()`/`basePath()` (src/env.js) stay in sync with the fixed
+  // basePath above without requiring operators to set it themselves.
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath,
+  },
   output:
     process.env.NEXT_CONFIG_BUILD_OUTPUT === "standalone"
       ? "standalone"
@@ -27,7 +39,16 @@ const config = {
   },
   devIndicators: false,
   allowedDevOrigins: getAllowedDevOrigins(),
+  async redirects() {
+    // Entry point outside the base path: host/ → host/leadagent.
+    return [
+      { source: "/", destination: basePath, basePath: false, permanent: false },
+    ];
+  },
   async rewrites() {
+    // NOTE: with `basePath` set, every `source` below is matched relative to
+    // the base path (browser requests hit /leadagent/api/...), while
+    // `destination` keeps pointing at the internal Gateway upstream.
     const rewrites = [];
     const gatewayURL = getInternalServiceURL(
       "DEER_FLOW_INTERNAL_GATEWAY_BASE_URL",

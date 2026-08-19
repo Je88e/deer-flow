@@ -58,11 +58,22 @@ export const env = createEnv({
 });
 
 /**
+ * The app's base path ("" on a root deployment, "/leadagent" when served
+ * under a prefix). next.config.js inlines NEXT_PUBLIC_BASE_PATH to match its
+ * own `basePath`, so this stays correct in client bundles without operators
+ * setting anything. Raw browser APIs (window.location, CSS url(), WebSocket
+ * URLs) do NOT apply Next's basePath automatically — prefix them with this.
+ */
+export function basePath() {
+  return env.NEXT_PUBLIC_BASE_PATH ?? "";
+}
+
+/**
  * Prefix for Gateway REST API requests, served under the app's base path.
  * Concatenate request paths onto it, e.g. `apiBase() + "/v1/auth/logout"`
  * resolves to "/leadagent/api/v1/auth/logout" under a "/leadagent" base path
  * and to "/api/v1/auth/logout" on a root deployment.
  */
 export function apiBase() {
-  return `${env.NEXT_PUBLIC_BASE_PATH ?? ""}/api`;
+  return `${basePath()}/api`;
 }

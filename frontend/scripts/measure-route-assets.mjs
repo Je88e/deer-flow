@@ -8,6 +8,9 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const DEMO_THREAD_ID = "7cfa5f8f-a2f8-47ad-acbd-da7137baf990";
+// Fixed app base path (next.config.js): the production server serves every
+// route and asset underneath it.
+const BASE_PATH = "/leadagent";
 export const ROUTES = [
   "/",
   "/login",
@@ -41,10 +44,14 @@ export function extractAssetPaths(html) {
   const assets = { css: [], js: [] };
   const seen = { css: new Set(), js: new Set() };
   const attributePattern = /(?:src|href)=["']([^"']+)["']/g;
+  const staticPrefix = "/_next/static/";
   for (const match of html.matchAll(attributePattern)) {
-    const value = match[1];
-    if (!value?.startsWith("/_next/static/")) continue;
-    const relativePath = value.slice("/_next/static/".length).split("?", 1)[0];
+    let value = match[1];
+    // Asset URLs carry the app base path; strip it before mapping to
+    // .next/static on disk.
+    if (value?.startsWith(BASE_PATH)) value = value.slice(BASE_PATH.length);
+    if (!value?.startsWith(staticPrefix)) continue;
+    const relativePath = value.slice(staticPrefix.length).split("?", 1)[0];
     if (!relativePath) continue;
     const kind = relativePath.endsWith(".css")
       ? "css"
@@ -140,7 +147,9 @@ async function waitForServer(baseUrl, child) {
 }
 
 async function measureRoute(baseUrl, route) {
-  const response = await fetch(`${baseUrl}${route}`, { redirect: "manual" });
+  const response = await fetch(`${baseUrl}${BASE_PATH}${route}`, {
+    redirect: "manual",
+  });
   if (!response.ok) {
     throw new Error(`${route} returned HTTP ${response.status}`);
   }

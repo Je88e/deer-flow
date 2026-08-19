@@ -17,6 +17,7 @@ import {
 } from "@/core/auth/setup";
 import { parseAuthError } from "@/core/auth/types";
 import { useI18n } from "@/core/i18n/hooks";
+import { apiBase, basePath } from "@/env";
 
 type SetupMode = "loading" | "init_admin" | "change_password" | "unavailable";
 
@@ -85,7 +86,7 @@ export default function SetupPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/initialize", {
+      const res = await fetch(`${apiBase()}/v1/auth/initialize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -131,7 +132,7 @@ export default function SetupPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/change-password", {
+      const res = await fetch(`${apiBase()}/v1/auth/change-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -211,7 +212,12 @@ export default function SetupPage() {
     return (
       <div className="bg-background flex min-h-screen items-center justify-center">
         <FlickeringGrid
-          className="absolute inset-0 z-0 mask-[url(/images/deer.svg)] mask-size-[100vw] mask-center mask-no-repeat md:mask-size-[72vh]"
+          className="absolute inset-0 z-0 mask-size-[100vw] mask-center mask-no-repeat md:mask-size-[72vh]"
+          style={{
+            // CSS url() is not covered by Next's basePath — prefix manually.
+            WebkitMaskImage: `url(${basePath()}/images/deer.svg)`,
+            maskImage: `url(${basePath()}/images/deer.svg)`,
+          }}
           squareSize={4}
           gridGap={4}
           color={actualTheme === "dark" ? "white" : "black"}
@@ -286,7 +292,12 @@ export default function SetupPage() {
   return (
     <div className="bg-background flex min-h-screen items-center justify-center">
       <FlickeringGrid
-        className="absolute inset-0 z-0 mask-[url(/images/deer.svg)] mask-size-[100vw] mask-center mask-no-repeat md:mask-size-[72vh]"
+        className="absolute inset-0 z-0 mask-size-[100vw] mask-center mask-no-repeat md:mask-size-[72vh]"
+        style={{
+          // CSS url() is not covered by Next's basePath — prefix manually.
+          WebkitMaskImage: `url(${basePath()}/images/deer.svg)`,
+          maskImage: `url(${basePath()}/images/deer.svg)`,
+        }}
         squareSize={4}
         gridGap={4}
         color={actualTheme === "dark" ? "white" : "black"}

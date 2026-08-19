@@ -10,7 +10,7 @@ import { AuroraText } from "@/components/ui/aurora-text";
 import { Button } from "@/components/ui/button";
 import { FlickeringGrid } from "@/components/ui/flickering-grid";
 import { useRenderActivity } from "@/core/dom/render-activity";
-import { env } from "@/env";
+import { basePath, env } from "@/env";
 import { cn } from "@/lib/utils";
 
 const Galaxy = dynamic(() => import("@/components/ui/galaxy"), { ssr: false });
@@ -58,7 +58,12 @@ export function Hero({ className }: { className?: string }) {
         )}
       </div>
       <FlickeringGrid
-        className="absolute inset-0 z-0 mask-[url(/images/deer.svg)] mask-size-[100vw] mask-center mask-no-repeat md:mask-size-[72vh]"
+        className="absolute inset-0 z-0 mask-size-[100vw] mask-center mask-no-repeat md:mask-size-[72vh]"
+        style={{
+          // CSS url() is not covered by Next's basePath — prefix manually.
+          WebkitMaskImage: `url(${basePath()}/images/deer.svg)`,
+          maskImage: `url(${basePath()}/images/deer.svg)`,
+        }}
         squareSize={4}
         gridGap={4}
         color={"white"}

@@ -10,6 +10,8 @@ import React, {
   type ReactNode,
 } from "react";
 
+import { apiBase, basePath } from "@/env";
+
 import { isStaticWebsiteOnly } from "../static-mode";
 
 import { type User, buildLoginUrl } from "./types";
@@ -71,7 +73,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
 
     try {
       setIsLoading(true);
-      const res = await fetch("/api/v1/auth/me", {
+      const res = await fetch(`${apiBase()}/v1/auth/me`, {
         credentials: "include",
       });
 
@@ -116,7 +118,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
 
     let logoutFailed = false;
     try {
-      const res = await fetch("/api/v1/auth/logout", {
+      const res = await fetch(`${apiBase()}/v1/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
@@ -129,7 +131,8 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     if (logoutFailed && typeof window !== "undefined") {
       // Hard navigation ensures every in-flight subscription is torn down,
       // matching the legacy form-POST logout behaviour during a gateway outage.
-      window.location.href = "/";
+      // Raw location.href is not covered by Next's basePath — prefix manually.
+      window.location.href = `${basePath()}/`;
       return;
     }
 
