@@ -22,6 +22,12 @@ export const env = createEnv({
     NEXT_PUBLIC_BACKEND_BASE_URL: z.string().optional(),
     NEXT_PUBLIC_LANGGRAPH_BASE_URL: z.string().optional(),
     NEXT_PUBLIC_STATIC_WEBSITE_ONLY: z.string().optional(),
+    // Full origin of the WIT Shell host when DeerFlow is embedded in a Shell
+    // iframe (postMessage targetOrigin / inbound origin check).
+    NEXT_PUBLIC_SHELL_ORIGIN: z.string().optional(),
+    // Base path DeerFlow is served under (must match next.config.js basePath,
+    // e.g. "/leadagent"); "" means a root deployment.
+    NEXT_PUBLIC_BASE_PATH: z.string().optional(),
   },
 
   /**
@@ -35,6 +41,8 @@ export const env = createEnv({
     NEXT_PUBLIC_LANGGRAPH_BASE_URL: process.env.NEXT_PUBLIC_LANGGRAPH_BASE_URL,
     NEXT_PUBLIC_STATIC_WEBSITE_ONLY:
       process.env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY,
+    NEXT_PUBLIC_SHELL_ORIGIN: process.env.NEXT_PUBLIC_SHELL_ORIGIN,
+    NEXT_PUBLIC_BASE_PATH: process.env.NEXT_PUBLIC_BASE_PATH,
     GITHUB_OAUTH_TOKEN: process.env.GITHUB_OAUTH_TOKEN,
   },
   /**
@@ -48,3 +56,13 @@ export const env = createEnv({
    */
   emptyStringAsUndefined: true,
 });
+
+/**
+ * Prefix for Gateway REST API requests, served under the app's base path.
+ * Concatenate request paths onto it, e.g. `apiBase() + "/v1/auth/logout"`
+ * resolves to "/leadagent/api/v1/auth/logout" under a "/leadagent" base path
+ * and to "/api/v1/auth/logout" on a root deployment.
+ */
+export function apiBase() {
+  return `${env.NEXT_PUBLIC_BASE_PATH ?? ""}/api`;
+}
