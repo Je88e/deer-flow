@@ -69,6 +69,20 @@ export function basePath() {
 }
 
 /**
+ * Strip the configured base path from a raw browser pathname, yielding the
+ * router-relative path Next's navigation hooks report
+ * ("/leadagent/workspace/chats/x" → "/workspace/chats/x"; the bare base path
+ * → "/"). Pathnames outside the base path — and every pathname on a root
+ * deployment, where basePath() is "" — pass through unchanged.
+ */
+export function stripBasePath(pathname) {
+  const base = basePath();
+  return base && pathname.startsWith(base)
+    ? pathname.slice(base.length) || "/"
+    : pathname;
+}
+
+/**
  * Prefix for Gateway REST API requests, served under the app's base path.
  * Concatenate request paths onto it, e.g. `apiBase() + "/v1/auth/logout"`
  * resolves to "/leadagent/api/v1/auth/logout" under a "/leadagent" base path

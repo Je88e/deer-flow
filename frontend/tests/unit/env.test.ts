@@ -34,3 +34,44 @@ describe("apiBase", () => {
     }
   });
 });
+
+describe("stripBasePath", () => {
+  test("is the identity on a root deployment", async () => {
+    delete process.env.NEXT_PUBLIC_BASE_PATH;
+    const { stripBasePath } = await importEnv();
+    expect(stripBasePath("/workspace/chats/t1")).toBe("/workspace/chats/t1");
+    expect(stripBasePath("/")).toBe("/");
+  });
+
+  test("strips the configured base path prefix", async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = "/leadagent";
+    try {
+      const { stripBasePath } = await importEnv();
+      expect(stripBasePath("/leadagent/workspace/chats/t1")).toBe(
+        "/workspace/chats/t1",
+      );
+    } finally {
+      delete process.env.NEXT_PUBLIC_BASE_PATH;
+    }
+  });
+
+  test("maps the bare base path to /", async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = "/leadagent";
+    try {
+      const { stripBasePath } = await importEnv();
+      expect(stripBasePath("/leadagent")).toBe("/");
+    } finally {
+      delete process.env.NEXT_PUBLIC_BASE_PATH;
+    }
+  });
+
+  test("leaves pathnames outside the base path unchanged", async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = "/leadagent";
+    try {
+      const { stripBasePath } = await importEnv();
+      expect(stripBasePath("/workspace/chats/t1")).toBe("/workspace/chats/t1");
+    } finally {
+      delete process.env.NEXT_PUBLIC_BASE_PATH;
+    }
+  });
+});

@@ -1,5 +1,5 @@
 import { buildLoginUrl } from "@/core/auth/types";
-import { basePath } from "@/env";
+import { basePath, stripBasePath } from "@/env";
 
 import { UnauthorizedError } from "./errors";
 
@@ -88,11 +88,7 @@ export async function fetch(
     // strip it from the return path so the post-login redirect stays a
     // router-relative path (the router re-applies the base path itself).
     const base = basePath();
-    const currentPath = window.location.pathname;
-    const returnPath =
-      base && currentPath.startsWith(base)
-        ? currentPath.slice(base.length) || "/"
-        : currentPath;
+    const returnPath = stripBasePath(window.location.pathname);
     window.location.href = `${base}${buildLoginUrl(returnPath)}`;
     throw new UnauthorizedError();
   }

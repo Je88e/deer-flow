@@ -13,6 +13,7 @@ import { resetThreadChatAfterDelete } from "@/components/workspace/chats/use-thr
 import { useI18n } from "@/core/i18n/hooks";
 import type { AgentThread } from "@/core/threads/types";
 import { pathOfThread } from "@/core/threads/utils";
+import { stripBasePath } from "@/env";
 
 function getMutationErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) {
@@ -37,8 +38,12 @@ export function EmbedThreadList() {
   // ChatPage commits newly created threads with `history.replaceState`,
   // which leaves Next's useParams/usePathname one thread behind, so the
   // hook values alone would misjudge the active thread right after creation.
-  const currentPathname =
-    typeof window === "undefined" ? pathname : window.location.pathname;
+  // window.location.pathname carries the deployment base path (raw browser
+  // APIs don't apply Next's stripping), so normalize it to the
+  // router-relative form before comparing against pathOfThread results.
+  const currentPathname = stripBasePath(
+    typeof window === "undefined" ? pathname : window.location.pathname,
+  );
 
   const {
     threads,
@@ -89,9 +94,11 @@ export function EmbedThreadList() {
       // which does not update Next's useParams/usePathname. Read the
       // committed browser URL so a just-created thread still counts as the
       // open thread, and also cover sitting on /new while deleting the
-      // newest thread.
-      const currentPathname =
-        typeof window === "undefined" ? pathname : window.location.pathname;
+      // newest thread. The browser URL carries the deployment base path,
+      // which pathOfThread results never do — strip before comparing.
+      const currentPathname = stripBasePath(
+        typeof window === "undefined" ? pathname : window.location.pathname,
+      );
       const threadPath = pathOfThread(thread);
       const nextPath = pathOfThread("new");
       const isCurrentThread =
