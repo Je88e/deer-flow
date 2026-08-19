@@ -451,4 +451,24 @@ describe("wireBridgeLogout", () => {
 
     expect(wireBridgeLogout(asClient(fake))).toBe(unsubscribe);
   });
+
+  test("LOGOUT clears the active bridge so later renewals short-circuit", async () => {
+    // T6 review Minor②: after the Shell logs the user out, a late 401 must
+    // not trigger a renewal against the logged-out Shell.
+    const fake = fakeBridgeClient();
+    await activate(fake);
+    expect(isEmbedAuthActive()).toBe(true);
+
+    let handler: (() => void) | undefined;
+    fake.onLogout.mockImplementation((subscriber: () => void) => {
+      handler = subscriber;
+      return noop;
+    });
+    wireBridgeLogout(asClient(fake));
+    handler?.();
+
+    expect(isEmbedAuthActive()).toBe(false);
+    await expect(renewEmbedSession()).resolves.toBe(false);
+    expect(fake.requestAuthToken).not.toHaveBeenCalled();
+  });
 });

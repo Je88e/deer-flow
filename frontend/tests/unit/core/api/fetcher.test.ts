@@ -101,4 +101,108 @@ describe("fetch (shared CSRF/auth wrapper)", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(embedAuth().renewEmbedSession).not.toHaveBeenCalled();
   });
+
+  test("renews the embed session and retries once on 401 instead of redirecting", async () => {
+    const location = stubWindow("/leadagent/workspace/chats/t1");
+    embedAuth().isEmbedAuthActive.mockReturnValue(true);
+    embedAuth().renewEmbedSession.mockResolvedValue(true);
+    const fetchMock = rs.fn();
+    fetchMock
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      );
+    rs.stubGlobal("fetch", fetchMock);
+
+    const { fetch } = await importFetcher();
+    const res = await fetch("/leadagent/api/v1/threads", { method: "GET" });
+
+    expect(res.status).toBe(200);
+    expect(embedAuth().renewEmbedSession).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [firstUrl] = fetchMock.mock.calls[0] as unknown as [string];
+    const [retryUrl, retryInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(retryUrl).toBe(firstUrl);
+    expect(retryInit.credentials).toBe("include");
+    // Silent renewal replaces the iframe login bounce: no navigation at all.
+    expect(location.href).toBe("");
+  });
+
+  test("hard-redirects to login when the embed session renewal fails", async () => {
+    const location = stubWindow("/leadagent/workspace/chats/t1");
+    embedAuth().isEmbedAuthActive.mockReturnValue(true);
+    embedAuth().renewEmbedSession.mockResolvedValue(false);
+    const fetchMock = rs.fn(async () => new Response(null, { status: 401 }));
+    rs.stubGlobal("fetch", fetchMock);
+
+    const { fetch } = await importFetcher();
+    await expect(
+      fetch("/leadagent/api/v1/threads", { method: "GET" }),
+    ).rejects.toBeInstanceOf(UnauthorizedError);
+
+    expect(embedAuth().renewEmbedSession).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(location.href).toBe(
+      "/leadagent/login?next=%2Fworkspace%2Fchats%2Ft1",
+    );
+  });
+
+  test("hard-redirects when the post-renewal retry is still 401", async () => {
+    const location = stubWindow("/leadagent/workspace/chats/t1");
+    embedAuth().isEmbedAuthActive.mockReturnValue(true);
+    embedAuth().renewEmbedSession.mockResolvedValue(true);
+    const fetchMock = rs.fn(async () => new Response(null, { status: 401 }));
+    rs.stubGlobal("fetch", fetchMock);
+
+    const { fetch } = await importFetcher();
+    await expect(
+      fetch("/leadagent/api/v1/threads", { method: "GET" }),
+    ).rejects.toBeInstanceOf(UnauthorizedError);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(embedAuth().renewEmbedSession).toHaveBeenCalledTimes(1);
+    expect(location.href).toBe(
+      "/leadagent/login?next=%2Fworkspace%2Fchats%2Ft1",
+    );
+  });
+
+  test("rebuilds the CSRF header from the rotated cookie on the post-renewal retry", async () => {
+    // token-exchange sets a fresh csrf_token cookie like local login does, so
+    // replaying the request with the pre-renewal token would 403.
+    stubWindow("/leadagent/workspace/chats/t1");
+    let csrf = "stale-token";
+    rs.stubGlobal("document", {
+      get cookie() {
+        return `csrf_token=${csrf}`;
+      },
+    });
+    embedAuth().isEmbedAuthActive.mockReturnValue(true);
+    embedAuth().renewEmbedSession.mockImplementation(async () => {
+      csrf = "fresh-token";
+      return true;
+    });
+    const seenCsrf: Array<string | null> = [];
+    const fetchMock = rs.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        seenCsrf.push(new Headers(init?.headers).get("X-CSRF-Token"));
+        return seenCsrf.length === 1
+          ? new Response(null, { status: 401 })
+          : new Response("{}", { status: 200 });
+      },
+    );
+    rs.stubGlobal("fetch", fetchMock);
+
+    const { fetch } = await importFetcher();
+    const res = await fetch("/leadagent/api/v1/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+
+    expect(res.status).toBe(200);
+    expect(seenCsrf).toEqual(["stale-token", "fresh-token"]);
+  });
 });

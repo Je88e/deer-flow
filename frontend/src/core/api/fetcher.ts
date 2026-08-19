@@ -1,3 +1,4 @@
+import { isEmbedAuthActive, renewEmbedSession } from "@/core/auth/embed-auth";
 import { buildLoginUrl } from "@/core/auth/types";
 import { basePath, stripBasePath } from "@/env";
 
@@ -40,6 +41,32 @@ export function readCsrfCookie(): string | null {
 }
 
 /**
+ * Merge the CSRF header into ``headers`` for state-changing methods, reading
+ * the cookie fresh on every call. GET/HEAD/OPTIONS/TRACE skip it to mirror
+ * the gateway's ``should_check_csrf`` logic exactly. Caller-supplied headers
+ * win: the helper only ADDS the header when it isn't already present, and it
+ * never mutates the caller's Headers instance.
+ */
+function mergeCsrfHeaders(
+  method: string,
+  headers: HeadersInit | undefined,
+): HeadersInit | undefined {
+  if (!isStateChangingMethod(method)) {
+    return headers;
+  }
+  const token = readCsrfCookie();
+  if (!token) {
+    return headers;
+  }
+  // Fresh Headers instance so we don't mutate caller-supplied objects.
+  const merged = new Headers(headers);
+  if (!merged.has("X-CSRF-Token")) {
+    merged.set("X-CSRF-Token", token);
+  }
+  return merged;
+}
+
+/**
  * Fetch with credentials and automatic CSRF protection.
  *
  * Two centralized contracts every API call needs:
@@ -52,30 +79,18 @@ export function readCsrfCookie(): string | null {
  *    403 if the header is missing — silently breaking every call site
  *    that uses raw ``fetch()`` instead of this wrapper.
  *
- * Auto-redirects to ``/login`` on 401. Caller-supplied headers are
- * preserved; the helper only ADDS the CSRF header when it isn't already
- * present, so explicit overrides win.
+ * On 401 the request auto-redirects to ``/login`` — except inside the WIT
+ * Shell iframe (EMBED mode), where an expired session is first renewed
+ * silently through the bridge and the request replayed once (plan §10.1).
  */
 export async function fetch(
   input: RequestInfo | string,
   init?: RequestInit,
 ): Promise<Response> {
   const url = typeof input === "string" ? input : input.url;
+  const method = init?.method ?? "GET";
 
-  // Inject CSRF for state-changing methods. GET/HEAD/OPTIONS/TRACE skip
-  // it to mirror the gateway's ``should_check_csrf`` logic exactly.
-  let headers = init?.headers;
-  if (isStateChangingMethod(init?.method ?? "GET")) {
-    const token = readCsrfCookie();
-    if (token) {
-      // Fresh Headers instance so we don't mutate caller-supplied objects.
-      const merged = new Headers(headers);
-      if (!merged.has("X-CSRF-Token")) {
-        merged.set("X-CSRF-Token", token);
-      }
-      headers = merged;
-    }
-  }
+  const headers = mergeCsrfHeaders(method, init?.headers);
 
   const res = await globalThis.fetch(url, {
     ...init,
@@ -84,6 +99,23 @@ export async function fetch(
   });
 
   if (res.status === 401) {
+    // §10.1 silent renewal: with an active Shell bridge, ask for a fresh ID
+    // token and re-run token-exchange, then replay the request once. The
+    // gate is inert outside EMBED mode, where the redirect below runs
+    // exactly as before.
+    if (isEmbedAuthActive() && (await renewEmbedSession())) {
+      const retried = await globalThis.fetch(url, {
+        ...init,
+        // The renewal's token-exchange rotates the session/CSRF cookies, so
+        // the replay rebuilds the CSRF header from the fresh cookie rather
+        // than reusing the pre-renewal token (which would 403).
+        headers: mergeCsrfHeaders(method, init?.headers),
+        credentials: "include",
+      });
+      if (retried.status !== 401) {
+        return retried;
+      }
+    }
     // Hard navigation (no Next router): apply the base path manually, and
     // strip it from the return path so the post-login redirect stays a
     // router-relative path (the router re-applies the base path itself).

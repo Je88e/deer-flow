@@ -83,6 +83,16 @@ export function isEmbedAuthActive(): boolean {
   return activeBridge !== null;
 }
 
+/**
+ * Clear the active-bridge marker when the Shell ends the session (LOGOUT).
+ * The Gateway session is gone, so a late 401 must not trigger a renewal
+ * against a Shell that already logged the user out. Distinct from
+ * resetEmbedAuthForTesting: an in-flight renewal is left to settle.
+ */
+export function deactivateEmbedAuth(): void {
+  activeBridge = null;
+}
+
 // ---- first-entry sequence -------------------------------------------------
 
 export function authenticateViaBridge(
@@ -176,6 +186,7 @@ async function exchangeIdToken(token: string): Promise<void> {
  */
 export function wireBridgeLogout(client: IframeBridgeClient): () => void {
   return client.onLogout(() => {
+    deactivateEmbedAuth();
     void fetch(`${apiBase()}/v1/auth/logout`, {
       method: "POST",
       credentials: "include",
