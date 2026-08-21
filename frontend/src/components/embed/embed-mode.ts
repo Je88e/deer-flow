@@ -5,6 +5,16 @@
 export const EMBED_SEARCH_PARAM = "embed";
 
 /**
+ * Request header that carries the EMBED flag from the proxy to the
+ * workspace layout. App Router layouts never receive `searchParams`
+ * (plan §4.1), so `src/proxy.ts` stamps this header from the
+ * `?embed=true` query parameter and the layout reads it via `headers()`.
+ * The proxy deletes any inbound value first, so the header always reflects
+ * the real query string rather than client input.
+ */
+export const EMBED_REQUEST_HEADER = "x-deerflow-embed";
+
+/**
  * EMBED mode is enabled only by the exact value "true". Anything else — a
  * missing parameter, "1", "false", or any other string — keeps the normal
  * standalone rendering path, so existing URLs never change behavior.

@@ -22,6 +22,7 @@
 ## 2. Shell 联调必带（计划 Step 8）
 
 1. **bridge-protocol.ts 逐字段对齐 Shell 仓库**——vendored schema 文件头已标"待与 Shell 仓库对齐"；七消息契约以计划 §5.1 为准。
+   - ✅ 2026-08-21 已对齐（Shell: `WitAI/frontend/packages/platform-sdk/src/iframe-bridge.ts`）。结论：七消息形状互通无阻塞（Shell 实发的 HANDSHAKE `mode:"embed"` / AUTH_TOKEN `provider:"keycloak"` / LOGOUT `payload:{}` 均满足本侧更严的 schema）。遗留容差差异（建议后续放宽本侧以贴合权威 schema，非阻塞）：① `version` 本侧 `literal("1.0")` vs Shell `string().min(1)`——Shell 升版本号时本侧会丢消息；② HANDSHAKE `mode` 本侧仅收 `"embed"` vs Shell `enum["embed","full"]`；③ LOGOUT/HANDSHAKE_REQUEST 的 `payload` 本侧必填 vs Shell optional（Shell 当前实现恒发 `{}`，不阻塞）。
 2. **Keycloak wit-shell client audience mapper 配置**（§10.7）——不配则 token-exchange 恒 401（aud 不匹配）。
 3. **§10.6 静默续签实测**——真实链路：操作 401 → `AUTH_TOKEN_REQUEST("session-expired")` → Shell 重发 token → 重 exchange → 原请求重试。
 4. **LOGOUT 联动实测**——Shell 发 LOGOUT 后 keepalive 请求在页面卸载场景送达 Gateway。
@@ -65,3 +66,24 @@
 2. token-exchange 对运行中 Gateway 的实测——需联调环境真实 Keycloak ID token。
 3. e2e 套件实跑——被 §4 的 scout-audit build bug 阻塞。
 4. T7-N1（history.replaceState 前缀）浏览器实测——静态+单测已过，浏览器实测并入 e2e 阻塞项。
+
+## 7. 联调修复记录（2026-08-21，真实 Shell 首轮联调）
+
+**症状**：Shell 报"应用未响应握手"——iframe 加载 5 秒内 Shell 未收到 `HANDSHAKE_REQUEST`。
+
+**根因（两个叠加，均为首次真实联调才暴露，对应 §6.2）**：
+
+1. **bootstrap 死锁**：`workspace/layout.tsx` 对无 session 请求服务端 `redirect("/login")`，而 embed 首次进入恰恰没有 session（token-exchange 还没机会执行）——执行换票的 `EmbedAuthGate` 永远挂载不上，握手根本不会发起。
+2. **embed 参数丢失**：`workspace/page.tsx` 的 `redirect("/workspace/chats/new")` 不带 query,Shell manifest 的 entry `/workspace?embed=true` 即使有 session 也会被 307 剥掉 embed 标记。
+
+**修复**（前端，全部带单测）：
+
+| 文件 | 改动 |
+|---|---|
+| `src/proxy.ts`（新增） | Next 16 proxy 约定：`/workspace/*` 且 `?embed=true` 时给请求打 `x-deerflow-embed: 1` 头（先删客户端伪造值） |
+| `src/app/workspace/layout.tsx` | unauthenticated + embed 头 → 渲染 `AuthProvider(null) + WorkspaceContent + children`（bootstrap 分支）而非 307;`key="embed-bootstrap"` 强制 refresh 后 remount（树形相同会让 AuthProvider 保留 null 态卡死遮罩）。WorkspaceContent 必须保留：page 树 SSR 经过 ChatPage 需要其 QueryClientProvider/SidebarProvider |
+| `src/components/embed/embed-auth-gate.tsx` | gate 消费 `useAuth`:user=null（bootstrap）时——exchange 成功 → `router.refresh()`（一次性防循环，模块级 guard)；失败/无 bridge → `router.replace("/login")`(§10.3 既定降级）。user 非 null 行为逐字节不变 |
+| `src/app/workspace/page.tsx` | 默认聊天重定向用 `embedHref` 保留 `?embed=true` |
+| `src/components/embed/embed-mode.ts` | 新增 `EMBED_REQUEST_HEADER` 常量 |
+
+**验证**：rstest 1162 passed（仅 3 个 §4 预存失败文件，零重叠）；curl 验收——`?embed=true` 无 session → 200(bootstrap 树）,plain 无 session → 307 /login（零回归）;`proxy.ts` 日志确认生效。Shell 侧 entry 已改 `https://`(http 会 301，导致 bridge targetOrigin 与最终文档 origin 失配、消息双向静默丢失）。
