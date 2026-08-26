@@ -75,3 +75,4 @@ config.yaml.bak
 docker/nginx/ssl
 
 skills/custom/scout-audit/mcps/*.zip
+docs/reports/

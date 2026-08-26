@@ -4,6 +4,8 @@
 
 ## Covered Commands
 
+- `fetch-lims.ts`
+- `run-rules.ts`
 - `validate-results.ts`
 - `generate-report.ts`
 - `run-minimal-regression.ts`
@@ -110,9 +112,3 @@ npx tsx skills/custom/scout-audit/scripts/run-rules.ts <docExtract.json> <limsDa
 - Common failures
   - `docType` 无法确定
   - 输入 JSON 非法或文件缺失
-
-## Usage Rule
-
-- 任一脚本非零退出都必须停止。
-- 先写并校验 `results.json`，再生成审核报告。
-- 一旦本次修改触及仓库契约，就必须运行最小回归。

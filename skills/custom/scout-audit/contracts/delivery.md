@@ -2,7 +2,7 @@
 
 ## Fixed Order
 
-交付顺序固定，不得重排:
+交付顺序固定，不得重排：
 
 1. 写入 `results.json`
 2. 校验 `results.json`
@@ -22,17 +22,10 @@
 ## Validation Gates
 
 - `results.json` 写入后，必须先通过结构校验，才能继续生成报告。
-- 若本次变更触及 contract / schema / template / 脚本接口，则最小回归为必跑项。
 
 ## Hard Stops
 
-以下任一情况都必须停止:
-
-- 任一脚本非零退出
-- 任一结构校验失败
-- 缺少覆盖确认
-- 两件套产物缺任一件
-- `single` / `joint` 的计数或命名不满足 contract
+停止条件以 `../SKILL.md` §Hard Stops 为唯一清单，本节不重复。
 
 ## Manual Fallback Policy
 
@@ -41,11 +34,11 @@
 
 ## Overwrite Confirmation
 
-- 若目标输出文件已存在，必须先获得用户覆盖确认。
-- 覆盖确认缺失时，不能继续写入，也不能宣称“基本完成”。
+覆盖确认是 preflight gate 步骤，规则以 `./preflight.md` §Overwrite Confirmation 为准；未获确认即停止（见 `../SKILL.md` §Hard Stops）。
 
 ## References
 
 - `../scripts/README.md`
 - `../schemas/report-schema.md`
 - `../templates/report-template.md`
+- `./preflight.md`
