@@ -57,8 +57,10 @@ test.describe("User message plain-text rendering", () => {
   test("pasted source code renders verbatim as one block", async ({ page }) => {
     mockLangGraphAPI(page, threadWithMessages(C_SOURCE));
 
-    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
-    await expect(page.getByText("ack")).toBeVisible({ timeout: 15_000 });
+    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await expect(
+      page.getByTestId("main-message-list").getByText("ack", { exact: true }),
+    ).toBeVisible({ timeout: 15_000 });
 
     // The pasted file must not be split into Markdown code-block widgets.
     await expect(
@@ -77,8 +79,10 @@ test.describe("User message plain-text rendering", () => {
     const message = "this costs $5 and $10 in total";
     mockLangGraphAPI(page, threadWithMessages(message));
 
-    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
-    await expect(page.getByText("ack")).toBeVisible({ timeout: 15_000 });
+    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await expect(
+      page.getByTestId("main-message-list").getByText("ack", { exact: true }),
+    ).toBeVisible({ timeout: 15_000 });
 
     await expect(page.locator(".is-user")).toContainText(message);
     await expect(page.locator(".is-user .katex")).toHaveCount(0);
@@ -90,8 +94,10 @@ test.describe("User message plain-text rendering", () => {
     const pageErrors = collectPageErrors(page);
     mockLangGraphAPI(page, threadWithMessages("> ".repeat(3000) + "hi"));
 
-    await page.goto(`/leadagent/workspace/chats/${MOCK_THREAD_ID}`);
-    await expect(page.getByText("ack")).toBeVisible({ timeout: 15_000 });
+    await page.goto(`/workspace/chats/${MOCK_THREAD_ID}`);
+    await expect(
+      page.getByTestId("main-message-list").getByText("ack", { exact: true }),
+    ).toBeVisible({ timeout: 15_000 });
 
     expect(pageErrors).toEqual([]);
     await expect(page.locator(".is-user")).toContainText("> > >");
