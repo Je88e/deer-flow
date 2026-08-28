@@ -2,6 +2,7 @@
 
 import logging
 import re
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, NotRequired, override
 
 from langchain.agents import AgentState
@@ -19,6 +20,14 @@ if TYPE_CHECKING:
     from deerflow.config.title_config import TitleConfig
 
 logger = logging.getLogger(__name__)
+
+# ``UploadsMiddleware`` wraps attachments in a ``<current_uploads>`` block that
+# also carries paths, document previews, and tool hints — hundreds to thousands
+# of characters that would otherwise consume the title budget and hide the
+# actual request.
+_UPLOADS_BLOCK_RE = re.compile(r"<current_uploads>[\s\S]*?</current_uploads>", re.IGNORECASE)
+# File entry lines inside the block look like ``- 批31772-COA.pdf (420.7 KB)``.
+_UPLOADED_FILENAME_RE = re.compile(r"^\s*-\s+(?P<name>.+?)\s+\([^()]*\)\s*$", re.MULTILINE)
 
 
 class TitleMiddlewareState(AgentState):
@@ -109,6 +118,31 @@ class TitleMiddleware(AgentMiddleware[TitleMiddlewareState]):
         user_msg_content = next((self._message_content(m) for m in messages if self._is_user_message_for_title(m)), "")
         return self._normalize_content(user_msg_content)
 
+    def _split_uploads_block(self, text: str) -> tuple[str, list[str]]:
+        """Split normalized user text into the real body and uploaded-file names.
+
+        The ``<current_uploads>`` wrapper is removed from the body so the
+        user's actual request stays visible to the title budget. File names
+        are high-signal title context and survive; paths, document previews,
+        and tool hints inside the block are dropped.
+        """
+        names: list[str] = []
+        for block in _UPLOADS_BLOCK_RE.findall(text):
+            names.extend(_UPLOADED_FILENAME_RE.findall(block))
+        body = _UPLOADS_BLOCK_RE.sub(" ", text).strip()
+        return body, list(dict.fromkeys(names))
+
+    def _get_title_user_parts(self, state: TitleMiddlewareState) -> tuple[str, list[str]]:
+        return self._split_uploads_block(self._get_title_user_message(state))
+
+    @staticmethod
+    def _compose_title_user_msg(body: str, attachment_names: Sequence[str]) -> str:
+        """Join body and attachment names; the attachment suffix is never length-capped."""
+        if not attachment_names:
+            return body
+        suffix = f"(Attachments: {', '.join(attachment_names)})"
+        return f"{body}\n{suffix}" if body else suffix
+
     def _should_generate_title(self, state: TitleMiddlewareState, *, allow_partial_exchange: bool = False) -> bool:
         """Check if we should generate a title for this thread."""
         config = self._get_title_config()
@@ -140,19 +174,24 @@ class TitleMiddleware(AgentMiddleware[TitleMiddlewareState]):
     def _build_title_prompt(self, state: TitleMiddlewareState) -> tuple[str, str]:
         """Extract user/assistant messages and build the title prompt.
 
-        Returns (prompt_string, user_msg) so callers can use user_msg as fallback.
+        The user body keeps the 500-char cut; the attachment-name suffix is
+        appended whole after it (never truncated). Returns (prompt_string,
+        user_msg) so callers can use user_msg as fallback.
         """
         config = self._get_title_config()
         messages = state.get("messages") or []
 
         assistant_msg_content = next((self._message_content(m) for m in messages if self._message_type(m) == "ai"), "")
 
-        user_msg = self._get_title_user_message(state)
+        body, attachment_names = self._get_title_user_parts(state)
+        user_msg = self._compose_title_user_msg(body[:500], attachment_names)
         assistant_msg = self._strip_think_tags(self._normalize_content(assistant_msg_content))
 
         prompt = config.prompt_template.format(
             max_words=config.max_words,
-            user_msg=user_msg[:500],
+            # Body was already cut to 500 chars before the attachment suffix was
+            # appended, so the composed value goes in whole.
+            user_msg=user_msg,
             assistant_msg=assistant_msg[:500],
         )
         return prompt, user_msg
@@ -169,16 +208,19 @@ class TitleMiddleware(AgentMiddleware[TitleMiddlewareState]):
         title = title_content.strip().strip('"').strip("'")
         return title[: config.max_chars] if len(title) > config.max_chars else title
 
-    def _fallback_title(self, user_msg: str) -> str:
+    def _fallback_title(self, user_msg: str, attachment_names: Sequence[str] = ()) -> str:
         config = self._get_title_config()
+        # An attachments-only first message still earns a meaningful title:
+        # the first uploaded file name beats the generic default.
+        source = user_msg or (attachment_names[0] if attachment_names else "")
         fallback_chars = min(config.max_chars, 50)
-        if len(user_msg) > fallback_chars:
+        if len(source) > fallback_chars:
             # Reserve room for the ellipsis so this path honours ``max_chars``
             # exactly as ``_parse_title`` does on the model path.
             ellipsis = "..."
             body = min(fallback_chars, config.max_chars - len(ellipsis))
-            return user_msg[:body].rstrip() + ellipsis
-        return user_msg if user_msg else "New Conversation"
+            return source[:body].rstrip() + ellipsis
+        return source if source else "New Conversation"
 
     def _get_runnable_config(self) -> dict[str, Any]:
         """Inherit the parent RunnableConfig and add middleware tag.
@@ -204,8 +246,8 @@ class TitleMiddleware(AgentMiddleware[TitleMiddlewareState]):
         if not self._should_generate_title(state, allow_partial_exchange=allow_partial_exchange):
             return None
 
-        user_msg = self._get_title_user_message(state)
-        return {"title": self._fallback_title(user_msg)}
+        body, attachment_names = self._get_title_user_parts(state)
+        return {"title": self._fallback_title(body, attachment_names)}
 
     async def _agenerate_title_result(
         self,
@@ -218,14 +260,12 @@ class TitleMiddleware(AgentMiddleware[TitleMiddlewareState]):
             return None
 
         config = self._get_title_config()
+        body, attachment_names = self._get_title_user_parts(state)
         if not config.model_name:
-            user_msg = self._get_title_user_message(state)
-            return {"title": self._fallback_title(user_msg)}
-
-        user_msg = self._get_title_user_message(state)
+            return {"title": self._fallback_title(body, attachment_names)}
 
         try:
-            prompt, user_msg = self._build_title_prompt(state)
+            prompt, _ = self._build_title_prompt(state)
             # attach_tracing=False because ``_get_runnable_config()`` inherits
             # the graph-level RunnableConfig (set in ``_make_lead_agent``) whose
             # callbacks already carry tracing handlers; binding them again at
@@ -254,7 +294,7 @@ class TitleMiddleware(AgentMiddleware[TitleMiddlewareState]):
                 return {"title": title}
         except Exception:
             logger.debug("Failed to generate async title; falling back to local title", exc_info=True)
-        return {"title": self._fallback_title(user_msg)}
+        return {"title": self._fallback_title(body, attachment_names)}
 
     @override
     def after_model(self, state: TitleMiddlewareState, runtime: Runtime) -> dict | None:

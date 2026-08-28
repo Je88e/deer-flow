@@ -47,7 +47,7 @@ function injectCsrfHeader(_url: URL, init: RequestInit): RequestInit {
 // first message after a reload never sends. The ``joinStream`` wrapper below
 // short-circuits these *before* joining.
 //
-// ``interrupted`` is included because in DeerFlow it is only ever written by
+// ``interrupted`` is included because in WitAI it is only ever written by
 // ``RunManager.cancel()`` (a user-initiated stop); the resumable human-in-the-
 // loop path uses ``Command(goto=END)`` (``ClarificationMiddleware``), which
 // ends the run as ``success``, not ``interrupted``. So an interrupted run has
@@ -275,7 +275,7 @@ async function* recoverStreamReplayGaps({
     recoveryAttempts += 1;
 
     // The SDK would otherwise ignore an unknown `gap` event and report a
-    // normal finish. Surface a custom control event to DeerFlow's hook, reload
+    // normal finish. Surface a custom control event to WitAI's hook, reload
     // durable values, then explicitly follow only events newer than the
     // retained tail captured by the server.
     clearReconnectRun(threadId, runId);

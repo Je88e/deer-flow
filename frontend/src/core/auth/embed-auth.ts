@@ -14,7 +14,7 @@
  * onLogout subscription; the keepalive Gateway logout request lives here.
  *
  * Discipline (§3.4): the Keycloak ID token exists only in local variables —
- * never localStorage — and the DeerFlow session stays in the Gateway's
+ * never localStorage — and the WitAI session stays in the Gateway's
  * HttpOnly cookie.
  */
 
@@ -157,7 +157,7 @@ function authFailedResult(
 }
 
 /**
- * Exchange the Shell-delivered Keycloak ID token for a DeerFlow session
+ * Exchange the Shell-delivered Keycloak ID token for a WitAI session
  * cookie. Body is the Task 1 contract, byte-for-byte:
  * `{ "token": "<ID token JWT>", "provider": "keycloak" }`.
  */

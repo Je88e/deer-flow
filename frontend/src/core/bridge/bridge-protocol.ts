@@ -2,7 +2,7 @@
  * Vendored iframe bridge protocol (zod schemas).
  *
  * This file is a zod reconstruction of the message set finalized on 2026-08-18
- * in the DeerFlow x WIT Shell integration plan (§5.1). The authoritative source
+ * in the WitAI x WIT Shell integration plan (§5.1). The authoritative source
  * is the Shell repository's `packages/platform-sdk/src/iframe-bridge.ts` (zod
  * schema), which is not available locally: when the Shell repo is reachable,
  * every field below must be aligned with it field by field. Protocol evolution
@@ -12,7 +12,7 @@
  * (NAVIGATE, THEME_CHANGE, LOCALE_CHANGE, TITLE_CHANGE, NAVIGATION_REQUEST)
  * are deliberately absent — they must first extend the Shell-side schema.
  *
- * Envelope: every message, including upstream (DeerFlow -> Shell) ones, carries
+ * Envelope: every message, including upstream (WitAI -> Shell) ones, carries
  * `version: "1.0"` at the top level of the message. The version never lives
  * inside the HANDSHAKE payload.
  *
@@ -28,7 +28,7 @@ export const BRIDGE_PROTOCOL_VERSION = "1.0";
 const versionSchema = z.literal(BRIDGE_PROTOCOL_VERSION);
 const emptyPayloadSchema = z.object({});
 
-// ---- Shell -> DeerFlow (downstream) payloads ----
+// ---- Shell -> WitAI (downstream) payloads ----
 
 export const handshakePayloadSchema = z.object({
   mode: z.literal("embed"),
@@ -43,7 +43,7 @@ export const authTokenPayloadSchema = z.object({
 
 export const logoutPayloadSchema = emptyPayloadSchema;
 
-// ---- DeerFlow -> Shell (upstream) payloads ----
+// ---- WitAI -> Shell (upstream) payloads ----
 
 export const handshakeRequestPayloadSchema = emptyPayloadSchema;
 
@@ -156,7 +156,7 @@ export function parseInbound(input: unknown): BridgeMessage | null {
   return result.success ? result.data : null;
 }
 
-// ---- Upstream (DeerFlow -> Shell) message constructors ----
+// ---- Upstream (WitAI -> Shell) message constructors ----
 // Each helper stamps the top-level protocol version so callers cannot forget it.
 
 export function handshakeRequestMessage(): HandshakeRequestMessage {

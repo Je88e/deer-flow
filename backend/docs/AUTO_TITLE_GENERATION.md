@@ -14,6 +14,8 @@
 
 TitleMiddleware 会先把 LangChain message content 里的结构化 block/list 内容归一化为纯文本，再拼到 title prompt 里，避免把 Python/JSON 的原始 repr 泄漏到标题生成模型。
 
+带附件的首条消息会先做 `<current_uploads>` 块剥离：块外的用户正文优先（保持前 500 字符截取），块内只解析出文件名并以 `(Attachments: name1, name2, ...)` 后缀完整附加（不截断），路径、文档预览、工具提示不会进入标题 prompt。Fallback 路径同样使用剥离后的正文；正文为空（纯附件消息）时回退到第一个文件名，最后才是 "New Conversation"。
+
 ## ⚠️ 重要：存储机制
 
 ### Title 存储位置

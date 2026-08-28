@@ -520,6 +520,118 @@ class TestTitleMiddlewareCoreLogic:
         assert middleware._should_generate_title(state, allow_partial_exchange=True) is True
         assert middleware._generate_title_result(state, allow_partial_exchange=True) == {"title": "请帮我写测试"}
 
+    def test_split_uploads_block_extracts_body_and_filenames(self):
+        """The uploads wrapper yields the real body plus file names; paths/previews/tool hints are dropped."""
+        middleware = TitleMiddleware()
+        text = (
+            "<current_uploads>\n"
+            "The following files were uploaded in this message:\n\n"
+            "- 批31772-COA.pdf (420.7 KB)\n"
+            "  Path: /mnt/user-data/uploads/批31772-COA.pdf\n"
+            "  No structural headings detected. Document begins with:\n"
+            "    > 华兰生物工程股份有限公司检验报告\n"
+            "  Use `grep` to search for keywords (e.g. `grep(pattern='keyword', path='/mnt/user-data/uploads/')`).\n\n"
+            "- 批31772-pH值.pdf (322.2 KB)\n"
+            "  Path: /mnt/user-data/uploads/批31772-pH值.pdf\n"
+            "</current_uploads>\n\n"
+            "审核该批次下的COA和ELN"
+        )
+
+        body, names = middleware._split_uploads_block(text)
+
+        assert body == "审核该批次下的COA和ELN"
+        assert names == ["批31772-COA.pdf", "批31772-pH值.pdf"]
+
+    def test_split_uploads_block_without_uploads_is_identity(self):
+        middleware = TitleMiddleware()
+
+        body, names = middleware._split_uploads_block("请帮我写测试")
+
+        assert body == "请帮我写测试"
+        assert names == []
+
+    def test_compose_title_user_msg_appends_full_attachment_list(self):
+        """Attachment names join as one suffix; the suffix itself is never length-capped here."""
+        middleware = TitleMiddleware()
+
+        assert middleware._compose_title_user_msg("正文", ["a.pdf", "b.pdf"]) == "正文\n(Attachments: a.pdf, b.pdf)"
+        assert middleware._compose_title_user_msg("", ["a.pdf", "b.pdf"]) == "(Attachments: a.pdf, b.pdf)"
+        assert middleware._compose_title_user_msg("正文", []) == "正文"
+
+    def test_fallback_title_strips_uploads_block_and_uses_body_text(self):
+        """Regression: fallback used to cut the raw message head, leaking ``<current_uploads>`` XML as the title."""
+        _set_test_title_config(enabled=True, model_name=None)
+        middleware = TitleMiddleware()
+        state = {
+            "messages": [
+                HumanMessage(
+                    content=(
+                        "<current_uploads>\n"
+                        "The following files were uploaded in this message:\n\n"
+                        "- 批31772-COA.pdf (420.7 KB)\n"
+                        "  Path: /mnt/user-data/uploads/批31772-COA.pdf\n"
+                        "  No structural headings detected. Document begins with:\n"
+                        "    > 华兰生物工程股份有限公司检验报告\n"
+                        "</current_uploads>\n\n"
+                        "审核该批次下的COA和ELN"
+                    )
+                ),
+                AIMessage(content="好的"),
+            ]
+        }
+
+        result = middleware._generate_title_result(state)
+
+        assert result == {"title": "审核该批次下的COA和ELN"}
+
+    def test_fallback_title_uses_first_attachment_name_when_body_empty(self):
+        """An attachments-only first message falls back to the first filename, not 'New Conversation'."""
+        _set_test_title_config(enabled=True, model_name=None)
+        middleware = TitleMiddleware()
+        state = {
+            "messages": [
+                HumanMessage(
+                    content=(
+                        "<current_uploads>\n"
+                        "The following files were uploaded in this message:\n\n"
+                        "- 批31772-COA.pdf (420.7 KB)\n"
+                        "  Path: /mnt/user-data/uploads/批31772-COA.pdf\n"
+                        "- 批31772-pH值.pdf (322.2 KB)\n"
+                        "  Path: /mnt/user-data/uploads/批31772-pH值.pdf\n"
+                        "</current_uploads>"
+                    )
+                ),
+                AIMessage(content="好的"),
+            ]
+        }
+
+        result = middleware._generate_title_result(state)
+
+        assert result == {"title": "批31772-COA.pdf"}
+
+    def test_build_title_prompt_keeps_500_char_body_and_appends_full_attachment_list(self):
+        """The body keeps the original 500-char cut; the attachment suffix is appended whole."""
+        _set_test_title_config(enabled=True)
+        middleware = TitleMiddleware()
+        long_body = "审" * 600
+        names_block = "\n".join(f"- 附件{i:02d}-质检报告.pdf ({i}.0 KB)\n  Path: /mnt/user-data/uploads/附件{i:02d}.pdf" for i in range(10))
+        state = {
+            "messages": [
+                HumanMessage(content=f"<current_uploads>\nThe following files were uploaded in this message:\n\n{names_block}\n</current_uploads>\n\n{long_body}"),
+                AIMessage(content="好的"),
+            ]
+        }
+
+        prompt, user_msg = middleware._build_title_prompt(state)
+
+        body_part, sep, suffix = user_msg.partition("\n(Attachments: ")
+        assert body_part == "审" * 500
+        assert sep, "attachment suffix must be present"
+        for i in range(10):
+            assert f"附件{i:02d}-质检报告.pdf" in suffix
+        assert "<current_uploads>" not in prompt
+        assert "Path:" not in prompt
+
     def test_generate_title_async_strips_think_tags_in_response(self, monkeypatch):
         """Async title generation strips <think> blocks from the model response."""
         _set_test_title_config(max_chars=50, model_name="title-model")

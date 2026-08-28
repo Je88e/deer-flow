@@ -85,7 +85,7 @@ export const zhCN: Translations = {
   welcome: {
     greeting: "你好，欢迎回来！",
     description:
-      "欢迎使用 🦌 DeerFlow，一个完全开源的超级智能体。通过内置和自定义的 Skills，\nDeerFlow 可以帮你搜索网络、分析数据，还能为你生成幻灯片、\n图片、视频、播客及网页等，几乎可以做任何事情。",
+      "欢迎使用 🦌 WitAI，一个完全开源的超级智能体。通过内置和自定义的 Skills，\nDeerFlow 可以帮你搜索网络、分析数据，还能为你生成幻灯片、\n图片、视频、播客及网页等，几乎可以做任何事情。",
 
     createYourOwnSkill: "创建你自己的 Agent SKill",
     createYourOwnSkillDescription:
@@ -303,11 +303,11 @@ export const zhCN: Translations = {
     cancelling: "正在取消…",
     cancelFailed: "取消任务失败",
     cancellationRetrying: (attempt) =>
-      `第 ${attempt} 次取消失败；DeerFlow 将继续重试。`,
+      `第 ${attempt} 次取消失败；WitAI 将继续重试。`,
     notificationRetrying: (attempt) =>
-      `第 ${attempt} 次聊天通知失败；DeerFlow 将退避后重试。`,
+      `第 ${attempt} 次聊天通知失败；WitAI 将退避后重试。`,
     notificationStopped: "聊天通知因反复失败或永久拒绝，已停止重试。",
-    trackingDegraded: "状态检查有所延迟，DeerFlow 仍在重试。",
+    trackingDegraded: "状态检查有所延迟，WitAI 仍在重试。",
     viewDetails: "查看详情",
     hideDetails: "收起详情",
     detailsFailed: "无法加载任务详情",
@@ -407,7 +407,7 @@ export const zhCN: Translations = {
       threadIdPlaceholder: "线程 ID",
       reuseNoticeTitle: "使用该线程的历史对话",
       reuseNoticeDescription:
-        "如果触发时该线程正在运行，DeerFlow 会将本次执行排队，并在线程空闲后启动；超过配置的最长等待时间后会标记为失败。",
+        "如果触发时该线程正在运行，WitAI 会将本次执行排队，并在线程空闲后启动；超过配置的最长等待时间后会标记为失败。",
     },
     filters: {
       allStatuses: "全部状态",
@@ -568,13 +568,13 @@ export const zhCN: Translations = {
 
   // Workspace
   workspace: {
-    officialWebsite: "访问 DeerFlow 官方网站",
-    githubTooltip: "访问 DeerFlow 的 GitHub 仓库",
+    officialWebsite: "访问 WitAI 官方网站",
+    githubTooltip: "访问 WitAI 的 GitHub 仓库",
     settingsAndMore: "设置和更多",
-    visitGithub: "在 GitHub 上查看 DeerFlow",
+    visitGithub: "在 GitHub 上查看 WitAI",
     reportIssue: "报告问题",
     contactUs: "联系我们",
-    about: "关于 DeerFlow",
+    about: "关于 WitAI",
     logout: "退出登录",
     gatewayUnavailable: "网关暂时不可用。",
     gatewayUnavailableRetrying: "正在后台重试…",
@@ -1026,7 +1026,7 @@ export const zhCN: Translations = {
         changeAppButton: "切换飞书 Bot",
         changeAppTitle: "切换到其他飞书 App",
         changeAppDescription:
-          "把你的 DeerFlow 账号指向另一个 Lark/飞书 App。只影响你自己的账号，不影响其他用户。",
+          "把你的 WitAI 账号指向另一个 Lark/飞书 App。只影响你自己的账号，不影响其他用户。",
         changeAppIdLabel: "App ID",
         changeAppSecretLabel: "App Secret",
         changeAppAuthResetNote:
@@ -1038,9 +1038,9 @@ export const zhCN: Translations = {
         brandLark: "Lark",
         connectionStarted: "连接链接已打开",
         connectionReady: "连接准备已完成，正在打开授权链接",
-        authStarted: "授权页已打开，DeerFlow 会自动检测授权结果。",
+        authStarted: "授权页已打开，WitAI 会自动检测授权结果。",
         authorizationStillPending:
-          "还没有检测到授权完成。请在浏览器完成授权；DeerFlow 会继续自动检测。如果页面没有更新，可点击“我已完成授权”。",
+          "还没有检测到授权完成。请在浏览器完成授权；WitAI 会继续自动检测。如果页面没有更新，可点击“我已完成授权”。",
         permissionTitle: "授权范围",
         permissionDescription:
           "默认只完成基础登录，不会申请任何业务权限。按需在这里勾选要授权的业务域；已连接用户可以重新授权继续追加（scope 会累积）。",
@@ -1144,10 +1144,10 @@ export const zhCN: Translations = {
           "首次连接需要在浏览器里完成一次飞书确认。打开下面的链接按提示完成；完成后回到这里继续授权。",
         openAuthLinkTitle: "在浏览器中完成飞书授权",
         openAuthLinkDescription:
-          "打开下面的链接完成授权。DeerFlow 会持续自动检测，并在授权通过后保存连接状态。",
+          "打开下面的链接完成授权。WitAI 会持续自动检测，并在授权通过后保存连接状态。",
         waitingAuthTitle: "等待飞书授权完成",
         waitingAuthDescription:
-          "请在刚打开的浏览器页面完成授权。DeerFlow 会自动更新这里的状态；下方按钮只是兜底操作。",
+          "请在刚打开的浏览器页面完成授权。WitAI 会自动更新这里的状态；下方按钮只是兜底操作。",
         openAuthLink: "打开链接",
         copyAuthLink: "复制链接",
         completeAuth: "我已完成授权",
@@ -1172,7 +1172,7 @@ export const zhCN: Translations = {
           "本次连接流程已向飞书验证当前用户授权。需要刷新授权或追加权限时，可重新连接。",
         authNextTitle: "下一步完成浏览器授权",
         authNextDescription:
-          "点击“连接飞书”后，DeerFlow 会先检查当前状态；未连接或授权过期时会拉起浏览器授权。",
+          "点击“连接飞书”后，WitAI 会先检查当前状态；未连接或授权过期时会拉起浏览器授权。",
       },
     },
     skills: {
@@ -1234,7 +1234,7 @@ export const zhCN: Translations = {
     passwordPlaceholder: "•••••••",
     rememberMe: "保持登录",
     rememberMeDescription:
-      "下次打开 DeerFlow 时尽量保持当前会话，仅保存邮箱，不保存密码。",
+      "下次打开 WitAI 时尽量保持当前会话，仅保存邮箱，不保存密码。",
     pleaseWait: "请稍候...",
     signIn: "登录",
     createAccount: "创建账号",
