@@ -23,7 +23,6 @@ from app.gateway.auth.session_cookie_state import (
     SKIP_AUTH_CSRF_COOKIE_STATE_ATTR,
 )
 from app.gateway.auth_disabled import is_auth_disabled
-from app.gateway.auth_middleware import get_bearer_token
 from app.gateway.request_path import get_request_route_path
 
 CSRF_COOKIE_NAME = "csrf_token"
@@ -233,16 +232,21 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Cross-site auth request denied."},
             )
 
-        # Requests presenting ``Authorization: Bearer`` credentials are exempt
-        # from the double-submit check: a browser cannot attach the
+        # Requests presenting an Authorization header (PAT ``dfp_`` tokens,
+        # OIDC Bearer access tokens) are exempt from the cookie double-submit
+        # check only — the cross-site origin check on auth endpoints above
+        # still runs for every request. A browser cannot attach the
         # Authorization header to a cross-site request (fetch/XHR carrying it
         # triggers a CORS preflight that hostile origins cannot pass; HTML
-        # forms cannot set headers at all), and AuthMiddleware fail-closes an
-        # invalid Bearer token to 401 before any route runs — so the exemption
-        # can never turn into an auth bypass. Keyed on the presented
-        # credential rather than an auth-success marker because
+        # forms cannot set headers at all). Safety rests on AuthMiddleware's
+        # strict credential precedence: ANY present-but-invalid Authorization
+        # header — wrong scheme, empty credential, junk Bearer — is a 401
+        # there before any route runs, so a cross-site attacker cannot ride a
+        # victim's cookie by padding the request with a garbage header, and
+        # the exemption can never turn into an auth bypass. Keyed on the
+        # presented header rather than an auth-success marker because
         # CSRFMiddleware runs before AuthMiddleware in the stack.
-        if should_check_csrf(request) and not _is_auth and get_bearer_token(request) is None:
+        if should_check_csrf(request) and not _is_auth and request.headers.get("authorization") is None:
             cookie_token = request.cookies.get(CSRF_COOKIE_NAME)
             header_token = request.headers.get(CSRF_HEADER_NAME)
 

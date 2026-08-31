@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "@rstest/core";
 
 import { pathOfAuditThread } from "@/core/scout-audit/utils";
 

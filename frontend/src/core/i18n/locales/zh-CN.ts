@@ -121,6 +121,8 @@ export const zhCN: Translations = {
     loadFullFile: "加载完整文件",
     loadingFullFile: "正在加载完整文件...",
     previewFailed: "无法预览此文件，但仍可下载原始文件。",
+    viewSource: "查看原始文件",
+    missingTarget: "该链接没有指明要展示哪个文件。",
   },
 
   // Citations
@@ -441,6 +443,8 @@ export const zhCN: Translations = {
       pause: "暂停",
       resume: "恢复",
       trigger: "立即触发",
+      duplicate: "复制",
+      duplicateTitleSuffix: "（副本）",
       delete: "删除",
     },
     deleteConfirm: "确定要删除该定时任务吗？此操作不可撤销。",
@@ -591,6 +595,8 @@ export const zhCN: Translations = {
     branchCreated: "已创建分叉对话",
     branchFailed: "创建分叉对话失败。",
     streamReplayGap: "部分实时更新已过期，已从持久化状态恢复对话。",
+    outlineLabel: "对话章节",
+    outlineAttachmentFallback: "图片或文件消息",
   },
 
   // Chats
@@ -677,7 +683,7 @@ export const zhCN: Translations = {
     saveAndConnect: "保存并连接",
     saveChanges: "保存修改",
     descriptions: {
-      buzz: "通过智能体接收 Buzz 频道消息和私聊。",
+      buzz: "通过 WitAI 智能体接收 Buzz 频道消息和私聊。",
       telegram: "接收 Telegram 私聊消息。",
       slack: "接收 Slack 工作区消息和提及。",
       discord: "接收 Discord 服务器消息。",

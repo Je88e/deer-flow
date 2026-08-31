@@ -39,8 +39,13 @@ function embedAuth(): EmbedAuthDouble {
   return (globalThis as Holders).__embedAuth!;
 }
 
-function stubWindow(pathname: string): { href: string; pathname: string } {
-  const location = { href: "", pathname };
+function stubWindow(
+  pathname: string,
+  search = "",
+): { href: string; pathname: string; search: string } {
+  // A real browser Location always exposes `search` ("" when absent) — the
+  // 401 redirect folds it into the login return path.
+  const location = { href: "", pathname, search };
   rs.stubGlobal("window", { location });
   return location;
 }
@@ -100,6 +105,27 @@ describe("fetch (shared CSRF/auth wrapper)", () => {
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(embedAuth().renewEmbedSession).not.toHaveBeenCalled();
+  });
+
+  test("401 keeps the query string in the return path under a base path", async () => {
+    // Routes that carry their target in the query (e.g. the standalone
+    // artifact viewer) must survive the login round-trip (#upstream parity),
+    // with the base path stripped from path+search alike.
+    const location = stubWindow(
+      "/leadagent/artifacts/view",
+      "?path=%2Freport.md",
+    );
+    const fetchMock = rs.fn(async () => new Response(null, { status: 401 }));
+    rs.stubGlobal("fetch", fetchMock);
+
+    const { fetch } = await importFetcher();
+    await expect(
+      fetch("/leadagent/api/v1/threads", { method: "GET" }),
+    ).rejects.toBeInstanceOf(UnauthorizedError);
+
+    expect(location.href).toBe(
+      "/leadagent/login?next=%2Fartifacts%2Fview%3Fpath%3D%252Freport.md",
+    );
   });
 
   test("renews the embed session and retries once on 401 instead of redirecting", async () => {

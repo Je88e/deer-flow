@@ -119,8 +119,13 @@ export async function fetch(
     // Hard navigation (no Next router): apply the base path manually, and
     // strip it from the return path so the post-login redirect stays a
     // router-relative path (the router re-applies the base path itself).
+    // Include the search string: routes that carry their target in the query
+    // (e.g. the standalone artifact viewer) are otherwise unrecoverable after
+    // login, which lands on the default workspace instead.
     const base = basePath();
-    const returnPath = stripBasePath(window.location.pathname);
+    const returnPath = stripBasePath(
+      `${window.location.pathname}${window.location.search}`,
+    );
     window.location.href = `${base}${buildLoginUrl(returnPath)}`;
     throw new UnauthorizedError();
   }

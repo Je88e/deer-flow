@@ -19,9 +19,11 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp
 
 from app.gateway.auth.errors import AuthErrorCode, AuthErrorResponse
+from app.gateway.auth.pat import PAT_TOKEN_PREFIX
 from app.gateway.auth_disabled import (
     AUTH_SOURCE_AUTH_DISABLED,
     AUTH_SOURCE_INTERNAL,
+    AUTH_SOURCE_PAT,
     AUTH_SOURCE_SESSION,
     get_auth_disabled_user,
     is_auth_disabled,
@@ -195,6 +197,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
     2. Strict validation of the presented credential — return 401
        TOKEN_INVALID if the token is absent, malformed, expired, or the
        signed user does not exist / is stale. A Bearer credential is
+       dispatched by format: ``dfp_``-prefixed tokens authenticate as PATs
+       (``app.gateway.auth.pat.authenticate_pat``), anything else is
        validated offline against the OIDC provider's JWKS
        (``get_user_from_bearer_token``); an invalid one never falls back to
        the session cookie.
@@ -232,24 +236,69 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         auth_source = AUTH_SOURCE_SESSION
         access_token = request.cookies.get("access_token")
+        authorization = request.headers.get("authorization")
         bearer_token = get_bearer_token(request)
+        pat_scopes: frozenset[str] = frozenset()
 
         # Non-public path: require credentials (priority: internal > bearer > cookie)
         if internal_user is not None:
             user = internal_user
             auth_source = AUTH_SOURCE_INTERNAL
-        elif bearer_token is not None:
-            # Direct-Bearer branch (micro-frontend deployment, plan §3.4): a
-            # presented Bearer credential is validated strictly — an invalid
-            # token is a 401, never a silent fallback to the session cookie.
-            # Success keeps auth_source at "session" so every downstream
-            # resolver treats the request exactly like a cookie session.
+        elif authorization is not None and not is_auth_disabled():
+            # Bearer credential precedence (#4849 + plan §3.4): a
+            # present-but-invalid Authorization header is a hard 401 and never
+            # silently falls back to the session cookie. This is also what
+            # makes the CSRF middleware's Authorization-header skip safe — a
+            # cross-site attacker cannot ride a victim's cookie by padding the
+            # request with a garbage Authorization header, because the request
+            # dies here before any route runs. Auth-disabled mode is an
+            # operator override of all authentication, so it stays ahead of the
+            # Bearer check (a stray Authorization header from a proxy must not
+            # 401 an E2E sandbox). Dispatch is by credential format:
+            # ``dfp_``-prefixed tokens authenticate as PATs, any other Bearer
+            # credential is validated as an OIDC access token.
+            if bearer_token is not None and bearer_token.startswith(PAT_TOKEN_PREFIX):
+                from app.gateway.auth.pat import authenticate_pat, is_pat_allowed_route
+
+                try:
+                    user, pat_scopes = await authenticate_pat(request.app, authorization)
+                except HTTPException as exc:
+                    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+                # Default-deny route boundary (#5041 review P1-1): scopes only
+                # constrain @require_permission routes, so any route outside the
+                # explicit PAT policy is closed to PAT callers outright — an
+                # all-scopes token must not reach undecorated mutation routes.
+                if not is_pat_allowed_route(request.method, get_request_route_path(request)):
+                    return JSONResponse(
+                        status_code=403,
+                        content={"detail": "PAT credentials are not permitted on this route"},
+                    )
+                auth_source = AUTH_SOURCE_PAT
+            elif bearer_token is not None:
+                # Direct-Bearer branch (micro-frontend deployment, plan §3.4):
+                # validated strictly against the OIDC provider's JWKS. Success
+                # keeps auth_source at "session" so every downstream resolver
+                # treats the request exactly like a cookie session.
+                try:
+                    user = await get_user_from_bearer_token(bearer_token)
+                    request.state.auth_scheme = AUTH_SCHEME_BEARER
+                except HTTPException as exc:
+                    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+            else:
+                # Present-but-unusable Authorization header (empty credential
+                # or a non-Bearer scheme): the same generic 401 every invalid
+                # credential gets, never a silent fall back to the cookie.
+                return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+        elif bearer_token is not None and not bearer_token.startswith(PAT_TOKEN_PREFIX) and is_auth_disabled():
+            # Auth-disabled mode with a non-PAT Bearer credential: validation
+            # still runs so a valid OIDC access token resolves its real user,
+            # but an invalid one degrades to the auth-disabled user instead of
+            # 401ing an E2E sandbox. PATs stay ignored here — auth-disabled is
+            # an operator override of all credential checks.
             try:
                 user = await get_user_from_bearer_token(bearer_token)
                 request.state.auth_scheme = AUTH_SCHEME_BEARER
-            except HTTPException as exc:
-                if not is_auth_disabled():
-                    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+            except HTTPException:
                 user = get_auth_disabled_user()
                 auth_source = AUTH_SOURCE_AUTH_DISABLED
         elif access_token:
@@ -297,6 +346,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
             user,
             is_internal=auth_source == AUTH_SOURCE_INTERNAL,
         )
+        if auth_source == AUTH_SOURCE_PAT:
+            # A PAT can only narrow its owning user's permissions: the stored
+            # scopes intersect the resolved route permissions, never widen
+            # them, and role changes / authorization policy stay authoritative
+            # because they were resolved fresh from the owning user above.
+            permissions = [permission for permission in permissions if permission in pat_scopes]
         request.state.auth = AuthContext(user=user, permissions=permissions)
         token = set_current_user(user)
         try:
