@@ -4,6 +4,8 @@ import { SparklesIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { embedHref } from "@/components/embed/embed-mode";
+import { useIsEmbedRoute } from "@/components/embed/use-is-embed-route";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -69,13 +71,20 @@ function SkillSettingsList({
   const isAdmin = user?.system_role === "admin";
   const [filter, setFilter] = useState<string>("public");
   const { mutate: enableSkill } = useEnableSkill();
+  // The settings dialog is reachable in EMBED mode, so this chat navigation
+  // must carry ?embed=true or it silently leaves EMBED mode.
+  const isEmbedRoute = useIsEmbedRoute();
   const filteredSkills = useMemo(
     () => skills.filter((skill) => skill.category === filter),
     [skills, filter],
   );
   const handleCreateSkill = () => {
     onClose?.();
-    router.push("/workspace/chats/new?mode=skill");
+    router.push(
+      isEmbedRoute
+        ? embedHref("/workspace/chats/new?mode=skill")
+        : "/workspace/chats/new?mode=skill",
+    );
   };
   return (
     <div className="flex w-full flex-col gap-4">

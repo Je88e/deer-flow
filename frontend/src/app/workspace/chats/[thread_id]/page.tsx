@@ -1,5 +1,4 @@
 import { EmbedAuthGate } from "@/components/embed/embed-auth-gate";
-import { EmbedLayout } from "@/components/embed/embed-layout";
 import { isEmbedSearchValue } from "@/components/embed/embed-mode";
 import { EmbedModeProvider } from "@/components/embed/embed-mode-provider";
 import ChatPage from "@/components/workspace/chats/chat-page";
@@ -20,13 +19,13 @@ export default async function WorkspaceChatPage({
   if (isEmbedded) {
     return (
       <EmbedModeProvider embedded>
-        {/* The gate wraps the whole EMBED shell (thread panel included) so
-            the shell's queries only fire once the session cookie from
-            token-exchange is in place. */}
+        {/* EMBED renders the standard workspace layout (sidebar included —
+            the sidebar and its menus hide EMBED-only entries themselves). The
+            gate still overlays the tree until the bridge token-exchange
+            settles, so the chat stack's queries only fire once the session
+            cookie is in place. */}
         <EmbedAuthGate>
-          <EmbedLayout>
-            <ChatPage />
-          </EmbedLayout>
+          <ChatPage />
         </EmbedAuthGate>
       </EmbedModeProvider>
     );

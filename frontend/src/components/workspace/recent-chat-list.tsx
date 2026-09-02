@@ -16,6 +16,8 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { embedHref } from "@/components/embed/embed-mode";
+import { useIsEmbedRoute } from "@/components/embed/use-is-embed-route";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -74,6 +76,10 @@ export function RecentChatList() {
   const { t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
+  // In EMBED mode every thread link and delete redirect must carry
+  // ?embed=true — dropping it silently leaves EMBED mode (menus reappear,
+  // Shell bridge goes dormant).
+  const isEmbedRoute = useIsEmbedRoute();
   const { thread_id: threadIdFromPath, agent_name: agentNameFromPath } =
     useParams<{
       thread_id: string;
@@ -169,7 +175,9 @@ export function RecentChatList() {
                 nextPath: nextThreadPath,
                 force: true,
               });
-              void router.replace(nextThreadPath);
+              void router.replace(
+                isEmbedRoute ? embedHref(nextThreadPath) : nextThreadPath,
+              );
             }
           : undefined,
       });
@@ -177,6 +185,7 @@ export function RecentChatList() {
     [
       agentNameFromPath,
       deleteThread,
+      isEmbedRoute,
       pathname,
       router,
       threadIdFromPath,
@@ -334,7 +343,11 @@ export function RecentChatList() {
                           data-branch-parent-id={
                             branchEntry?.parentThread?.thread_id
                           }
-                          href={pathOfThread(thread)}
+                          href={
+                            isEmbedRoute
+                              ? embedHref(pathOfThread(thread))
+                              : pathOfThread(thread)
+                          }
                           title={branchLabel}
                         >
                           {branchEntry && branchEntry.depth > 0 && (

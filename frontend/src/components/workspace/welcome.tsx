@@ -50,7 +50,7 @@ export function Welcome({
         ) : (
           <div className="flex max-w-full flex-wrap items-center justify-center gap-2">
             <div className={cn("inline-block", !waved ? "animate-wave" : "")}>
-              {isUltra ? "🚀" : "👋"}
+              {/* {isUltra ? "🚀" : "👋"} */}
             </div>
             <AuroraText colors={colors}>{t.welcome.greeting}</AuroraText>
           </div>

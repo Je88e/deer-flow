@@ -8,6 +8,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { embedHref } from "@/components/embed/embed-mode";
+import { useIsEmbedRoute } from "@/components/embed/use-is-embed-route";
 import {
   CommandDialog,
   CommandEmpty,
@@ -33,14 +35,17 @@ export function CommandPalette() {
   const { t } = useI18n();
   const router = useRouter();
   const { openSettings } = useSettingsDialog();
+  const isEmbedRoute = useIsEmbedRoute();
   const [open, setOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [isMac, setIsMac] = useState(false);
 
   const handleNewChat = useCallback(() => {
-    router.push("/workspace/chats/new");
+    router.push(
+      isEmbedRoute ? embedHref("/workspace/chats/new") : "/workspace/chats/new",
+    );
     setOpen(false);
-  }, [router]);
+  }, [isEmbedRoute, router]);
 
   const handleOpenSettings = useCallback(() => {
     setOpen(false);

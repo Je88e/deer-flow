@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { embedHref } from "@/components/embed/embed-mode";
+import { useIsEmbedRoute } from "@/components/embed/use-is-embed-route";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,6 +30,9 @@ import { formatTimeAgo } from "@/core/utils/datetime";
 
 export default function ChatsPage() {
   const { t } = useI18n();
+  // Thread links must carry ?embed=true in EMBED mode or the navigation
+  // silently leaves EMBED (menus reappear, Shell bridge goes dormant).
+  const isEmbedRoute = useIsEmbedRoute();
   const {
     data: infiniteThreads,
     fetchNextPage,
@@ -100,7 +105,14 @@ export default function ChatsPage() {
                   renderItem={(thread) => {
                     const channelSource = channelSourceOfThread(thread);
                     return (
-                      <Link key={thread.thread_id} href={pathOfThread(thread)}>
+                      <Link
+                        key={thread.thread_id}
+                        href={
+                          isEmbedRoute
+                            ? embedHref(pathOfThread(thread))
+                            : pathOfThread(thread)
+                        }
+                      >
                         <div className="flex flex-col gap-2 border-b p-4">
                           <div className="flex min-w-0 items-center gap-2">
                             <ThreadChannelIcon source={channelSource} />

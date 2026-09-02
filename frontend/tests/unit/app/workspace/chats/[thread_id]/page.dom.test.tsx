@@ -19,16 +19,9 @@ rs.mock("@/components/workspace/chats/chat-page", () => ({
   },
 }));
 
-// Task 5 mounts the EMBED thread panel inside EmbedLayout. This suite pins
-// the page's embed-branch decision, so stub the panel rather than dragging
-// its hooks and i18n provider requirements into every case.
-rs.mock("@/components/embed/embed-thread-list", () => ({
-  EmbedThreadList: () => <div data-testid="embed-thread-list" />,
-}));
-
-// Task 6 wraps the EMBED shell in EmbedAuthGate (bridge handshake +
-// token-exchange). Same reason as above: its i18n/bridge requirements do
-// not belong in this branch-decision suite, so stub it as a pass-through.
+// The EMBED branch wraps the chat in EmbedAuthGate (bridge handshake +
+// token-exchange). Its i18n/bridge requirements do not belong in this
+// branch-decision suite, so stub it as a pass-through.
 rs.mock("@/components/embed/embed-auth-gate", () => ({
   EmbedAuthGate: ({ children }: { children: ReactNode }) => (
     <div data-testid="embed-auth-gate">{children}</div>
@@ -65,7 +58,7 @@ describe("workspace chat page embed branch", () => {
     expect(screen.getByTestId("chat-page-probe").textContent).toBe(
       "embedded=false",
     );
-    expect(document.querySelector('[data-embed-layout="true"]')).toBeNull();
+    expect(screen.queryByTestId("embed-auth-gate")).toBeNull();
   });
 
   it("does not enter embed mode for other embed values", async () => {
@@ -73,16 +66,17 @@ describe("workspace chat page embed branch", () => {
     expect(screen.getByTestId("chat-page-probe").textContent).toBe(
       "embedded=false",
     );
-    expect(document.querySelector('[data-embed-layout="true"]')).toBeNull();
+    expect(screen.queryByTestId("embed-auth-gate")).toBeNull();
   });
 
-  it("wraps chat in the embed shell and context when ?embed=true", async () => {
+  it("wraps chat in the embed context and auth gate when ?embed=true", async () => {
     await renderPage({ embed: "true" });
     expect(screen.getByTestId("chat-page-probe").textContent).toBe(
       "embedded=true",
     );
-    const shell = document.querySelector('[data-embed-layout="true"]');
-    expect(shell).not.toBeNull();
-    expect(shell?.contains(screen.getByTestId("chat-page-probe"))).toBe(true);
+    // EMBED renders the standard layout (no dedicated embed shell anymore):
+    // the gate is the only wrapper, and it carries the chat page inside.
+    const gate = screen.getByTestId("embed-auth-gate");
+    expect(gate.contains(screen.getByTestId("chat-page-probe"))).toBe(true);
   });
 });

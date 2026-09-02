@@ -15,6 +15,7 @@ import {
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 
+import { useIsEmbedRoute } from "@/components/embed/use-is-embed-route";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,11 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
+
+import {
+  EMBED_HIDDEN_SECTIONS,
+  resolveInitialSettingsSection,
+} from "./settings-sections";
 
 function SettingsPageLoading() {
   return (
@@ -117,19 +123,10 @@ type SettingsDialogProps = React.ComponentProps<typeof Dialog> & {
 export function SettingsDialog(props: SettingsDialogProps) {
   const { defaultSection = "appearance", ...dialogProps } = props;
   const { t } = useI18n();
-  const [activeSection, setActiveSection] =
-    useState<SettingsSection>(defaultSection);
+  const isEmbedRoute = useIsEmbedRoute();
 
-  useEffect(() => {
-    // When opening the dialog, ensure the active section follows the caller's intent.
-    // This allows triggers like "About" to open the dialog directly on that page.
-    if (dialogProps.open) {
-      setActiveSection(defaultSection);
-    }
-  }, [defaultSection, dialogProps.open]);
-
-  const sections = useMemo(
-    () => [
+  const sections = useMemo(() => {
+    const all = [
       {
         id: "account",
         label: t.settings.sections.account,
@@ -168,20 +165,38 @@ export function SettingsDialog(props: SettingsDialogProps) {
       },
       { id: "skills", label: t.settings.sections.skills, icon: SparklesIcon },
       // { id: "about", label: t.settings.sections.about, icon: InfoIcon },
-    ],
-    [
-      t.settings.sections.account,
-      t.settings.sections.appearance,
-      t.settings.sections.channels,
-      t.settings.sections.integrations,
-      t.settings.sections.memory,
-      t.settings.sections.tools,
-      t.settings.sections.subagents,
-      t.settings.sections.skills,
-      t.settings.sections.notification,
-      // t.settings.sections.about,
-    ],
+    ];
+    return isEmbedRoute
+      ? all.filter((section) => !EMBED_HIDDEN_SECTIONS.has(section.id))
+      : all;
+  }, [
+    isEmbedRoute,
+    t.settings.sections.account,
+    t.settings.sections.appearance,
+    t.settings.sections.channels,
+    t.settings.sections.integrations,
+    t.settings.sections.memory,
+    t.settings.sections.tools,
+    t.settings.sections.subagents,
+    t.settings.sections.skills,
+    t.settings.sections.notification,
+    // t.settings.sections.about,
+  ]);
+
+  // The default section (and the store default) is "appearance", which EMBED
+  // hides — land on the first visible section instead so the dialog never
+  // opens on a page whose nav entry is filtered out.
+  const [activeSection, setActiveSection] = useState<SettingsSection>(() =>
+    resolveInitialSettingsSection(defaultSection, sections),
   );
+
+  useEffect(() => {
+    // When opening the dialog, ensure the active section follows the caller's intent.
+    // This allows triggers like "About" to open the dialog directly on that page.
+    if (dialogProps.open) {
+      setActiveSection(resolveInitialSettingsSection(defaultSection, sections));
+    }
+  }, [defaultSection, dialogProps.open, sections]);
   return (
     <Dialog
       {...dialogProps}

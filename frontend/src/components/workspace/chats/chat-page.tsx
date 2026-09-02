@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { type PromptInputMessage } from "@/components/ai-elements/prompt-input";
+import { embedHref } from "@/components/embed/embed-mode";
+import { useEmbedMode } from "@/components/embed/embed-mode-provider";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ArtifactTrigger } from "@/components/workspace/artifacts";
@@ -92,6 +94,7 @@ function normalizeUrlParam(value: string | null): string | null {
 function ChatPageInner() {
   const { t } = useI18n();
   const router = useRouter();
+  const { embedded } = useEmbedMode();
   const { threadId, setThreadId, isNewThread, setIsNewThread, isMock } =
     useThreadChat();
   // `isNewThread` tracks whether the backend has the thread yet — gates the
@@ -158,10 +161,14 @@ function ChatPageInner() {
       // ! Important: Never use next.js router for navigation in this case, otherwise it will cause the thread to re-mount and lose all states. Use native history API instead.
       // The native history API is not covered by Next's basePath — write the
       // prefixed URL so refresh/deep-link keeps resolving under /leadagent.
+      // Keep the current query string (?embed=true in EMBED mode): a
+      // stripped query would silently drop the next router navigation out
+      // of EMBED mode.
+      const search = window.location.search;
       history.replaceState(
         null,
         "",
-        `${basePath()}/workspace/chats/${createdThreadId}`,
+        `${basePath()}/workspace/chats/${createdThreadId}${search}`,
       );
       setThreadId(createdThreadId);
       setIsNewThread(false);
@@ -197,9 +204,12 @@ function ChatPageInner() {
       !hasMoreHistory &&
       !hasThreadMessages
     ) {
-      router.replace("/workspace/chats/new");
+      router.replace(
+        embedded ? embedHref("/workspace/chats/new") : "/workspace/chats/new",
+      );
     }
   }, [
+    embedded,
     hasMoreHistory,
     hasThreadMessages,
     isHistoryLoading,
@@ -275,14 +285,18 @@ function ChatPageInner() {
           messageIds,
         });
         toast.success(t.conversation.branchCreated);
-        router.push(`/workspace/chats/${response.thread_id}`);
+        router.push(
+          embedded
+            ? embedHref(`/workspace/chats/${response.thread_id}`)
+            : `/workspace/chats/${response.thread_id}`,
+        );
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : t.conversation.branchFailed,
         );
       }
     },
-    [branchThread, isMock, isNewThread, router, t, threadId],
+    [branchThread, embedded, isMock, isNewThread, router, t, threadId],
   );
 
   const tokenUsageInlineMode = tokenUsageEnabled
@@ -365,10 +379,12 @@ function ChatPageInner() {
                   env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY !== "true" && (
                     <ThreadSubagentBatches threadId={threadId} />
                   )}
-                {!isNewThread && !isMock && (
+                {!isNewThread && !isMock && !embedded && (
                   <ThreadScheduledTasksLink threadId={threadId} />
                 )}
-                {showAuditButton && (
+                {/* EMBED hides the audit/scheduled-task entries alongside the
+                    sidebar menus: those routes are outside the Shell flow. */}
+                {showAuditButton && !embedded && (
                   <Tooltip content={t.pages.audits}>
                     <Button
                       className="text-muted-foreground hover:text-foreground"

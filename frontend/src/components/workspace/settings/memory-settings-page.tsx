@@ -11,6 +11,8 @@ import Link from "next/link";
 import { useDeferredValue, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { embedHref } from "@/components/embed/embed-mode";
+import { useIsEmbedRoute } from "@/components/embed/use-is-embed-route";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -279,6 +281,9 @@ function upperFirst(str: string) {
 
 export function MemorySettingsPage() {
   const { t } = useI18n();
+  // Reachable from the EMBED settings dialog: fact-source thread links must
+  // carry ?embed=true or they silently leave EMBED mode.
+  const isEmbedRoute = useIsEmbedRoute();
   const { memory, isLoading, error } = useMemory();
   const clearMemory = useClearMemory();
   const createMemoryFact = useCreateMemoryFact();
@@ -711,7 +716,11 @@ export function MemorySettingsPage() {
                                   t.settings.memory.manualFactSource
                                 ) : (
                                   <Link
-                                    href={pathOfThread(fact.source)}
+                                    href={
+                                      isEmbedRoute
+                                        ? embedHref(pathOfThread(fact.source))
+                                        : pathOfThread(fact.source)
+                                    }
                                     className="text-primary underline-offset-4 hover:underline"
                                   >
                                     {t.settings.memory.markdown.table.view}
