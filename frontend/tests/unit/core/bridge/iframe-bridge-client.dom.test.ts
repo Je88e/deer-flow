@@ -71,6 +71,22 @@ function logoutMessage(origin: string) {
   dispatchMessage(origin, { version: "1.0", type: "LOGOUT", payload: {} });
 }
 
+function themeChangeMessage(origin: string, theme: "light" | "dark") {
+  dispatchMessage(origin, {
+    version: "1.0",
+    type: "THEME_CHANGE",
+    payload: { theme },
+  });
+}
+
+function localeChangeMessage(origin: string, locale: "en" | "zh") {
+  dispatchMessage(origin, {
+    version: "1.0",
+    type: "LOCALE_CHANGE",
+    payload: { locale },
+  });
+}
+
 function newClient(
   options: ConstructorParameters<typeof IframeBridgeClient>[0] = {},
 ): IframeBridgeClient {
@@ -351,6 +367,99 @@ describe("onLogout", () => {
     // Only outbound bridge traffic exists; no fetch of a logout endpoint.
     expect(parent.postMessage).not.toHaveBeenCalled();
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("onThemeChange / onLocaleChange", () => {
+  test("notifies subscribers on THEME_CHANGE from the Shell origin", () => {
+    const client = newClient();
+    const first = rs.fn();
+    const second = rs.fn();
+
+    const unsubscribeFirst = client.onThemeChange(first);
+    client.onThemeChange(second);
+
+    themeChangeMessage(SHELL_ORIGIN, "dark");
+    expect(first).toHaveBeenCalledWith("dark");
+    expect(second).toHaveBeenCalledWith("dark");
+
+    themeChangeMessage(SHELL_ORIGIN, "light");
+    expect(first).toHaveBeenCalledWith("light");
+
+    unsubscribeFirst();
+    themeChangeMessage(SHELL_ORIGIN, "dark");
+    expect(first).toHaveBeenCalledTimes(2);
+    expect(second).toHaveBeenCalledTimes(3);
+  });
+
+  test("notifies subscribers on LOCALE_CHANGE from the Shell origin", () => {
+    const client = newClient();
+    const handler = rs.fn();
+    client.onLocaleChange(handler);
+
+    localeChangeMessage(SHELL_ORIGIN, "zh");
+    expect(handler).toHaveBeenCalledWith("zh");
+  });
+
+  test("replays the latest pushed value to a late subscriber", () => {
+    const client = newClient();
+    // The Shell pushes the initial value right after the handshake, which can
+    // happen before React mounts and subscribes.
+    themeChangeMessage(SHELL_ORIGIN, "dark");
+    localeChangeMessage(SHELL_ORIGIN, "zh");
+
+    const themeHandler = rs.fn();
+    const localeHandler = rs.fn();
+    client.onThemeChange(themeHandler);
+    client.onLocaleChange(localeHandler);
+
+    expect(themeHandler).toHaveBeenCalledTimes(1);
+    expect(themeHandler).toHaveBeenCalledWith("dark");
+    expect(localeHandler).toHaveBeenCalledTimes(1);
+    expect(localeHandler).toHaveBeenCalledWith("zh");
+  });
+
+  test("the replayed value is the newest, not the first, push", () => {
+    const client = newClient();
+    themeChangeMessage(SHELL_ORIGIN, "dark");
+    themeChangeMessage(SHELL_ORIGIN, "light");
+
+    const handler = rs.fn();
+    client.onThemeChange(handler);
+    expect(handler).toHaveBeenCalledWith("light");
+  });
+
+  test("ignores appearance pushes from a non-Shell origin", () => {
+    const client = newClient();
+    const themeHandler = rs.fn();
+    const localeHandler = rs.fn();
+    client.onThemeChange(themeHandler);
+    client.onLocaleChange(localeHandler);
+
+    themeChangeMessage(OTHER_ORIGIN, "dark");
+    localeChangeMessage(OTHER_ORIGIN, "zh");
+
+    expect(themeHandler).not.toHaveBeenCalled();
+    expect(localeHandler).not.toHaveBeenCalled();
+  });
+
+  test("drops protocol-invalid appearance pushes", () => {
+    const client = newClient();
+    const themeHandler = rs.fn();
+    client.onThemeChange(themeHandler);
+
+    dispatchMessage(SHELL_ORIGIN, {
+      version: "1.0",
+      type: "THEME_CHANGE",
+      payload: { theme: "system" },
+    });
+    dispatchMessage(SHELL_ORIGIN, {
+      version: "1.0",
+      type: "LOCALE_CHANGE",
+      payload: { locale: "zh-CN" },
+    });
+
+    expect(themeHandler).not.toHaveBeenCalled();
   });
 });
 

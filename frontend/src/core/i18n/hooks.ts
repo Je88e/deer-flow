@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import { isEmbeddedWindow } from "@/core/bridge/iframe-bridge-client";
+
 import { useI18nContext } from "./context";
 import { getLocaleFromCookie, setLocaleInCookie } from "./cookies";
 
@@ -17,6 +19,13 @@ export function useI18n() {
 
   // Initialize locale on mount
   useEffect(() => {
+    // Inside the WIT Shell iframe the Shell owns the locale (LOCALE_CHANGE
+    // pushes via useEmbedAppearance). Skip the cookie/browser fallback here
+    // so it cannot overwrite the pushed value, whichever runs last.
+    if (isEmbeddedWindow()) {
+      return;
+    }
+
     const saved = getLocaleFromCookie();
     if (saved) {
       const normalizedSaved = normalizeLocale(saved);

@@ -17,6 +17,8 @@ import {
   type AuthTokenPayload,
   type BridgeMessage,
   type HandshakePayload,
+  type LocaleChangePayload,
+  type ThemeChangePayload,
   authTokenRequestMessage,
   authFailedMessage,
   handshakeRequestMessage,
@@ -65,6 +67,10 @@ export function isEmbeddedWindow(): boolean {
   return typeof window !== "undefined" && window.self !== window.top;
 }
 
+/** Values the Shell pushes for the embedded frame's appearance. */
+export type ShellTheme = ThemeChangePayload["theme"];
+export type ShellLocale = LocaleChangePayload["locale"];
+
 export interface IframeBridgeClientOptions {
   /** Handshake / token-wait timeout in milliseconds. Defaults to 5000. */
   timeoutMs?: number;
@@ -90,6 +96,13 @@ export class IframeBridgeClient {
   private readonly tokenWaiters: Array<(token: AuthTokenPayload) => void> = [];
   private pendingToken: AuthTokenPayload | null = null;
   private readonly logoutHandlers = new Set<() => void>();
+  private readonly themeHandlers = new Set<(theme: ShellTheme) => void>();
+  private readonly localeHandlers = new Set<(locale: ShellLocale) => void>();
+  // Latest-value cache: the Shell pushes the initial theme/locale right after
+  // the handshake, which can precede React mounting and subscribing. Handlers
+  // registered after a push receive the newest value replayed synchronously.
+  private latestTheme: ShellTheme | null = null;
+  private latestLocale: ShellLocale | null = null;
 
   constructor(options: IframeBridgeClientOptions = {}) {
     this.timeoutMs = options.timeoutMs ?? DEFAULT_BRIDGE_TIMEOUT_MS;
@@ -186,6 +199,37 @@ export class IframeBridgeClient {
     };
   }
 
+  /**
+   * Subscribe to Shell THEME_CHANGE pushes. If a value was already pushed
+   * (the Shell sends the initial theme right after the handshake), the newest
+   * one is replayed to the handler synchronously on subscription. Returns an
+   * unsubscribe function.
+   */
+  onThemeChange(handler: (theme: ShellTheme) => void): () => void {
+    if (this.latestTheme !== null) {
+      handler(this.latestTheme);
+    }
+    this.themeHandlers.add(handler);
+    return () => {
+      this.themeHandlers.delete(handler);
+    };
+  }
+
+  /**
+   * Subscribe to Shell LOCALE_CHANGE pushes; replays the newest pushed value
+   * on subscription like {@link onThemeChange}. Returns an unsubscribe
+   * function.
+   */
+  onLocaleChange(handler: (locale: ShellLocale) => void): () => void {
+    if (this.latestLocale !== null) {
+      handler(this.latestLocale);
+    }
+    this.localeHandlers.add(handler);
+    return () => {
+      this.localeHandlers.delete(handler);
+    };
+  }
+
   /** Detach the window listener. Intended for tests and teardown. */
   destroy(): void {
     if (this.embedded) {
@@ -235,6 +279,20 @@ export class IframeBridgeClient {
       case "LOGOUT": {
         for (const handler of this.logoutHandlers) {
           handler();
+        }
+        return;
+      }
+      case "THEME_CHANGE": {
+        this.latestTheme = message.payload.theme;
+        for (const handler of this.themeHandlers) {
+          handler(this.latestTheme);
+        }
+        return;
+      }
+      case "LOCALE_CHANGE": {
+        this.latestLocale = message.payload.locale;
+        for (const handler of this.localeHandlers) {
+          handler(this.latestLocale);
         }
         return;
       }

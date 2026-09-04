@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { Toaster } from "sonner";
 
+import { EmbedAppearanceSync } from "@/components/embed/embed-appearance-sync";
 import { QueryClientProvider } from "@/components/query-client-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { CommandPalette } from "@/components/workspace/command-palette";
@@ -31,6 +32,8 @@ export async function WorkspaceContent({
 
   return (
     <QueryClientProvider>
+      {/* EMBED: apply Shell-pushed theme/locale; renders null standalone. */}
+      <EmbedAppearanceSync />
       <SidebarProvider className="h-screen" defaultOpen={initialSidebarOpen}>
         <WorkspaceSidebar />
         <SidebarInset className="min-w-0">

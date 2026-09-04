@@ -48,6 +48,54 @@ describe("parseInbound acceptance matrix", () => {
     expect(
       parseInbound({ version: VERSION, type: "LOGOUT", payload: {} }),
     ).toEqual({ version: VERSION, type: "LOGOUT", payload: {} });
+
+    expect(
+      parseInbound({
+        version: VERSION,
+        type: "THEME_CHANGE",
+        payload: { theme: "dark" },
+      }),
+    ).toEqual({
+      version: VERSION,
+      type: "THEME_CHANGE",
+      payload: { theme: "dark" },
+    });
+
+    expect(
+      parseInbound({
+        version: VERSION,
+        type: "THEME_CHANGE",
+        payload: { theme: "light" },
+      }),
+    ).toEqual({
+      version: VERSION,
+      type: "THEME_CHANGE",
+      payload: { theme: "light" },
+    });
+
+    expect(
+      parseInbound({
+        version: VERSION,
+        type: "LOCALE_CHANGE",
+        payload: { locale: "zh" },
+      }),
+    ).toEqual({
+      version: VERSION,
+      type: "LOCALE_CHANGE",
+      payload: { locale: "zh" },
+    });
+
+    expect(
+      parseInbound({
+        version: VERSION,
+        type: "LOCALE_CHANGE",
+        payload: { locale: "en" },
+      }),
+    ).toEqual({
+      version: VERSION,
+      type: "LOCALE_CHANGE",
+      payload: { locale: "en" },
+    });
   });
 
   test("accepts every upstream message shape", () => {
@@ -219,6 +267,34 @@ describe("parseInbound rejection matrix", () => {
         version: VERSION,
         type: "AUTH_FAILED",
         payload: { error: "boom" },
+      },
+    ],
+    [
+      "THEME_CHANGE with missing theme",
+      { version: VERSION, type: "THEME_CHANGE", payload: {} },
+    ],
+    [
+      "THEME_CHANGE with unsupported theme",
+      {
+        version: VERSION,
+        type: "THEME_CHANGE",
+        payload: { theme: "system" },
+      },
+    ],
+    [
+      "THEME_CHANGE with non-string theme",
+      { version: VERSION, type: "THEME_CHANGE", payload: { theme: 1 } },
+    ],
+    [
+      "LOCALE_CHANGE with missing locale",
+      { version: VERSION, type: "LOCALE_CHANGE", payload: {} },
+    ],
+    [
+      "LOCALE_CHANGE with full-form locale instead of the short code",
+      {
+        version: VERSION,
+        type: "LOCALE_CHANGE",
+        payload: { locale: "zh-CN" },
       },
     ],
     ["null input", null],

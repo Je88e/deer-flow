@@ -8,9 +8,12 @@
  * every field below must be aligned with it field by field. Protocol evolution
  * is announced and synced from the Shell side.
  *
- * Exactly the seven finalized messages exist here. Phase 1.5 messages
- * (NAVIGATE, THEME_CHANGE, LOCALE_CHANGE, TITLE_CHANGE, NAVIGATION_REQUEST)
- * are deliberately absent — they must first extend the Shell-side schema.
+ * Exactly the seven finalized messages existed at vendoring time. Two Phase
+ * 1.5 messages have since been finalized on the Shell side and added here in
+ * the same additive style: THEME_CHANGE and LOCALE_CHANGE (downstream
+ * appearance sync, payloads per plan §5.2). The remaining Phase 1.5 messages
+ * (NAVIGATE, TITLE_CHANGE, NAVIGATION_REQUEST) are still deliberately absent —
+ * they must first extend the Shell-side schema.
  *
  * Envelope: every message, including upstream (WitAI -> Shell) ones, carries
  * `version: "1.0"` at the top level of the message. The version never lives
@@ -42,6 +45,20 @@ export const authTokenPayloadSchema = z.object({
 });
 
 export const logoutPayloadSchema = emptyPayloadSchema;
+
+export const themeChangePayloadSchema = z.object({
+  /** Host page theme. "system" is intentionally absent (plan §5.2). */
+  theme: z.enum(["light", "dark"]),
+});
+
+/**
+ * Host page language as the short code ("en" | "zh", plan §5.2). Mapping to
+ * the full locale ("en-US" / "zh-CN") is the receiver's job —
+ * `normalizeLocale` already handles the short forms.
+ */
+export const localeChangePayloadSchema = z.object({
+  locale: z.enum(["en", "zh"]),
+});
 
 // ---- WitAI -> Shell (upstream) payloads ----
 
@@ -80,6 +97,18 @@ export const logoutMessageSchema = z.object({
   payload: logoutPayloadSchema,
 });
 
+export const themeChangeMessageSchema = z.object({
+  version: versionSchema,
+  type: z.literal("THEME_CHANGE"),
+  payload: themeChangePayloadSchema,
+});
+
+export const localeChangeMessageSchema = z.object({
+  version: versionSchema,
+  type: z.literal("LOCALE_CHANGE"),
+  payload: localeChangePayloadSchema,
+});
+
 export const handshakeRequestMessageSchema = z.object({
   version: versionSchema,
   type: z.literal("HANDSHAKE_REQUEST"),
@@ -108,6 +137,8 @@ export const bridgeMessageSchema = z.discriminatedUnion("type", [
   handshakeMessageSchema,
   authTokenMessageSchema,
   logoutMessageSchema,
+  themeChangeMessageSchema,
+  localeChangeMessageSchema,
   handshakeRequestMessageSchema,
   authTokenRequestMessageSchema,
   readyMessageSchema,
@@ -119,6 +150,8 @@ export const bridgeMessageSchema = z.discriminatedUnion("type", [
 export type HandshakePayload = z.infer<typeof handshakePayloadSchema>;
 export type AuthTokenPayload = z.infer<typeof authTokenPayloadSchema>;
 export type LogoutPayload = z.infer<typeof logoutPayloadSchema>;
+export type ThemeChangePayload = z.infer<typeof themeChangePayloadSchema>;
+export type LocaleChangePayload = z.infer<typeof localeChangePayloadSchema>;
 export type HandshakeRequestPayload = z.infer<
   typeof handshakeRequestPayloadSchema
 >;
@@ -131,6 +164,8 @@ export type AuthFailedPayload = z.infer<typeof authFailedPayloadSchema>;
 export type HandshakeMessage = z.infer<typeof handshakeMessageSchema>;
 export type AuthTokenMessage = z.infer<typeof authTokenMessageSchema>;
 export type LogoutMessage = z.infer<typeof logoutMessageSchema>;
+export type ThemeChangeMessage = z.infer<typeof themeChangeMessageSchema>;
+export type LocaleChangeMessage = z.infer<typeof localeChangeMessageSchema>;
 export type HandshakeRequestMessage = z.infer<
   typeof handshakeRequestMessageSchema
 >;

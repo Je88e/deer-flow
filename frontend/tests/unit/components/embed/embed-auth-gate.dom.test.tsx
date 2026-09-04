@@ -32,6 +32,7 @@ type GateHolders = {
   __gateBridge?: {
     client: BridgeClientDouble | null;
     getCalls: number;
+    embedded?: boolean;
   };
   __gateRoute?: { threadId: string | undefined };
   __gateRouter?: RouterDouble;
@@ -43,6 +44,9 @@ rs.mock("@/core/bridge/iframe-bridge-client", () => ({
     holder.getCalls += 1;
     return holder.client;
   },
+  // Mirrors the window check for consumers like the i18n mount initializer.
+  isEmbeddedWindow: () =>
+    (globalThis as GateHolders).__gateBridge?.embedded ?? true,
 }));
 
 rs.mock("next/navigation", () => ({
@@ -109,7 +113,11 @@ function renderGate(
     user = AUTH_USER as User | null,
   } = {},
 ) {
-  (globalThis as GateHolders).__gateBridge = { client: bridge, getCalls: 0 };
+  (globalThis as GateHolders).__gateBridge = {
+    client: bridge,
+    getCalls: 0,
+    embedded,
+  };
   (globalThis as GateHolders).__gateRoute = { threadId };
   (globalThis as GateHolders).__gateRouter = {
     replace: rs.fn(),
