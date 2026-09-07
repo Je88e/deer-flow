@@ -25,8 +25,8 @@ import sys
 import threading
 import time
 import weakref
-from collections.abc import AsyncIterator, Callable, Coroutine, Mapping
-from contextlib import asynccontextmanager
+from collections.abc import Callable, Coroutine, Mapping
+from contextlib import AbstractAsyncContextManager
 from contextvars import Context
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -73,10 +73,12 @@ from deerflow.runtime.goal import (
     visible_conversation_signature,
     write_thread_goal,
 )
+from deerflow.runtime.keyed_lock import AsyncKeyedLockTable
 from deerflow.runtime.serialization import serialize
 from deerflow.runtime.stream_bridge import StreamBridge
 from deerflow.runtime.stream_modes import normalize_stream_modes, to_langgraph_stream_modes
 from deerflow.runtime.user_context import get_current_user, get_effective_user_id, resolve_runtime_user_id
+from deerflow.sandbox.lease import SANDBOX_SERVER_OWNED_CONTEXT_KEYS
 from deerflow.trace_context import DEERFLOW_TRACE_METADATA_KEY, ensure_trace_id
 from deerflow.tracing import inject_langfuse_metadata
 from deerflow.utils.messages import message_to_text
@@ -89,8 +91,7 @@ from .schemas import RunStatus
 
 logger = logging.getLogger(__name__)
 
-_checkpoint_locks_guard = threading.Lock()
-_checkpoint_locks_by_loop: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, dict[str, asyncio.Lock]] = weakref.WeakKeyDictionary()
+_checkpoint_locks = AsyncKeyedLockTable[str]()
 
 # Completed LangGraph runs can leave callback Contexts and AsyncPregelLoop
 # instances in unreachable reference cycles. They are collectable, but a busy
@@ -228,22 +229,9 @@ def _release_run_scoped_references(
             runtime_context.pop(key, None)
 
 
-@asynccontextmanager
-async def _checkpoint_thread_lock(thread_id: str) -> AsyncIterator[None]:
+def _checkpoint_thread_lock(thread_id: str) -> AbstractAsyncContextManager[None]:
     """Serialize checkpoint mutations for one thread without blocking goal commands."""
-    loop = asyncio.get_running_loop()
-    with _checkpoint_locks_guard:
-        locks = _checkpoint_locks_by_loop.get(loop)
-        if locks is None:
-            locks = {}
-            _checkpoint_locks_by_loop[loop] = locks
-        lock = locks.get(thread_id)
-        if lock is None:
-            lock = asyncio.Lock()
-            locks[thread_id] = lock
-
-    async with lock:
-        yield
+    return _checkpoint_locks.hold(thread_id)
 
 
 _DELIVERY_RECEIPT_RETRY_DELAYS_SECONDS = (0.1, 0.5)
@@ -519,11 +507,14 @@ class _LargeFileToolChunkBatcher:
 # strips ``__``-prefixed keys in build_run_config, but embedded harness callers
 # have no such filter and ``deerflow_trace_id`` carries no prefix to be caught
 # by it anyway.
-_SERVER_OWNED_RUNTIME_CONTEXT_KEYS: Final[frozenset[str]] = frozenset(
-    {
-        CURRENT_RUN_PRE_EXISTING_MESSAGE_IDS_KEY,
-        DEERFLOW_TRACE_METADATA_KEY,
-    }
+_SERVER_OWNED_RUNTIME_CONTEXT_KEYS: Final[frozenset[str]] = (
+    frozenset(
+        {
+            CURRENT_RUN_PRE_EXISTING_MESSAGE_IDS_KEY,
+            DEERFLOW_TRACE_METADATA_KEY,
+        }
+    )
+    | SANDBOX_SERVER_OWNED_CONTEXT_KEYS
 )
 
 
@@ -602,17 +593,17 @@ def _install_runtime_context(config: dict, runtime_context: dict[str, Any]) -> N
     if isinstance(existing_context, dict):
         existing_context.setdefault("thread_id", runtime_context["thread_id"])
         existing_context.setdefault("run_id", runtime_context["run_id"])
-        # Assigned, not setdefault: this is a server-owned key, the same rule
-        # _bind_trace_id applies to the runtime context and the run metadata. A
-        # deerflow_trace_id the caller put in body.config.context is an echo of
-        # a past output, not an input, and leaving it would make this one dict
-        # disagree with the response header and the logs.
-        if DEERFLOW_TRACE_METADATA_KEY in runtime_context:
-            existing_context[DEERFLOW_TRACE_METADATA_KEY] = runtime_context[DEERFLOW_TRACE_METADATA_KEY]
+        # Keep both context views authoritative. A server-owned value is
+        # assigned from the runtime context when present and removed otherwise,
+        # so an embedded caller cannot preserve a forged lifecycle identity in
+        # ``config['context']`` after it was rejected by _build_runtime_context.
+        for key in _SERVER_OWNED_RUNTIME_CONTEXT_KEYS:
+            if key in runtime_context:
+                existing_context[key] = runtime_context[key]
+            else:
+                existing_context.pop(key, None)
         if "app_config" in runtime_context:
             existing_context["app_config"] = runtime_context["app_config"]
-        if CURRENT_RUN_PRE_EXISTING_MESSAGE_IDS_KEY in runtime_context:
-            existing_context[CURRENT_RUN_PRE_EXISTING_MESSAGE_IDS_KEY] = runtime_context[CURRENT_RUN_PRE_EXISTING_MESSAGE_IDS_KEY]
         return
 
     config["context"] = dict(runtime_context)
@@ -737,6 +728,36 @@ def _bind_trace_id(config: dict[str, Any], runtime_ctx: dict[str, Any]) -> str:
     return trace_id
 
 
+def _defer_finalization_interrupt(
+    deferred: BaseException | None,
+    interrupt: BaseException,
+) -> BaseException:
+    """Preserve the first interrupt while allowing terminal awaits to finish."""
+    if isinstance(interrupt, asyncio.CancelledError):
+        task = asyncio.current_task()
+        if task is not None:
+            while task.cancelling():
+                task.uncancel()
+    return deferred if deferred is not None else interrupt
+
+
+async def _await_task_stop_after_host_cancellation(
+    task: asyncio.Task[None],
+    deferred: BaseException | None,
+) -> BaseException | None:
+    """Wait for one task-stop fan-out despite repeated host cancellation."""
+    while True:
+        try:
+            await asyncio.shield(task)
+            return deferred
+        except asyncio.CancelledError as exc:
+            host = asyncio.current_task()
+            if host is None or not host.cancelling():
+                # The fan-out task itself was cancelled rather than the host.
+                raise
+            deferred = _defer_finalization_interrupt(deferred, exc)
+
+
 async def run_agent(
     bridge: StreamBridge,
     run_manager: RunManager,
@@ -777,7 +798,7 @@ async def run_agent(
     extensions = ctx.extensions if ctx.extensions is not None else get_loaded_extensions()
     task_store: ExtensionData | None = None
     task_info: TaskInfo | None = None
-    deferred_stop_interrupt: BaseException | None = None
+    deferred_finalization_interrupt: BaseException | None = None
     pre_run_checkpoint_id: str | None = None
     pre_run_workspace_snapshot: WorkspaceSnapshot | None = None
     workspace_changes_user_id: str | None = None
@@ -1165,7 +1186,7 @@ async def run_agent(
 
         async def _stream_once(input_payload: Any, stream_config: RunnableConfig) -> None:
             nonlocal llm_error_fallback_message
-            file_tool_chunk_batcher = _LargeFileToolChunkBatcher() if "values" in requested_modes else None
+            file_tool_chunk_batcher = _LargeFileToolChunkBatcher() if "messages-tuple" in requested_modes else None
             try:
                 async with _checkpoint_thread_lock(thread_id):
                     if len(lg_modes) == 1 and not stream_subgraphs:
@@ -1543,12 +1564,23 @@ async def run_agent(
                     await ctx.on_run_completed(record)
                 except Exception:
                     logger.warning("Run completion hook failed for %s (non-fatal)", run_id, exc_info=True)
+                except BaseException as exc:
+                    # A terminal hook must not leave replacement runs blocked or
+                    # stream consumers waiting indefinitely.
+                    deferred_finalization_interrupt = _defer_finalization_interrupt(
+                        deferred_finalization_interrupt,
+                        exc,
+                    )
+                    logger.warning(
+                        "Run completion hook interrupted for %s; completing finalization first",
+                        run_id,
+                    )
 
             if task_info is not None and task_store is not None:
                 # Keep the finalizing barrier held until stop observers finish, so
                 # a same-thread replacement cannot overlap this task's lifecycle.
-                try:
-                    await notify_task_stop(
+                task_stop = asyncio.create_task(
+                    notify_task_stop(
                         extensions,
                         task_store,
                         task_info,
@@ -1557,6 +1589,13 @@ async def run_agent(
                             succeeded=record.status == RunStatus.success,
                         ),
                         timeout=_EXTENSION_TASK_NOTIFY_TIMEOUT_SECONDS,
+                    ),
+                    name=f"extension-task-stop-{run_id}",
+                )
+                try:
+                    deferred_finalization_interrupt = await _await_task_stop_after_host_cancellation(
+                        task_stop,
+                        deferred_finalization_interrupt,
                     )
                 except Exception:
                     logger.warning(
@@ -1567,7 +1606,10 @@ async def run_agent(
                 except BaseException as exc:
                     # Cancellation here must not strand the finalizing barrier or
                     # leave stream consumers waiting for the end frame.
-                    deferred_stop_interrupt = exc
+                    deferred_finalization_interrupt = _defer_finalization_interrupt(
+                        deferred_finalization_interrupt,
+                        exc,
+                    )
                     logger.warning(
                         "Extension task-stop notification interrupted for run %s; completing cleanup first",
                         run_id,
@@ -1577,8 +1619,8 @@ async def run_agent(
 
             await bridge.publish_end(run_id)
 
-            if deferred_stop_interrupt is not None:
-                raise deferred_stop_interrupt
+            if deferred_finalization_interrupt is not None:
+                raise deferred_finalization_interrupt
         finally:
             try:
                 if journal is not None:
@@ -1587,11 +1629,28 @@ async def run_agent(
                     except Exception:
                         logger.warning("Failed to close journal for run %s", run_id, exc_info=True)
             finally:
-                _release_run_scoped_references(
-                    runnable_configs,
-                    runtime_ctx,
-                    journal,
-                )
+                lease_cleanup_interrupt: BaseException | None = None
+                try:
+                    from deerflow.sandbox.lease import release_sandbox_execution_lease_async
+
+                    await release_sandbox_execution_lease_async(runtime_ctx)
+                except Exception:
+                    logger.warning("Failed to release sandbox execution lease for run %s", run_id, exc_info=True)
+                except BaseException as exc:
+                    # release_async completes the underlying cleanup before it
+                    # re-raises cancellation. Defer that interruption until the
+                    # worker has dropped all other run-scoped references too.
+                    lease_cleanup_interrupt = exc
+                    logger.warning(
+                        "Sandbox execution lease cleanup was interrupted for run %s; completing local cleanup first",
+                        run_id,
+                    )
+                finally:
+                    _release_run_scoped_references(
+                        runnable_configs,
+                        runtime_ctx,
+                        journal,
+                    )
                 # Drop graph and per-run payload references before the terminal
                 # worker task itself becomes collectable.
                 agent = None
@@ -1617,6 +1676,9 @@ async def run_agent(
                 # through RunStore.
                 _create_contextless_task(run_manager.cleanup(run_id))
                 _schedule_terminal_cycle_collection()
+
+                if lease_cleanup_interrupt is not None:
+                    raise lease_cleanup_interrupt
 
 
 # ---------------------------------------------------------------------------
