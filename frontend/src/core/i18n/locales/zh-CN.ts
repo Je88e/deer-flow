@@ -704,7 +704,7 @@ export const zhCN: Translations = {
 
   // Page titles (document title)
   pages: {
-    appName: "Scout",
+    appName: "WitAI",
     chats: "对话",
     audits: "审核结果",
     newChat: "新对话",
@@ -1239,7 +1239,7 @@ export const zhCN: Translations = {
       deniedHint:
         "通知权限已被拒绝。可在浏览器的网站设置中重新开启，以接收完成提醒。",
       testButton: "发送测试通知",
-      testTitle: "Scout",
+      testTitle: "WitAI",
       testBody: "这是一条测试通知。",
       notSupported: "当前浏览器不支持通知功能。",
       disableNotification: "关闭通知",
