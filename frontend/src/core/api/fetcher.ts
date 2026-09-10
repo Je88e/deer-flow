@@ -1,8 +1,10 @@
 import { isEmbedAuthActive, renewEmbedSession } from "@/core/auth/embed-auth";
 import { buildLoginUrl } from "@/core/auth/types";
+import { isStaticWebsiteOnly } from "@/core/static-mode";
 import { basePath, stripBasePath } from "@/env";
 
 import { UnauthorizedError } from "./errors";
+import { staticApiResponse } from "./static-response";
 
 /** HTTP methods that the gateway's CSRFMiddleware checks. */
 export type StateChangingMethod = "POST" | "PUT" | "DELETE" | "PATCH";
@@ -89,6 +91,17 @@ export async function fetch(
 ): Promise<Response> {
   const url = typeof input === "string" ? input : input.url;
   const method = init?.method ?? "GET";
+
+  // Static demos have no Gateway. Resolve REST calls before credentials,
+  // CSRF, or redirects; demo assets and explicit mock routes still use HTTP.
+  if (isStaticWebsiteOnly()) {
+    const response = await staticApiResponse(url, {
+      ...init,
+      method:
+        init?.method ?? (typeof input === "string" ? "GET" : input.method),
+    });
+    if (response) return response;
+  }
 
   const headers = mergeCsrfHeaders(method, init?.headers);
 

@@ -30,6 +30,10 @@ rs.mock("@/components/workspace/recent-chat-list", () => ({
   RecentChatList: () => <div>recent chats</div>,
 }));
 
+rs.mock("@/components/workspace/projects-section", () => ({
+  ProjectsSection: () => <div>projects</div>,
+}));
+
 rs.mock("@/components/workspace/workspace-header", () => ({
   WorkspaceHeader: () => <div>header</div>,
 }));
