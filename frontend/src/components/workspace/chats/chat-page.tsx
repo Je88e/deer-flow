@@ -392,11 +392,15 @@ function ChatPageInner() {
                   env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY !== "true" && (
                     <ThreadSubagentBatches threadId={threadId} />
                   )}
-                {!isNewThread && !isMock && !embedded && (
-                  <ThreadScheduledTasksLink threadId={threadId} />
+                {!isNewThread && !isMock && (
+                  <ThreadScheduledTasksLink
+                    threadId={threadId}
+                    embedded={embedded}
+                  />
                 )}
-                {/* EMBED hides the audit/scheduled-task entries alongside the
-                    sidebar menus: those routes are outside the Shell flow. */}
+                {/* EMBED hides the audit entry alongside the sidebar menu:
+                    that route is outside the Shell flow. The scheduled-task
+                    link stays visible and keeps ?embed=true via embedHref. */}
                 {showAuditButton && !embedded && (
                   <Tooltip content={t.pages.audits}>
                     <Button

@@ -93,21 +93,28 @@ describe("WorkspaceNavChatList embed mode", () => {
       expect(screen.getByText(label)).not.toBeNull();
     }
     expect(linkDestination("Chats")).toBe("/workspace/chats");
+    expect(linkDestination("Scheduled Tasks")).toBe(
+      "/workspace/scheduled-tasks",
+    );
   });
 
-  it("hides agents, scheduled tasks, and audits when ?embed=true", () => {
+  it("keeps scheduled tasks but hides agents and audits when ?embed=true", () => {
     setEmbedParam("true");
     render(<WorkspaceNavChatList />);
     expect(screen.getByText("Chats")).not.toBeNull();
-    for (const label of ["Agents", "Scheduled Tasks", "Audits"]) {
+    expect(screen.getByText("Scheduled Tasks")).not.toBeNull();
+    for (const label of ["Agents", "Audits"]) {
       expect(screen.queryByText(label)).toBeNull();
     }
   });
 
-  it("keeps the embed parameter on the chats link when embedded", () => {
+  it("keeps the embed parameter on the chats and scheduled-tasks links when embedded", () => {
     setEmbedParam("true");
     render(<WorkspaceNavChatList />);
     expect(linkDestination("Chats")).toBe("/workspace/chats?embed=true");
+    expect(linkDestination("Scheduled Tasks")).toBe(
+      "/workspace/scheduled-tasks?embed=true",
+    );
   });
 
   it("renders the full menu for non-true embed values", () => {

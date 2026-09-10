@@ -30,9 +30,10 @@ export function WorkspaceNavChatList() {
   const pathname = usePathname();
   const { enabled: agentsEnabled } = useAgentsApiEnabled();
   // EMBED (WIT Shell iframe) hides the workspace-only destinations (agents,
-  // scheduled tasks, audits): the Shell owns those flows, and the routes
-  // would fall out of EMBED mode anyway because these links never carry the
-  // ?embed=true parameter.
+  // audits): the Shell owns those flows, and those links never carry the
+  // ?embed=true parameter. Scheduled tasks stay reachable from the Shell
+  // iframe and navigate through embedHref so they never fall out of EMBED
+  // mode.
   const isEmbedRoute = useIsEmbedRoute();
 
   return (
@@ -100,20 +101,28 @@ export function WorkspaceNavChatList() {
                 </Tooltip>
               )}
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={pathname.startsWith("/workspace/scheduled-tasks")}
-                asChild
-              >
-                <Link
-                  className="text-muted-foreground"
-                  href="/workspace/scheduled-tasks"
-                >
-                  <CalendarClock />
-                  <span>{t.sidebar.scheduledTasks}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+          </>
+        )}
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            isActive={pathname.startsWith("/workspace/scheduled-tasks")}
+            asChild
+          >
+            <Link
+              className="text-muted-foreground"
+              href={
+                isEmbedRoute
+                  ? embedHref("/workspace/scheduled-tasks")
+                  : "/workspace/scheduled-tasks"
+              }
+            >
+              <CalendarClock />
+              <span>{t.sidebar.scheduledTasks}</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        {!isEmbedRoute && (
+          <>
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={pathname.startsWith("/workspace/audits")}
