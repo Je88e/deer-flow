@@ -85,6 +85,14 @@ services:
       args:
         PNPM_STORE_PATH: ${PNPM_STORE_PATH:-/root/.local/share/pnpm/store}
         NPM_REGISTRY: ${NPM_REGISTRY:-}
+        # Inlined into the client bundle at build time (see frontend/Dockerfile).
+        NEXT_PUBLIC_SHELL_ORIGIN: ${NEXT_PUBLIC_SHELL_ORIGIN:-}
+        # Build-time proxy (BuildKit predefined args, no ARG needed in Dockerfile).
+        # Sourced from BUILD_* vars so a shell-level HTTP_PROXY=127.0.0.1 cannot
+        # leak in — 127.0.0.1 is not the host inside a build container.
+        HTTP_PROXY: ${BUILD_HTTP_PROXY:-}
+        HTTPS_PROXY: ${BUILD_HTTPS_PROXY:-}
+        NO_PROXY: ${BUILD_NO_PROXY:-localhost,127.0.0.1}
     container_name: deer-flow-frontend
     environment:
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
@@ -107,6 +115,10 @@ services:
         UV_EXTRAS: ${UV_EXTRAS:-}
         NPM_REGISTRY: ${NPM_REGISTRY:-}
         LARK_CLI_NPM_VERSION: ${LARK_CLI_NPM_VERSION:-1.0.65}
+        # Build-time proxy (BuildKit predefined args, no ARG needed in Dockerfile).
+        HTTP_PROXY: ${BUILD_HTTP_PROXY:-}
+        HTTPS_PROXY: ${BUILD_HTTPS_PROXY:-}
+        NO_PROXY: ${BUILD_NO_PROXY:-localhost,127.0.0.1}
     container_name: deer-flow-gateway
     # Gateway hosts the agent runtime with in-process RunManager + StreamBridge
     # singletons -- run state lives in this worker's memory. Default to a single
@@ -179,6 +191,10 @@ services:
       args:
         APT_MIRROR: ${APT_MIRROR:-}
         PIP_INDEX_URL: ${PIP_INDEX_URL:-}
+        # Build-time proxy (BuildKit predefined args, no ARG needed in Dockerfile).
+        HTTP_PROXY: ${BUILD_HTTP_PROXY:-}
+        HTTPS_PROXY: ${BUILD_HTTPS_PROXY:-}
+        NO_PROXY: ${BUILD_NO_PROXY:-localhost,127.0.0.1}
     container_name: deer-flow-provisioner
     volumes:
       - ~/.kube/config:/root/.kube/config:ro

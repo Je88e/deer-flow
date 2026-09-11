@@ -5,11 +5,19 @@
 
 ARG PNPM_STORE_PATH=/root/.local/share/pnpm/store
 ARG NPM_REGISTRY
+# NEXT_PUBLIC_* vars are inlined into the client bundle at build time; runtime
+# env injection (compose env_file) only reaches server-side code. frontend/.env
+# is excluded from the build context by .dockerignore (**/.env), so the Shell
+# origin must flow through as a build arg for EMBED-mode bridge handshakes to
+# target the right postMessage origin.
+ARG NEXT_PUBLIC_SHELL_ORIGIN
 
 # ── Base: shared setup ────────────────────────────────────────────────────────
 FROM node:22-alpine AS base
 ARG PNPM_STORE_PATH
 ARG NPM_REGISTRY
+ARG NEXT_PUBLIC_SHELL_ORIGIN
+ENV NEXT_PUBLIC_SHELL_ORIGIN=${NEXT_PUBLIC_SHELL_ORIGIN}
 # Configure corepack registry before installing pnpm so the download itself
 # succeeds in restricted networks (COREPACK_NPM_REGISTRY controls where
 # corepack fetches package managers from).
