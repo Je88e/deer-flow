@@ -1,6 +1,12 @@
 "use client";
 
-import { LoaderIcon, SparklesIcon, UploadIcon } from "lucide-react";
+import {
+  DownloadIcon,
+  LoaderIcon,
+  SparklesIcon,
+  UploadIcon,
+} from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -42,6 +48,10 @@ import { env } from "@/env";
 
 import { SettingsSection } from "./settings-section";
 
+const SkillExportDialog = dynamic(() => import("./skill-export-dialog"), {
+  ssr: false,
+});
+
 export function SkillSettingsPage({ onClose }: { onClose?: () => void } = {}) {
   const { t } = useI18n();
   const { skills, isLoading, error } = useSkills();
@@ -59,7 +69,9 @@ export function SkillSettingsPage({ onClose }: { onClose?: () => void } = {}) {
           {t.settings.skills.adminRequired}
         </div>
       ) : error ? (
-        <div>Error: {error.message}</div>
+        <div>
+          {t.common.error} {error.message}
+        </div>
       ) : (
         <SkillSettingsList skills={skills} onClose={onClose} />
       )}
@@ -78,6 +90,7 @@ function SkillSettingsList({
   const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.system_role === "admin";
+  const [exportName, setExportName] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("public");
   const { mutate: enableSkill } = useEnableSkill();
   // The settings dialog is reachable in EMBED mode, so this chat navigation
@@ -153,6 +166,15 @@ function SkillSettingsList({
 
   return (
     <div className="flex w-full flex-col gap-4">
+      {exportName &&
+        isAdmin &&
+        env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY !== "true" && (
+          <SkillExportDialog
+            key={`${user.id}:${exportName}`}
+            name={exportName}
+            onClose={() => setExportName(null)}
+          />
+        )}
       <header className="flex justify-between">
         <div className="flex gap-2">
           <Tabs value={filter} onValueChange={setFilter}>
@@ -209,6 +231,18 @@ function SkillSettingsList({
               </ItemDescription>
             </ItemContent>
             <ItemActions>
+              {isAdmin && skill.category === "custom" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true"}
+                  onClick={() => setExportName(skill.name)}
+                  aria-label={`${t.settings.skills.exportSkill} ${skill.name}`}
+                >
+                  <DownloadIcon className="size-4" />
+                  {t.settings.skills.exportSkill}
+                </Button>
+              )}
               <Switch
                 checked={skill.enabled}
                 disabled={

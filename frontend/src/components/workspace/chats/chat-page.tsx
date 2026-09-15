@@ -40,6 +40,8 @@ import { TokenUsageIndicator } from "@/components/workspace/token-usage-indicato
 import { Tooltip } from "@/components/workspace/tooltip";
 import { useActiveGoal } from "@/components/workspace/use-active-goal";
 import { Welcome } from "@/components/workspace/welcome";
+import { useAuth } from "@/core/auth/AuthProvider";
+import { hasPermission, PERMISSIONS } from "@/core/auth/permissions";
 import { useBrowserControlEnabled } from "@/core/features";
 import { useI18n } from "@/core/i18n/hooks";
 import {
@@ -53,6 +55,7 @@ import { useModels } from "@/core/models/hooks";
 import { useNotification } from "@/core/notification/hooks";
 import { useProject } from "@/core/projects";
 import { useLocalSettings, useThreadSettings } from "@/core/settings";
+import { resolveThreadContext } from "@/core/settings/store";
 import { createThread } from "@/core/threads/api";
 import {
   useBranchThread,
@@ -99,6 +102,8 @@ function normalizeUrlParam(value: string | null): string | null {
 
 function ChatPageInner() {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const canStopStreaming = hasPermission(user, PERMISSIONS.RUNS_CANCEL);
   const router = useRouter();
   const { embedded } = useEmbedMode();
   const searchParams = useSearchParams();
@@ -642,13 +647,16 @@ function ChatPageInner() {
                         isUploading ||
                         (!isNewThread && isHistoryLoading)
                       }
-                      onContextChange={(context) =>
-                        setSettings("context", context)
-                      }
+                      onContextChange={(context, options) => {
+                        if (options?.automatic)
+                          resolveThreadContext(threadId, context);
+                        else setSettings("context", context);
+                      }}
                       onGoalChange={setLocalGoal}
                       onPrepareThread={ensureProjectThread}
                       onSubmit={handleSubmit}
                       onStop={handleStop}
+                      canStopStreaming={canStopStreaming}
                     />
                   ) : (
                     <div

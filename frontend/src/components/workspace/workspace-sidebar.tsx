@@ -12,6 +12,7 @@ import {
 import { WorkspaceChannelsList } from "./channels/workspace-channels-list";
 import { ProjectsSection } from "./projects-section";
 import { RecentChatList } from "./recent-chat-list";
+import { ThreadDeleteDialogProvider } from "./thread-delete-dialog";
 import { WorkspaceHeader } from "./workspace-header";
 import { WorkspaceNavChatList } from "./workspace-nav-chat-list";
 import { WorkspaceNavMenu } from "./workspace-nav-menu";
@@ -26,7 +27,7 @@ export function WorkspaceSidebar({
   // carry the embed parameter on their own navigations.
 
   return (
-    <>
+    <ThreadDeleteDialogProvider>
       <Sidebar variant="sidebar" collapsible="icon" {...props}>
         <SidebarHeader className="py-0">
           <WorkspaceHeader />
@@ -46,6 +47,6 @@ export function WorkspaceSidebar({
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
-    </>
+    </ThreadDeleteDialogProvider>
   );
 }
