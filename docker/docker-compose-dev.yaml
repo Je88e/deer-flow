@@ -162,7 +162,8 @@ services:
       args:
         PNPM_STORE_PATH: ${PNPM_STORE_PATH:-/root/.local/share/pnpm/store}
         NPM_REGISTRY: ${NPM_REGISTRY:-}
-        # Inlined into the client bundle at build time (see frontend/Dockerfile).
+        # Build-time fallback for the Shell origin (see frontend/Dockerfile);
+        # the client probes the parent frame's origin at runtime first.
         NEXT_PUBLIC_SHELL_ORIGIN: ${NEXT_PUBLIC_SHELL_ORIGIN:-}
         # Build-time proxy (BuildKit predefined args, no ARG needed in Dockerfile).
         HTTP_PROXY: ${BUILD_HTTP_PROXY:-}

@@ -500,10 +500,21 @@ frontend/src/core/bridge/
 - **消息类型以 vendored schema 为准**：不另建 `message-types.ts`，类型一律
   `z.infer` 自 `bridge-protocol.ts`，避免与 Shell 侧类型漂移。
 - `IframeBridgeClient` 是一个单例类，封装 `window.parent.postMessage` 通信。
-- **postMessage 一律使用显式 `targetOrigin`**（禁止 `"*"`）：取自环境变量
-  `NEXT_PUBLIC_SHELL_ORIGIN`（完整 origin，如 `http://localhost:5007`），
-  未设置时默认 `window.location.origin`（同域子路径生产部署）。
-- **入站消息先校验 `event.origin`**，与 `shellOrigin` 不匹配一律丢弃，不做任何处理。
+- **postMessage 一律使用显式 `targetOrigin`**（禁止 `"*"`）：Shell origin 在运行时
+  通过探测父窗口解析（见 `detectParentOrigin()`），顺序为浏览器计算的事实优先、
+  URL 文本声明靠后：`window.location.ancestorOrigins`（末位=直接父，Chromium/Safari）
+  > `document.referrer`（首载即嵌入页；指向自身的值视为导航噪音跳过）>
+  `?shellOrigin=` 参数（Shell 经 `appendShellOrigin()` 注入 iframe URL、DeerFlow 的
+  `embedHref` 在内部导航中透传；仅压过 env 兜底，绝不压过浏览器信号——嵌套 iframe
+  下 URL 文本可被透传型中间层改写，浏览器计算的信任锚不可伪造）。探测不到时退回
+  环境变量 `NEXT_PUBLIC_SHELL_ORIGIN`（完整 origin，如 `http://localhost:5007`，构建期
+  内联，仅为兜底），仍未设置时默认 `window.location.origin`（同域子路径生产部署）。
+  探测方案使一次构建可服务任意 Shell 宿主（服务器、本地），无需为换 Shell 重构建。
+  注意其安全语义：入站白名单的基准从"运维显式配置"变为"信任实际嵌入方"——
+  `NEXT_PUBLIC_SHELL_ORIGIN` 不再是嵌入方白名单，任何自带探测信号的嵌入方都会被
+  接受，属内部部署可接受的取舍（出站方向恒有"仅投递给真实父帧且 origin 严格匹配"
+  的不变量，探测失败的最坏后果是可见的降级到 iframe 内登录页，而非静默泄露）。
+- **入站消息先校验 `event.origin`**，与解析出的 `shellOrigin` 不匹配一律丢弃，不做任何处理。
 - **每条消息（含上行）在顶层携带 `version: "1.0"`**。
 - 握手有超时机制（默认 5 秒）。超时后降级为完整模式（不走 Bridge）。
 - 非 EMBED 模式下（DeerFlow 独立运行），Bridge 不初始化，不影响正常功能。

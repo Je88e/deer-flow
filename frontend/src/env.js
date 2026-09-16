@@ -22,8 +22,10 @@ export const env = createEnv({
     NEXT_PUBLIC_BACKEND_BASE_URL: z.string().optional(),
     NEXT_PUBLIC_LANGGRAPH_BASE_URL: z.string().optional(),
     NEXT_PUBLIC_STATIC_WEBSITE_ONLY: z.string().optional(),
-    // Full origin of the WIT Shell host when DeerFlow is embedded in a Shell
-    // iframe (postMessage targetOrigin / inbound origin check).
+    // Fallback origin of the WIT Shell host when DeerFlow is embedded in a
+    // Shell iframe (postMessage targetOrigin / inbound origin check). The
+    // parent frame's origin is probed at runtime first; see
+    // core/bridge/iframe-bridge-client.ts detectParentOrigin().
     NEXT_PUBLIC_SHELL_ORIGIN: z.string().optional(),
     // Base path DeerFlow is served under (must match next.config.js basePath,
     // e.g. "/leadagent"); "" means a root deployment.

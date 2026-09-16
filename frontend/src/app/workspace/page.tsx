@@ -14,10 +14,16 @@ export default async function WorkspacePage({
   if (env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true") {
     return redirect(`/workspace/chats/${DEMO_THREAD_IDS[0]}`);
   }
-  const { embed } = await searchParams;
+  const { embed, shellOrigin } = await searchParams;
   // The default-chat redirect must carry EMBED mode across it: dropping the
   // parameter would silently re-render the standalone layout inside the
-  // Shell iframe and the bridge handshake would never start.
+  // Shell iframe and the bridge handshake would never start. The Shell's
+  // ?shellOrigin= probe parameter rides along the same way — there is no
+  // window to read it from on the server, so it comes from searchParams.
   const target = "/workspace/chats/new";
-  return redirect(isEmbedSearchValue(embed) ? embedHref(target) : target);
+  return redirect(
+    isEmbedSearchValue(embed)
+      ? embedHref(target, { shellOrigin: shellOrigin ?? null })
+      : target,
+  );
 }

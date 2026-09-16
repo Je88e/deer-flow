@@ -8,8 +8,10 @@ ARG NPM_REGISTRY
 # NEXT_PUBLIC_* vars are inlined into the client bundle at build time; runtime
 # env injection (compose env_file) only reaches server-side code. frontend/.env
 # is excluded from the build context by .dockerignore (**/.env), so the Shell
-# origin must flow through as a build arg for EMBED-mode bridge handshakes to
-# target the right postMessage origin.
+# origin must flow through as a build arg to reach the client bundle. The
+# bridge probes the parent frame's origin at runtime (?shellOrigin= param >
+# ancestorOrigins > document.referrer), so this arg is only the fallback when
+# probing cannot work — one build serves any Shell host without rebuilds.
 ARG NEXT_PUBLIC_SHELL_ORIGIN
 
 # ── Base: shared setup ────────────────────────────────────────────────────────

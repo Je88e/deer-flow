@@ -1,3 +1,5 @@
+import { SHELL_ORIGIN_SEARCH_PARAM } from "@/core/bridge/iframe-bridge-client";
+
 /**
  * URL search parameter that switches a workspace route into EMBED mode for
  * the WIT Shell iframe integration.
@@ -36,8 +38,46 @@ export function isEmbedSearchValue(
  * the sidebar, the thread list, or the chat page) must go through this
  * helper: dropping the parameter would leave EMBED mode, restoring the
  * EMBED-hidden menus and cutting the Shell bridge off from the tree.
+ *
+ * When the current URL carries `?shellOrigin=` (appended by the Shell), it is
+ * re-propagated too: after an in-frame reload that parameter is the last
+ * reliable origin probe signal left in browsers without
+ * `window.location.ancestorOrigins` (Firefox), so dropping it would lock the
+ * bridge onto a wrong origin and degrade embed mode to the standalone login.
  */
-export function embedHref(path: string): string {
+export interface EmbedHrefOptions {
+  /**
+   * Shell origin to propagate as `?shellOrigin=`. On the client it defaults
+   * to the current URL's value; pass it explicitly where no `window` exists
+   * (server-side redirects read it from their `searchParams`). `null` means
+   * there is none to propagate.
+   */
+  shellOrigin?: string | string[] | null;
+}
+
+export function embedHref(
+  path: string,
+  options: EmbedHrefOptions = {},
+): string {
   const separator = path.includes("?") ? "&" : "?";
-  return `${path}${separator}${EMBED_SEARCH_PARAM}=true`;
+  let href = `${path}${separator}${EMBED_SEARCH_PARAM}=true`;
+  const raw =
+    options.shellOrigin === undefined
+      ? currentShellOriginParam()
+      : options.shellOrigin;
+  const shellOrigin = Array.isArray(raw) ? raw[0] : raw;
+  if (shellOrigin) {
+    href += `&${SHELL_ORIGIN_SEARCH_PARAM}=${encodeURIComponent(shellOrigin)}`;
+  }
+  return href;
+}
+
+/** Current URL's `?shellOrigin=` value, or null on the server (no window). */
+function currentShellOriginParam(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return new URLSearchParams(window.location.search).get(
+    SHELL_ORIGIN_SEARCH_PARAM,
+  );
 }

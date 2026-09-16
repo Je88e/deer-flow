@@ -46,4 +46,30 @@ describe("embedHref", () => {
       "/workspace/chats/abc?mock=true&embed=true",
     );
   });
+
+  it("re-propagates an explicit shellOrigin after the embed parameter", () => {
+    expect(
+      embedHref("/workspace/chats/abc", {
+        shellOrigin: "http://localhost:3000",
+      }),
+    ).toBe(
+      "/workspace/chats/abc?embed=true&shellOrigin=http%3A%2F%2Flocalhost%3A3000",
+    );
+  });
+
+  it("uses the first value when the explicit shellOrigin is an array", () => {
+    expect(
+      embedHref("/workspace/chats/abc", {
+        shellOrigin: ["http://shell.example", "http://ignored.example"],
+      }),
+    ).toBe(
+      "/workspace/chats/abc?embed=true&shellOrigin=http%3A%2F%2Fshell.example",
+    );
+  });
+
+  it("omits shellOrigin when it is explicitly null (none to propagate)", () => {
+    expect(embedHref("/workspace/chats/abc", { shellOrigin: null })).toBe(
+      "/workspace/chats/abc?embed=true",
+    );
+  });
 });

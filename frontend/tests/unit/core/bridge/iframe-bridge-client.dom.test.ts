@@ -497,18 +497,147 @@ describe("standalone (non-iframe) guard", () => {
   });
 });
 
+/** Own-property stubs over location (search / ancestorOrigins) + referrer. */
+interface ProbeStub {
+  search?: string;
+  ancestorOrigins?: string[];
+  referrer?: string;
+}
+
+/**
+ * happy-dom implements none of the probe signals (no ancestorOrigins, empty
+ * search/referrer), so tests inject them as configurable own properties;
+ * restoreProbes deletes them to expose the prototype getters again.
+ */
+function stubProbes(stub: ProbeStub): void {
+  if (stub.search !== undefined) {
+    Object.defineProperty(window.location, "search", {
+      value: stub.search,
+      configurable: true,
+    });
+  }
+  if (stub.ancestorOrigins !== undefined) {
+    Object.defineProperty(window.location, "ancestorOrigins", {
+      value: stub.ancestorOrigins,
+      configurable: true,
+    });
+  }
+  if (stub.referrer !== undefined) {
+    Object.defineProperty(document, "referrer", {
+      value: stub.referrer,
+      configurable: true,
+    });
+  }
+}
+
+function restoreProbes(): void {
+  const location = window.location as unknown as Record<string, unknown>;
+  delete location.search;
+  delete location.ancestorOrigins;
+  delete (document as unknown as Record<string, unknown>).referrer;
+}
+
 describe("resolveShellOrigin", () => {
-  test("uses NEXT_PUBLIC_SHELL_ORIGIN when set", () => {
-    process.env.NEXT_PUBLIC_SHELL_ORIGIN = "http://configured:5007";
-    try {
-      expect(resolveShellOrigin()).toBe("http://configured:5007");
-    } finally {
-      delete process.env.NEXT_PUBLIC_SHELL_ORIGIN;
-    }
+  afterEach(() => {
+    restoreProbes();
+    delete process.env.NEXT_PUBLIC_SHELL_ORIGIN;
   });
 
-  test("falls back to the current origin", () => {
-    delete process.env.NEXT_PUBLIC_SHELL_ORIGIN;
+  test("prefers ancestorOrigins (browser-computed direct parent) over every declared signal", () => {
+    stubProbes({
+      search: "?embed=true&shellOrigin=http%3A%2F%2Fdeclared.example",
+      ancestorOrigins: ["http://outer.example", "http://direct-parent.example"],
+      referrer: "http://referrer.example/page",
+    });
+    process.env.NEXT_PUBLIC_SHELL_ORIGIN = "http://configured:5007";
+    expect(resolveShellOrigin()).toBe("http://direct-parent.example");
+  });
+
+  test("prefers document.referrer over the declared ?shellOrigin parameter", () => {
+    stubProbes({
+      search: "?shellOrigin=http%3A%2F%2Fdeclared.example",
+      referrer: "http://referrer.example/some/page?next=1",
+    });
+    expect(resolveShellOrigin()).toBe("http://referrer.example");
+  });
+
+  test("uses the ?shellOrigin parameter when no browser-computed signal exists", () => {
+    stubProbes({
+      search: "?embed=true&shellOrigin=http%3A%2F%2Fdeclared.example%3A5007",
+    });
+    process.env.NEXT_PUBLIC_SHELL_ORIGIN = "http://configured:5007";
+    expect(resolveShellOrigin()).toBe("http://declared.example:5007");
+  });
+
+  test("filters document.referrer pointing at the frame itself", () => {
+    stubProbes({
+      search: "?shellOrigin=http%3A%2F%2Fdeclared.example",
+      referrer: `${window.location.origin}/workspace/chats/new`,
+    });
+    // A self-referencing referrer (in-frame reload) is navigation noise, not a
+    // parent signal: it must fall through to the declared parameter.
+    expect(resolveShellOrigin()).toBe("http://declared.example");
+  });
+
+  test("falls through a self-referencing referrer to the env fallback", () => {
+    stubProbes({
+      referrer: `${window.location.origin}/workspace/chats/new`,
+    });
+    process.env.NEXT_PUBLIC_SHELL_ORIGIN = "http://configured:5007";
+    // Without the filter this would lock onto the frame's own origin (never
+    // the Shell's), which also shields the env fallback below it.
+    expect(resolveShellOrigin()).toBe("http://configured:5007");
+  });
+
+  test("skips an empty ancestorOrigins list", () => {
+    stubProbes({
+      ancestorOrigins: [],
+      search: "?shellOrigin=http%3A%2F%2Fdeclared.example",
+    });
+    expect(resolveShellOrigin()).toBe("http://declared.example");
+  });
+
+  test("falls back to NEXT_PUBLIC_SHELL_ORIGIN when no probe signal exists", () => {
+    process.env.NEXT_PUBLIC_SHELL_ORIGIN = "http://configured:5007";
+    expect(resolveShellOrigin()).toBe("http://configured:5007");
+  });
+
+  test("falls back to the current origin when nothing is configured", () => {
     expect(resolveShellOrigin()).toBe(window.location.origin);
+  });
+
+  test("rejects a non-http(s) probe value and continues down the chain", () => {
+    stubProbes({
+      search: "?shellOrigin=javascript%3Aalert(1)",
+      referrer: "http://referrer.example/page",
+    });
+    expect(resolveShellOrigin()).toBe("http://referrer.example");
+  });
+
+  test("does not probe in a top-level window", () => {
+    unframeWindow();
+    stubProbes({ search: "?shellOrigin=http%3A%2F%2Fdeclared.example" });
+    process.env.NEXT_PUBLIC_SHELL_ORIGIN = "http://configured:5007";
+    // Standalone: probing is skipped, so the configured value still wins.
+    expect(resolveShellOrigin()).toBe("http://configured:5007");
+  });
+
+  test("probing feeds the client handshake target and inbound check", async () => {
+    stubProbes({
+      ancestorOrigins: ["http://direct-parent.example"],
+    });
+    const client = new IframeBridgeClient();
+    clients.push(client);
+
+    const pending = client.handshake();
+    expect(parent.postMessage.mock.calls[0]?.[1]).toBe(
+      "http://direct-parent.example",
+    );
+
+    handshakeMessage("http://direct-parent.example");
+    await expect(pending).resolves.toEqual({
+      mode: "embed",
+      capabilities: ["threads"],
+    });
   });
 });

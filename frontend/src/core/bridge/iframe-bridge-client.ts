@@ -7,6 +7,9 @@
  * - Inbound messages whose `event.origin` does not match the Shell origin are
  *   silently dropped before parsing; messages that fail protocol validation are
  *   dropped as well.
+ * - The Shell origin is resolved at runtime by probing the parent frame
+ *   (see {@link detectParentOrigin}), which trusts whoever embeds the frame —
+ *   a deliberate trade-off so one build serves every Shell host.
  *
  * The client performs no logout side effects (controller ruling #4): LOGOUT is
  * surfaced through `onLogout` subscriptions, and the Gateway logout request
@@ -50,11 +53,97 @@ export class BridgeNotEmbeddedError extends Error {
 }
 
 /**
- * Full origin of the Shell host, e.g. `http://localhost:5007`. Falls back to
- * the current origin so a same-origin sub-path production deployment works
- * without configuration. Returns "" on the server, where no window exists.
+ * Query parameter the Shell appends to the iframe URL carrying its own
+ * origin, e.g. `?shellOrigin=http://localhost:3000`. Declared fallback for
+ * the origin probe; kept as a shared constant because embed-mode.ts
+ * re-propagates it across internal navigation.
+ */
+export const SHELL_ORIGIN_SEARCH_PARAM = "shellOrigin";
+
+/**
+ * Parse a candidate into a valid http(s) origin, or null for junk
+ * (`javascript:`, relative fragments, empty strings). Guards every probe
+ * signal before it becomes a postMessage targetOrigin.
+ */
+function toValidOrigin(candidate: string | null | undefined): string | null {
+  if (!candidate) {
+    return null;
+  }
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
+/** Location plus the non-standard ancestorOrigins this probe reads. */
+type ProbeLocation = Location & {
+  ancestorOrigins?: ArrayLike<string> | null;
+};
+
+/**
+ * Probe the embedding Shell's origin at runtime so one build serves every
+ * Shell host (server, localhost) without rebuilds. Signals, browser-computed
+ * facts first and declared text last:
+ *
+ * 1. `window.location.ancestorOrigins` — browser-computed, not forgeable by
+ *    any page content; the last entry is the direct parent. Chromium/Safari
+ *    only; Firefox does not implement it.
+ * 2. `document.referrer` — on first load it is the embedding page, reduced
+ *    to its origin under the default Referrer-Policy (unless the Shell
+ *    strips it). A referrer pointing at the frame itself (in-frame reload)
+ *    is navigation noise and skipped.
+ * 3. `?shellOrigin=` — the Shell appends it to the iframe URL (see the
+ *    Shell-side `appendShellOrigin()` host helper) and DeerFlow's embedHref
+ *    re-propagates it across internal navigation. It is URL text that any
+ *    URL-passing intermediary could rewrite, so it only outranks the env
+ *    fallback, never a browser-computed signal.
+ *
+ * Returns null when no signal yields a usable origin.
+ *
+ * Security note: this trusts whoever embeds the frame — the inbound origin
+ * check below stays strict against the resolved origin, but that origin is
+ * discovered rather than operator-pinned. Accepted trade-off for internal
+ * Shell deployments; see docs/dev/deerflow-shell-integration-plan.md.
+ */
+export function detectParentOrigin(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const ancestors = (window.location as ProbeLocation).ancestorOrigins;
+  if (ancestors && ancestors.length > 0) {
+    const origin = toValidOrigin(ancestors[ancestors.length - 1]);
+    if (origin) {
+      return origin;
+    }
+  }
+  const referrer = toValidOrigin(document.referrer);
+  if (referrer && referrer !== window.location.origin) {
+    return referrer;
+  }
+  return toValidOrigin(
+    new URLSearchParams(window.location.search).get(SHELL_ORIGIN_SEARCH_PARAM),
+  );
+}
+
+/**
+ * Full origin of the Shell host, e.g. `http://localhost:5007`. Probes the
+ * parent frame first (see {@link detectParentOrigin}); NEXT_PUBLIC_SHELL_ORIGIN
+ * is a build-time fallback for environments where probing yields nothing,
+ * and a same-origin sub-path deployment needs no configuration at all.
+ * Returns "" on the server, where no window exists.
  */
 export function resolveShellOrigin(): string {
+  if (typeof window !== "undefined" && isEmbeddedWindow()) {
+    const probed = detectParentOrigin();
+    if (probed) {
+      return probed;
+    }
+  }
   const configured = process.env.NEXT_PUBLIC_SHELL_ORIGIN;
   if (configured) {
     return configured;
