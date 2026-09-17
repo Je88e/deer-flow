@@ -56,6 +56,9 @@ rs.mock("@/core/i18n/hooks", () => ({
         audits: "Audits",
         agentsDisabledTooltip: "Agents API is disabled",
       },
+      capabilities: {
+        title: "Capability Center",
+      },
     },
   }),
 }));
@@ -87,23 +90,32 @@ function linkDestination(label: string): string {
 }
 
 describe("WorkspaceNavChatList embed mode", () => {
-  it("renders all four nav entries on standalone routes", () => {
+  it("renders all five nav entries on standalone routes", () => {
     render(<WorkspaceNavChatList />);
-    for (const label of ["Chats", "Agents", "Scheduled Tasks", "Audits"]) {
+    for (const label of [
+      "Chats",
+      "Agents",
+      "Scheduled Tasks",
+      "Audits",
+      "Capability Center",
+    ]) {
       expect(screen.getByText(label)).not.toBeNull();
     }
     expect(linkDestination("Chats")).toBe("/workspace/chats");
     expect(linkDestination("Scheduled Tasks")).toBe(
       "/workspace/scheduled-tasks",
     );
+    expect(linkDestination("Capability Center")).toBe(
+      "/workspace/capabilities",
+    );
   });
 
-  it("keeps scheduled tasks but hides agents and audits when ?embed=true", () => {
+  it("keeps scheduled tasks but hides agents, audits, and capabilities when ?embed=true", () => {
     setEmbedParam("true");
     render(<WorkspaceNavChatList />);
     expect(screen.getByText("Chats")).not.toBeNull();
     expect(screen.getByText("Scheduled Tasks")).not.toBeNull();
-    for (const label of ["Agents", "Audits"]) {
+    for (const label of ["Agents", "Audits", "Capability Center"]) {
       expect(screen.queryByText(label)).toBeNull();
     }
   });

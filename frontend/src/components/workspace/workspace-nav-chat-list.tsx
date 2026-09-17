@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BlocksIcon,
   BotIcon,
   CalendarClock,
   FileTextIcon,
@@ -121,6 +122,8 @@ export function WorkspaceNavChatList() {
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+        {/* EMBED (WIT Shell iframe) hides workspace-only destinations;
+            capabilities management is not part of the Shell flows either. */}
         {!isEmbedRoute && (
           <>
             <SidebarMenuItem>
@@ -134,6 +137,20 @@ export function WorkspaceNavChatList() {
                 >
                   <FileTextIcon />
                   <span>{t.sidebar.audits}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={pathname.startsWith("/workspace/capabilities")}
+                asChild
+              >
+                <Link
+                  className="text-muted-foreground"
+                  href="/workspace/capabilities"
+                >
+                  <BlocksIcon />
+                  <span>{t.capabilities.title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

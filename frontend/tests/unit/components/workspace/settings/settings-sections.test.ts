@@ -12,11 +12,8 @@ const ALL_SECTION_IDS: SettingsSection[] = [
   "appearance",
   "notification",
   "channels",
-  "integrations",
   "memory",
-  "tools",
   "subagents",
-  "skills",
 ];
 
 const EMBED_SECTION_IDS = ALL_SECTION_IDS.filter(
@@ -59,6 +56,6 @@ describe("resolveInitialSettingsSection", () => {
   });
 
   it("keeps the requested section when the visible list is empty", () => {
-    expect(resolveInitialSettingsSection("tools", [])).toBe("tools");
+    expect(resolveInitialSettingsSection("memory", [])).toBe("memory");
   });
 });
