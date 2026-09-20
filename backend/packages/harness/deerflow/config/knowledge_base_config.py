@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class KnowledgeBaseConfig(BaseModel):
-    """Hot-reloadable DeerFlow knowledge capability settings.
+    """Hot-reloadable WitAI knowledge capability settings.
 
     Provider connection and retrieval options belong to the provider tool
     entry (for example ``tools[].use: ...ragflow...``), not this generic

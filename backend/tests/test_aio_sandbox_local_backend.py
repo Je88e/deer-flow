@@ -26,7 +26,7 @@ def test_sandbox_info_does_not_serialize_or_repr_relay_credentials():
     info = SandboxInfo(
         sandbox_id="sandbox-id",
         sandbox_url="http://localhost:8080",
-        request_headers={"X-DeerFlow-Relay-Token": "secret-token"},
+        request_headers={"X-WitAI-Relay-Token": "secret-token"},
         requires_replacement=True,
     )
 
@@ -1383,7 +1383,7 @@ def test_restricted_discovery_uses_proxy_relay_port(monkeypatch):
     assert info is not None
     assert info.container_name == "sandbox-existing"
     assert info.sandbox_url == "http://localhost:18080"
-    assert info.request_headers == {"X-DeerFlow-Relay-Token": "test-relay-token-that-is-at-least-32-bytes"}
+    assert info.request_headers == {"X-WitAI-Relay-Token": "test-relay-token-that-is-at-least-32-bytes"}
     assert readiness == [{"timeout": 5, "headers": info.request_headers}]
 
 
@@ -2280,7 +2280,7 @@ def test_restricted_network_proxy_enforces_and_approves_real_traffic(monkeypatch
                     "--max-time",
                     "2",
                     "-H",
-                    f"X-DeerFlow-Relay-Token: {relay_token}",
+                    f"X-WitAI-Relay-Token: {relay_token}",
                     sandbox_url,
                 ],
                 capture_output=True,

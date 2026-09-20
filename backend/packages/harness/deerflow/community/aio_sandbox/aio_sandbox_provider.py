@@ -72,7 +72,7 @@ DEFAULT_CONTAINER_PREFIX = "deer-flow-sandbox"
 IDLE_CHECK_INTERVAL = _SHARED_IDLE_CHECK_INTERVAL
 # The supported semver AIO images currently default to ten shell sessions.
 # Leave lower-concurrency deployments on the image default; only override it
-# when DeerFlow's configured execution capacity cannot fit.
+# when WitAI's configured execution capacity cannot fit.
 _AIO_DEFAULT_MAX_SHELL_SESSIONS = 10
 _SHELL_SESSION_HEADROOM = 1
 

@@ -1,7 +1,7 @@
 """Pure-Bearer direct authentication (WIT Shell micro-frontend, plan §3.4).
 
 Requests may carry ``Authorization: Bearer <jwt>`` — a Keycloak access token —
-instead of the DeerFlow session cookie. The Gateway validates it offline
+instead of the WitAI session cookie. The Gateway validates it offline
 against the provider's JWKS (signature / iss / exp plus the relaxed audience
 matrix ``azp == client_id`` or ``client_id ∈ aud``), resolves the identity
 through the same ``get_or_provision_oidc_user`` path as the OIDC callback and

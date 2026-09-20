@@ -1,4 +1,4 @@
-"""Pure-argument factory for DeerFlow agents.
+"""Pure-argument factory for WitAI agents.
 
 ``create_deerflow_agent`` accepts plain Python arguments — it does not load
 YAML or install process-global runtime dependencies. It is the SDK-level entry
@@ -79,7 +79,7 @@ def create_deerflow_agent(
     name: str = "default",
     subagent_runtime: SubagentRuntime | None = None,
 ) -> CompiledStateGraph:
-    """Create a DeerFlow agent from plain Python arguments.
+    """Create a WitAI agent from plain Python arguments.
 
     The factory assembly itself reads no config files. Pass ``subagent_runtime``
     when direct SDK-created graphs must share an explicit native-subagent

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DeerFlow — Cross-Origin Client Demo</title>
+<title>WitAI — Cross-Origin Client Demo</title>
 <style>
   :root {
     --bg: oklch(14% 0.01 260);
@@ -205,9 +205,9 @@
 </head>
 <body>
 <div class="app">
-  <h1>DeerFlow — Cross-Origin Client Demo</h1>
+  <h1>WitAI — Cross-Origin Client Demo</h1>
   <p class="subtitle">
-    Zero-dependency demo showing how external browser apps authenticate and call the DeerFlow API.
+    Zero-dependency demo showing how external browser apps authenticate and call the WitAI API.
     Open this file from a <strong>different origin</strong> (e.g. <code>file://</code> or another server)
     to verify cross-origin integration works.
   </p>
@@ -218,7 +218,7 @@
   </div>
 
   <div id="statusBanner" class="status status-unauthenticated">
-    Enter the DeerFlow base URL and click "Check Setup" to begin.
+    Enter the WitAI base URL and click "Check Setup" to begin.
   </div>
 
   <div class="actions" id="authActions">
@@ -349,7 +349,7 @@ function addLogEntry(method, path, status, body, elapsed, isError) {
 
   // Hints for common errors
   if (status === 0 || status === null) {
-    html += `<div class="hint">⚠ Network error — is the server running? Check the base URL and make sure DeerFlow is accessible.</div>`;
+    html += `<div class="hint">⚠ Network error — is the server running? Check the base URL and make sure WitAI is accessible.</div>`;
   } else if (status === 401 && !isAuthenticated) {
     html += `<div class="hint">🔐 Not authenticated. Login first, then retry.</div>`;
   } else if (status === 401 && isAuthenticated) {

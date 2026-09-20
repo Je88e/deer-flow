@@ -1,6 +1,6 @@
-"""DeerFlowClient — Embedded Python client for DeerFlow agent system.
+"""DeerFlowClient — Embedded Python client for WitAI agent system.
 
-Provides direct programmatic access to DeerFlow's agent capabilities
+Provides direct programmatic access to WitAI's agent capabilities
 without requiring LangGraph Server or Gateway API processes.
 
 Usage:
@@ -143,9 +143,9 @@ class StreamEvent:
 
 
 class DeerFlowClient:
-    """Embedded Python client for DeerFlow agent system.
+    """Embedded Python client for WitAI agent system.
 
-    Provides direct programmatic access to DeerFlow's agent capabilities
+    Provides direct programmatic access to WitAI's agent capabilities
     without requiring LangGraph Server or Gateway API processes.
 
     Note:
@@ -774,7 +774,7 @@ class DeerFlowClient:
         thread_id: str | None = None,
         **kwargs,
     ) -> Generator[StreamEvent, None, None]:
-        """Stream a conversation turn with a DeerFlow request trace context.
+        """Stream a conversation turn with a WitAI request trace context.
 
         The embedded entry point, and like every other one it binds a trace id
         for the turn so logs, Langfuse metadata, and delegated work correlate.

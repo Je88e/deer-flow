@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { Toaster } from "sonner";
 
 import { EmbedAppearanceSync } from "@/components/embed/embed-appearance-sync";
+import { EmbedWorkspaceBoundary } from "@/components/embed/embed-workspace-boundary";
 import { QueryClientProvider } from "@/components/query-client-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { CommandPalette } from "@/components/workspace/command-palette";
@@ -38,20 +39,25 @@ export async function WorkspaceContent({
           i18n context only, and must not unmount when the boundary suspends
           on an account switch. */}
       <EmbedAppearanceSync />
-      <UserPreferencesBoundary>
-        <SidebarProvider className="h-screen" defaultOpen={initialSidebarOpen}>
-          <WorkspaceSidebar />
-          <SidebarInset className="min-w-0">
-            <GatewayOfflineBanner gatewayUnavailable={gatewayUnavailable} />
-            <ModelLoadErrorBanner gatewayUnavailable={gatewayUnavailable} />
-            {children}
-          </SidebarInset>
-        </SidebarProvider>
-        <CommandPalette />
-        <SettingsDialogHost />
-        <WorkspaceSettingsDeepLink />
-        <Toaster position="top-center" />
-      </UserPreferencesBoundary>
+      <EmbedWorkspaceBoundary>
+        <UserPreferencesBoundary>
+          <SidebarProvider
+            className="h-screen"
+            defaultOpen={initialSidebarOpen}
+          >
+            <WorkspaceSidebar />
+            <SidebarInset className="min-w-0">
+              <GatewayOfflineBanner gatewayUnavailable={gatewayUnavailable} />
+              <ModelLoadErrorBanner gatewayUnavailable={gatewayUnavailable} />
+              {children}
+            </SidebarInset>
+          </SidebarProvider>
+          <CommandPalette />
+          <SettingsDialogHost />
+          <WorkspaceSettingsDeepLink />
+          <Toaster position="top-center" />
+        </UserPreferencesBoundary>
+      </EmbedWorkspaceBoundary>
     </QueryClientProvider>
   );
 }

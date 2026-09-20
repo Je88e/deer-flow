@@ -1,1 +1,1 @@
-# DeerFlow Setup Wizard package
+# WitAI Setup Wizard package

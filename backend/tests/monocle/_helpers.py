@@ -1,4 +1,4 @@
-"""Helpers for the DeerFlow Monocle behavioural tests.
+"""Helpers for the WitAI Monocle behavioural tests.
 
 Kept out of ``conftest.py`` so nothing imports ``conftest`` as a module.
 Monocle instrumentation is owned by the Test Tools validator (installed by the
@@ -31,10 +31,10 @@ def live_tests_enabled() -> bool:
 
 
 def run_deerflow(message: str) -> str:
-    """Run the DeerFlow agent once and return its response text.
+    """Run the WitAI agent once and return its response text.
 
     The model is resolved from ``config.yaml`` (no hardcoded override) so the
-    live test exercises DeerFlow's own model-resolution path.
+    live test exercises WitAI's own model-resolution path.
     """
     from deerflow.client import DeerFlowClient
 

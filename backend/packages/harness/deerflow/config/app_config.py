@@ -187,7 +187,7 @@ def apply_logging_level(name: str | None) -> None:
 
 
 class AppConfig(BaseModel):
-    """Config for the DeerFlow application"""
+    """Config for the WitAI application"""
 
     log_level: str = Field(
         default="info",
@@ -686,7 +686,7 @@ def _load_and_cache_app_config(config_path: str | None = None) -> AppConfig:
 
 
 def get_app_config() -> AppConfig:
-    """Get the DeerFlow config instance.
+    """Get the WitAI config instance.
 
     Returns a cached singleton instance and automatically reloads it when the
     underlying config file path or content signature changes. Use

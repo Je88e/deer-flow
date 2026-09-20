@@ -410,7 +410,7 @@ class AioSandbox(Sandbox):
                 runs unchanged.
             timeout: Optional per-call timeout. The current sandbox SDK does not
                 expose a command-level timeout distinct from its client/request
-                timeout, so DeerFlow keeps using the backend's default here.
+                timeout, so WitAI keeps using the backend's default here.
 
         Returns:
             The output of the command.

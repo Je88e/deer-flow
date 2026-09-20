@@ -22,7 +22,7 @@ upgrades, and pinning conflicts with tracking latest). Instead:
   fallback (no external URL injection);
 * every archive member passes structural guards (zip-slip / symlink /
   executable-binary / size / required-skill completeness / ``SKILL.md`` parse);
-* a **content** SHA-256 over the extracted skill tree, after DeerFlow's shared
+* a **content** SHA-256 over the extracted skill tree, after WitAI's shared
   guidance is injected, is recorded in the manifest, so a reinstall whose
   effective skill content changed is detectable/auditable even when GitHub
   re-packs identical content with different archive bytes.
@@ -30,7 +30,7 @@ upgrades, and pinning conflicts with tracking latest). Instead:
 Runtime coupling: the npm-installed ``lark-cli`` binary version is pinned in
 ``backend/Dockerfile`` (``ARG LARK_CLI_NPM_VERSION``) and
 ``docker/docker-compose*.yaml`` as a bootstrap fallback. The admin install path
-also manages a writable DeerFlow-owned Gateway CLI under
+also manages a writable WitAI-owned Gateway CLI under
 ``.deer-flow/integrations/lark-cli/gateway-cli`` and prefers it over the system
 PATH, so users do not need to run terminal installation commands. Reinstalling
 the integration refreshes both the managed Gateway CLI and the skill pack to the
@@ -1151,7 +1151,7 @@ def _mkdir_under_private_boundary(path: Path) -> None:
 
 
 def lark_cli_managed_gateway_dir() -> Path:
-    """Gateway-scoped DeerFlow-managed lark-cli install root."""
+    """Gateway-scoped WitAI-managed lark-cli install root."""
     return get_paths().base_dir / "integrations" / INTEGRATION_ID / "gateway-cli"
 
 
@@ -1477,7 +1477,7 @@ def _lark_cli_managed_path() -> str | None:
 
 
 def lark_cli_env_overlay(user_id: str, *, sandbox_paths: bool = False, broker: bool = False) -> dict[str, str]:
-    """Environment overlay for lark-cli using DeerFlow-managed credentials.
+    """Environment overlay for lark-cli using WitAI-managed credentials.
 
     The directories are per-user so a local trusted-mode login cannot bleed across
     accounts.
@@ -2118,7 +2118,7 @@ def _resolve_lark_cli_path() -> str | None:
 
 
 def _ensure_managed_gateway_lark_cli() -> LarkCliProbe:
-    """Install/update the DeerFlow-managed Gateway lark-cli.
+    """Install/update the WitAI-managed Gateway lark-cli.
 
     This is called by the admin install endpoint so non-technical users do not
     need to install ``@larksuite/cli`` in a terminal. If npm/GitHub are not
@@ -2636,7 +2636,7 @@ def _download_lark_archive(version: str) -> Path:
 def _content_sha256(root: Path, skill_names: set[str]) -> str:
     """SHA-256 over effective installed skill contents (not archive bytes).
 
-    The caller computes this after injecting DeerFlow's shared guidance, so the
+    The caller computes this after injecting WitAI's shared guidance, so the
     digest covers both official extracted files and the guidance users/agents
     actually read. It remains stable across GitHub re-packs of identical
     content. Paths and bytes are hashed in sorted order for determinism.
@@ -2819,9 +2819,9 @@ def _append_deerflow_lark_shared_guidance(root: Path) -> None:
 
 {_DEERFLOW_LARK_SHARED_GUIDANCE_MARKER}
 
-## DeerFlow 授权入口
+## WitAI 授权入口
 
-在 DeerFlow 中，如果 `lark-cli auth status` 或业务命令提示未配置、未登录、token 过期或缺少用户授权：
+在 WitAI 中，如果 `lark-cli auth status` 或业务命令提示未配置、未登录、token 过期或缺少用户授权：
 
 1. 不要要求用户在终端执行 `lark-cli config init`、`lark-cli auth login` 或 `lark-cli auth login --device-code`。
 2. 回复用户这个可点击链接：[打开飞书授权设置](/workspace/capabilities?tab=plugins&plugin=lark)。

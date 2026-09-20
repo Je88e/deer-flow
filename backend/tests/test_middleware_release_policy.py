@@ -239,7 +239,7 @@ _MIDDLEWARE_DECLARATIONS = [
         "ModelLengthFinishReasonMiddleware",
         _make_model_length_finish_reason_middleware,
     ),
-    # DeerFlow's own subclass, not the LangChain base class re-exported into
+    # WitAI's own subclass, not the LangChain base class re-exported into
     # this module under the same import path (TodoListMiddleware).
     ("deerflow.agents.middlewares.todo_middleware", "TodoMiddleware", _make_todo_middleware),
     ("deerflow.agents.middlewares.token_budget_middleware", "TokenBudgetMiddleware", _make_token_budget_middleware),

@@ -102,6 +102,11 @@ export function EmbedAuthGate({ children }: { children: ReactNode }) {
               router.refresh();
               return;
             }
+            // A completed exchange is not proof the browser accepted its
+            // cookie. Never mount API consumers if the refreshed server tree
+            // still has no session (e.g. blocked third-party cookies).
+            router.replace("/login");
+            return;
           } else {
             // no-bridge / failed with no session to fall back on: degrade
             // to the standalone login page (§10.3 accepted behavior). The

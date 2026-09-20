@@ -1,4 +1,4 @@
-# DeerFlow docker image cache
+# WitAI docker image cache
 docker/.cache/
 # oh-my-claudecode state
 .omc/
@@ -72,6 +72,7 @@ config.yaml.bak
 # Monocle agent-observability trace output (local file exporter)
 .monocle/
 
+docker/nginx/
 docker/nginx/ssl
 
 skills/custom/scout-audit/mcps/*.zip

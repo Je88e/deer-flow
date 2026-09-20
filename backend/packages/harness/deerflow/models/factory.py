@@ -138,7 +138,7 @@ def _apply_stream_chunk_timeout_default(model_class: type, model_settings_from_c
     """Inject a generous ``stream_chunk_timeout`` for OpenAI-compatible clients.
 
     ``stream_chunk_timeout`` is a field of langchain-openai's ``BaseChatOpenAI``, so
-    it is accepted by ``ChatOpenAI`` and by every DeerFlow provider that subclasses
+    it is accepted by ``ChatOpenAI`` and by every WitAI provider that subclasses
     it: ``PatchedChatOpenAI`` plus the self-hosted / reasoning adapters
     ``VllmChatModel``, ``MindIEChatModel``, ``PatchedChatDeepSeek``,
     ``PatchedChatMiMo``, ``PatchedChatStepFun`` and ``PatchedChatMiniMax``. We gate on

@@ -278,7 +278,7 @@ describe("EmbedAuthGate bootstrap (unauthenticated EMBED entry)", () => {
     fetchSpy.mockRestore();
   });
 
-  it("never refreshes twice when the refreshed tree still has no user", async () => {
+  it("keeps consumers blocked when the refreshed tree still has no user", async () => {
     const fetchSpy = rs
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(new Response("{}", { status: 200 }));
@@ -291,12 +291,13 @@ describe("EmbedAuthGate bootstrap (unauthenticated EMBED entry)", () => {
     first.unmount();
 
     // Post-refresh remount: the cached first-auth resolves again (no second
-    // handshake/exchange), and the one-shot guard must settle the gate
-    // instead of looping router.refresh().
+    // handshake/exchange). Do not loop router.refresh() or release protected
+    // consumers when the browser has not retained the session cookie.
     renderGate(bridge, { user: null });
     await waitFor(() => {
-      expect(screen.getByTestId("gate-children")).not.toBeNull();
+      expect(routerDouble().replace).toHaveBeenCalledWith("/login");
     });
+    expect(screen.queryByTestId("gate-children")).toBeNull();
     expect(routerDouble().refresh).not.toHaveBeenCalled();
     expect(firstRouter.refresh).toHaveBeenCalledTimes(1);
     expect(bridge.handshake).toHaveBeenCalledTimes(1);

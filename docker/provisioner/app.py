@@ -1,4 +1,4 @@
-"""DeerFlow Sandbox Provisioner Service.
+"""WitAI Sandbox Provisioner Service.
 
 Dynamically creates and manages per-sandbox Pods in Kubernetes.
 Each ``sandbox_id`` gets its own Pod + Service.  The backend accesses sandboxes
@@ -163,7 +163,7 @@ def join_host_path(base: str, *parts: str) -> str:
 
 
 def _host_base_dir_for_extra_mounts() -> str:
-    """Return the host-visible DeerFlow state root used for controlled mounts."""
+    """Return the host-visible WitAI state root used for controlled mounts."""
     if DEER_FLOW_HOST_BASE_DIR:
         return os.path.normpath(DEER_FLOW_HOST_BASE_DIR)
 
@@ -248,7 +248,7 @@ def _validated_extra_mounts(
         if not os.path.isabs(host_path):
             raise HTTPException(status_code=400, detail=f"Extra mount host path must be absolute: {mount.host_path}")
         if not _is_path_under_base(host_path, host_base_dir):
-            raise HTTPException(status_code=400, detail=f"Extra mount host path is outside DeerFlow state: {mount.host_path}")
+            raise HTTPException(status_code=400, detail=f"Extra mount host path is outside WitAI state: {mount.host_path}")
 
         container_path = _normalize_extra_mount_container_path(
             mount.container_path,
@@ -343,7 +343,7 @@ def _lark_broker_credential_mounts(
 def _extra_mount_pvc_sub_path(host_path: str) -> str:
     host_base_dir = _host_base_dir_for_extra_mounts()
     if not _is_path_under_base(host_path, host_base_dir):
-        raise HTTPException(status_code=400, detail=f"Extra mount host path is outside DeerFlow state: {host_path}")
+        raise HTTPException(status_code=400, detail=f"Extra mount host path is outside WitAI state: {host_path}")
 
     rel_path = os.path.relpath(os.path.normpath(host_path), host_base_dir)
     rel_parts = [part for part in rel_path.replace(os.sep, "/").split("/") if part and part != "."]
@@ -444,7 +444,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="DeerFlow Sandbox Provisioner", lifespan=lifespan)
+app = FastAPI(title="WitAI Sandbox Provisioner", lifespan=lifespan)
 
 
 @app.middleware("http")

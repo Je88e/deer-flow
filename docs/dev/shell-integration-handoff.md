@@ -87,3 +87,21 @@
 | `src/components/embed/embed-mode.ts` | 新增 `EMBED_REQUEST_HEADER` 常量 |
 
 **验证**：rstest 1162 passed（仅 3 个 §4 预存失败文件，零重叠）；curl 验收——`?embed=true` 无 session → 200(bootstrap 树）,plain 无 session → 307 /login（零回归）;`proxy.ts` 日志确认生效。Shell 侧 entry 已改 `https://`(http 会 301，导致 bridge targetOrigin 与最终文档 origin 失配、消息双向静默丢失）。
+
+## 2026-09-20 首次登录 API 401 竞态修复
+
+首次进入 Shell 时，deer-flow 尚无会话 cookie。原认证门禁位于聊天 page 内，
+`WorkspaceNavChatList` 和 `WorkspaceChannelsList` 已在外层 layout 挂载，
+先于 token-exchange 请求 `/api/features`、`/api/channels/providers`。
+共享 fetcher 收到 401 时，bridge 尚未成为 active，遂跳转登录页；已有有效 cookie
+时请求成功，所以用户观察到的是偶发故障。
+
+修复将 `EmbedModeProvider` 和 `EmbedAuthGate` 提升到 `WorkspaceContent` 的
+`EmbedWorkspaceBoundary`，统一覆盖偏好同步、侧栏、全局组件和页面。边界读取
+实时查询参数，处理 Next layout 保留期间的导航。首次交换成功后仍须等服务端
+刷新取得用户；刷新后仍无用户的重新挂载不再释放业务组件。
+
+回归用例：`frontend/tests/unit/app/workspace/embed-bootstrap.dom.test.tsx`。
+它渲染实际工作区组合、侧栏消费者、查询 hooks、fetcher 和认证流程，覆盖慢握手、
+延迟交换、无旧会话/已有会话、交换 401/403、独立访问和切换 embed 模式。
+这是请求时序修复；真实权限不足的 403 仍由服务端判定，不能通过重试或放宽认证掩盖。

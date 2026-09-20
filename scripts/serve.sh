@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# serve.sh — Unified DeerFlow service launcher
+# serve.sh — Unified WitAI service launcher
 #
 # Usage:
 #   ./scripts/serve.sh [--dev|--prod] [--daemon] [--stop|--restart]
@@ -338,7 +338,7 @@ else
 fi
 
 # Runtime path defaults. Local `make dev` launches Gateway from `backend/`,
-# so pin DeerFlow-owned state to the expected backend runtime directory and
+# so pin WitAI-owned state to the expected backend runtime directory and
 # create it before uvicorn builds its reload exclude filter.
 if [ -z "$DEER_FLOW_PROJECT_ROOT" ]; then
     export DEER_FLOW_PROJECT_ROOT="$REPO_ROOT"
@@ -380,7 +380,7 @@ if ! { \
         [ -f backend/config.yaml ] || \
         [ -f config.yaml ]; \
     }; then
-    echo "✗ No DeerFlow config file found."
+    echo "✗ No WitAI config file found."
     echo "  Run 'make setup' (recommended) or 'make config' to generate config.yaml."
     exit 1
 fi
@@ -429,7 +429,7 @@ fi
 
 echo ""
 echo "=========================================="
-echo "  Starting DeerFlow"
+echo "  Starting WitAI"
 echo "=========================================="
 echo ""
 echo "  Mode: $MODE_LABEL"
@@ -512,7 +512,7 @@ run_service "Nginx" \
 
 echo ""
 echo "=========================================="
-echo "  ✓ DeerFlow is running!  [$MODE_LABEL]"
+echo "  ✓ WitAI is running!  [$MODE_LABEL]"
 echo "=========================================="
 echo ""
 echo "  🌐 http://localhost:2026"

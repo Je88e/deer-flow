@@ -1,39 +1,7 @@
-import { EmbedAuthGate } from "@/components/embed/embed-auth-gate";
-import { isEmbedSearchValue } from "@/components/embed/embed-mode";
-import { EmbedModeProvider } from "@/components/embed/embed-mode-provider";
 import ChatPage from "@/components/workspace/chats/chat-page";
 
-// Next 16: `searchParams` is a Promise and must be awaited. The workspace
-// layout is already `force-dynamic`, so no extra route segment config is
-// needed here — awaiting `searchParams` keeps the route dynamic either way.
-interface WorkspaceChatPageProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
-
-export default async function WorkspaceChatPage({
-  searchParams,
-}: WorkspaceChatPageProps) {
-  const { embed } = await searchParams;
-  const isEmbedded = isEmbedSearchValue(embed);
-
-  if (isEmbedded) {
-    return (
-      <EmbedModeProvider embedded>
-        {/* EMBED renders the standard workspace layout (sidebar included —
-            the sidebar and its menus hide EMBED-only entries themselves). The
-            gate still overlays the tree until the bridge token-exchange
-            settles, so the chat stack's queries only fire once the session
-            cookie is in place. */}
-        <EmbedAuthGate>
-          <ChatPage />
-        </EmbedAuthGate>
-      </EmbedModeProvider>
-    );
-  }
-
-  return (
-    <EmbedModeProvider embedded={false}>
-      <ChatPage />
-    </EmbedModeProvider>
-  );
+export default function WorkspaceChatPage() {
+  // WorkspaceContent owns the shared embed context and authentication gate,
+  // including sidebar/global consumers and every workspace destination.
+  return <ChatPage />;
 }

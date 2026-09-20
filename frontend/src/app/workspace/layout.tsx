@@ -43,14 +43,13 @@ export default async function WorkspaceLayout({
       if (embedRequested) {
         // EMBED first entry has no session cookie yet — the bridge
         // token-exchange is what creates it (plan §3.1). Render the page
-        // tree so the EMBED branch can mount EmbedAuthGate; redirecting to
+        // tree so WorkspaceContent can mount EmbedAuthGate; redirecting to
         // /login here would abort the page and the handshake would never
-        // start. The gate overlays the children until token-exchange
+        // start. The gate blocks all workspace consumers until token-exchange
         // succeeds, then router.refresh()es into the authenticated branch
-        // above. WorkspaceContent is required even here: the page tree
-        // SSRs through ChatPage, which needs its QueryClientProvider and
-        // SidebarProvider. AuthProvider with a null initialUser keeps
-        // useAuth consumers mounted without firing requests, and the
+        // above. WorkspaceContent owns the gate above its sidebar, global
+        // providers and page, so all initial queries await authentication.
+        // AuthProvider supplies the null bootstrap user, and the
         // distinct key forces a remount when the refresh swaps branches —
         // an identical tree shape would make AuthProvider keep the stale
         // null-user state across router.refresh().

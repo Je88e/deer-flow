@@ -997,7 +997,7 @@ async def oauth_callback(
 
     Handles the OIDC provider's redirect after user authorization.
     Validates the state cookie, exchanges the code for tokens, validates
-    the ID token, provisions/links the DeerFlow user, and sets the
+    the ID token, provisions/links the WitAI user, and sets the
     session cookie.
     """
     from deerflow.config.app_config import get_app_config
@@ -1082,7 +1082,7 @@ async def oauth_callback(
 
     user = result["user"]
 
-    # ── Issue DeerFlow session ───────────────────────────────────────
+    # ── Issue WitAI session ───────────────────────────────────────
     token = create_access_token(str(user.id), token_version=user.token_version)
 
     # Revalidate as defense-in-depth if future state writers populate this target.
@@ -1138,7 +1138,7 @@ class TokenExchangeRequest(BaseModel):
 
     The embedded frontend POSTs the Keycloak ID token it received from the
     Shell iframe bridge; the Gateway validates it offline (JWKS) and issues a
-    DeerFlow session (docs/dev/deerflow-shell-integration-plan.md §3.1).
+    WitAI session (docs/dev/deerflow-shell-integration-plan.md §3.1).
     """
 
     token: str
@@ -1147,7 +1147,7 @@ class TokenExchangeRequest(BaseModel):
 
 @router.post("/token-exchange", response_model=LoginResponse)
 async def token_exchange(request: Request, response: Response, body: TokenExchangeRequest):
-    """Exchange a Shell-injected Keycloak ID token for a DeerFlow session.
+    """Exchange a Shell-injected Keycloak ID token for a WitAI session.
 
     Pure-API counterpart of the OIDC callback: same discovery + ID-token
     validation and the same provisioning path (``get_or_provision_oidc_user``),
@@ -1158,7 +1158,7 @@ async def token_exchange(request: Request, response: Response, body: TokenExchan
     POST response like it does for local login.
 
     The nonce check is skipped on purpose: the ID token's ``nonce`` belongs to
-    the issuing wit-shell authorization-code flow, which DeerFlow never sees;
+    the issuing wit-shell authorization-code flow, which WitAI never sees;
     signature / iss / aud / exp validation remains fully enforced.
     """
     from deerflow.config.app_config import get_app_config

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def _default_local_base_dir() -> Path:
-    """Return the caller project's writable DeerFlow state directory."""
+    """Return the caller project's writable WitAI state directory."""
     return runtime_home()
 
 
@@ -108,7 +108,7 @@ def join_host_path(base: str, *parts: str) -> str:
 
 class Paths:
     """
-    Centralized path configuration for DeerFlow application data.
+    Centralized path configuration for WitAI application data.
 
     Directory layout (host side):
         {base_dir}/

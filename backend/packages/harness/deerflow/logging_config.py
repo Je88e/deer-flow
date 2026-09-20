@@ -1,4 +1,4 @@
-"""Logging setup helpers for DeerFlow."""
+"""Logging setup helpers for WitAI."""
 
 from __future__ import annotations
 
@@ -345,7 +345,7 @@ def _trace_formatter(format_name: str | None) -> logging.Formatter:
 
 
 def configure_logging(config: object) -> None:
-    """Configure DeerFlow logging from an AppConfig-like object.
+    """Configure WitAI logging from an AppConfig-like object.
 
     With logging enhancement disabled this preserves the previous
     ``basicConfig + apply_logging_level`` behavior. With enhancement enabled,

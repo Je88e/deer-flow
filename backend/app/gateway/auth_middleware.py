@@ -66,7 +66,7 @@ _PUBLIC_EXACT_PATHS: frozenset[str] = frozenset(
         "/api/v1/auth/initialize",
         "/api/v1/auth/providers",
         # WIT Shell iframe exchange: the caller's credential is the Keycloak ID
-        # token in the body, not a DeerFlow session cookie.
+        # token in the body, not a WitAI session cookie.
         "/api/v1/auth/token-exchange",
     }
 )

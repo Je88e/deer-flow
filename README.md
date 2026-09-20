@@ -269,6 +269,11 @@ It is disabled by default; see the linked guide to enable it.
 
 ### Running the Application
 
+When embedded in WitAI Shell (`?embed=true`), the entire workspace waits for
+the Shell token exchange before loading protected data, including sidebar
+features and channel providers. An unauthenticated refreshed tree keeps
+workspace requests blocked. See the [Shell integration notes](docs/dev/shell-integration-handoff.md).
+
 #### Deployment Sizing
 
 Use the table below as a practical starting point when choosing how to run DeerFlow:

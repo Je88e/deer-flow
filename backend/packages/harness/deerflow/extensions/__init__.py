@@ -1,4 +1,4 @@
-"""DeerFlow's extension mechanism (host side).
+"""WitAI's extension mechanism (host side).
 
 The public contracts live in the separate `deerflow-extension-api` package;
 this module implements loading, registration, middleware injection and the

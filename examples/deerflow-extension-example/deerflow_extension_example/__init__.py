@@ -1,4 +1,4 @@
-"""A compact, standalone DeerFlow extension exercising every contribution kind."""
+"""A compact, standalone WitAI extension exercising every contribution kind."""
 
 from __future__ import annotations
 

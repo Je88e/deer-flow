@@ -55,7 +55,7 @@ def _build_fake_create_chat_model(agent_name: str):
 
 @pytest.fixture
 def isolated_deer_flow_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Stand up an isolated DeerFlow data root + config under tmp_path.
+    """Stand up an isolated WitAI data root + config under tmp_path.
 
     - Sets ``DEER_FLOW_HOME`` so paths land under tmp_path, not the real
       ``.deer-flow`` directory.

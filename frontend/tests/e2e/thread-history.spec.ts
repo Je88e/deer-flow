@@ -745,7 +745,7 @@ test.describe("Thread history", () => {
         exact: true,
       }),
     ).toBeVisible();
-    await expect(page.getByText("Hello from DeerFlow!")).toBeVisible();
+    await expect(page.getByText("Hello from WitAI!")).toBeVisible();
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "Delete", exact: true })

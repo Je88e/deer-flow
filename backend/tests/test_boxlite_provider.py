@@ -363,7 +363,7 @@ def test_idle_timeout_zero_is_preserved_and_disables_reaper(monkeypatch):
 
 
 def test_create_box_passes_prefixed_sandbox_id_as_name(monkeypatch):
-    """_create_box gives BoxLite a DeerFlow-owned name prefix."""
+    """_create_box gives BoxLite a WitAI-owned name prefix."""
     monkeypatch.setattr(
         "deerflow.community.boxlite.provider.get_app_config",
         lambda: _stub_config(),
@@ -392,7 +392,7 @@ def test_create_box_passes_prefixed_sandbox_id_as_name(monkeypatch):
 
 
 def test_startup_reconciliation_adopts_prefixed_existing_boxes(monkeypatch):
-    """Existing DeerFlow-named BoxLite boxes are adopted into the warm pool."""
+    """Existing WitAI-named BoxLite boxes are adopted into the warm pool."""
     monkeypatch.setattr(
         "deerflow.community.boxlite.provider.get_app_config",
         lambda: _stub_config(),

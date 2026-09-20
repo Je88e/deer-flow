@@ -790,8 +790,8 @@ class TelegramChannel(Channel):
             },
             status="connected",
         )
-        logger.info("[Telegram] bound chat=%s user=%s to DeerFlow user=%s connection=%s", chat_id, user_id, owner_user_id, connection["id"])
-        await self._run_on_telegram_loop(update.message.reply_text("Telegram connected to DeerFlow."))
+        logger.info("[Telegram] bound chat=%s user=%s to WitAI user=%s connection=%s", chat_id, user_id, owner_user_id, connection["id"])
+        await self._run_on_telegram_loop(update.message.reply_text("Telegram connected to WitAI."))
         return True
 
     async def _bind_connection_from_start_token(self, update, state_token: str) -> bool:
@@ -861,7 +861,7 @@ class TelegramChannel(Channel):
                 return
         if not self._check_user(update.effective_user.id):
             return
-        await update.message.reply_text("Welcome to DeerFlow! Send me a message to start a conversation.\nType /help for available commands.")
+        await update.message.reply_text("Welcome to WitAI! Send me a message to start a conversation.\nType /help for available commands.")
 
     async def _process_incoming_with_reply(
         self,
@@ -975,7 +975,7 @@ class TelegramChannel(Channel):
         user_id = str(update.effective_user.id)
         msg_id = str(update.message.message_id)
 
-        # topic_id determines which DeerFlow thread the message maps to.
+        # topic_id determines which WitAI thread the message maps to.
         # In private chats, use None so that all messages share a single
         # thread (the store key becomes "channel:chat_id").
         # In group chats, use the reply-to message id or the current

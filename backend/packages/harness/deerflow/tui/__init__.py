@@ -1,1 +1,1 @@
-"""DeerFlow terminal workbench (TUI), embedded over DeerFlowClient."""
+"""WitAI terminal workbench (TUI), embedded over DeerFlowClient."""

@@ -83,7 +83,7 @@ async def _ensure_admin_user(app: FastAPI) -> None:
 
     After admin creation, migrate orphan threads from the LangGraph
     store (metadata.user_id unset) to the admin account. This is the
-    "no-auth → with-auth" upgrade path: users who ran DeerFlow without
+    "no-auth → with-auth" upgrade path: users who ran WitAI without
     authentication have existing LangGraph thread data that needs an
     owner assigned.
         First boot (no admin exists):
@@ -708,11 +708,11 @@ def create_app() -> FastAPI:
     openapi_url = "/openapi.json" if config.enable_docs else None
 
     app = FastAPI(
-        title="DeerFlow API Gateway",
+        title="WitAI API Gateway",
         description="""
-## DeerFlow API Gateway
+## WitAI API Gateway
 
-API Gateway for DeerFlow - A LangGraph-based AI agent backend with sandbox execution capabilities.
+API Gateway for WitAI - A LangGraph-based AI agent backend with sandbox execution capabilities.
 
 ### Features
 
@@ -760,7 +760,7 @@ This gateway provides runtime endpoints for agent runs plus custom endpoints for
             },
             {
                 "name": "threads",
-                "description": "Manage DeerFlow thread-local filesystem data",
+                "description": "Manage WitAI thread-local filesystem data",
             },
             {
                 "name": "agents",

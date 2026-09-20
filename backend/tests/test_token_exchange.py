@@ -1,7 +1,7 @@
-"""POST /api/v1/auth/token-exchange — WIT Shell ID-token → DeerFlow session.
+"""POST /api/v1/auth/token-exchange — WIT Shell ID-token → WitAI session.
 
 The embedded (iframe) frontend receives a Keycloak ID token from the WIT Shell
-bridge and exchanges it for the normal DeerFlow cookie pair. Unlike the OIDC
+bridge and exchanges it for the normal WitAI cookie pair. Unlike the OIDC
 callback this is a pure API call: no redirect, no state cookie, and the nonce
 check is skipped because the nonce belongs to the issuing wit-shell
 authorization-code flow (docs/dev/deerflow-shell-integration-plan.md §3.1).
@@ -206,7 +206,7 @@ def test_token_exchange_success_sets_cookie_pair(make_client):
     assert access_cookies, "token-exchange must set the access_token cookie"
     assert csrf_cookies, "token-exchange response must carry the csrf_token cookie pair"
     assert "httponly" in access_cookies[0].lower()
-    # WIT Shell serves DeerFlow under /leadagent; the auth cookie family is
+    # WIT Shell serves WitAI under /leadagent; the auth cookie family is
     # scoped to that base path (plan §6.3).
     assert "path=/leadagent" in access_cookies[0].lower()
     assert "path=/leadagent" in csrf_cookies[0].lower()

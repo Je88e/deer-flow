@@ -1,4 +1,4 @@
-"""Command-line entry point and launch-mode planning for the DeerFlow TUI.
+"""Command-line entry point and launch-mode planning for the WitAI TUI.
 
 ``plan_launch`` is a pure decision function (fully unit-tested): given argv, TTY
 state and the environment, it decides whether to open the terminal UI or run a
@@ -48,7 +48,7 @@ def _positive_int(value: str) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="deerflow",
-        description="DeerFlow terminal workbench — a TUI over the embedded DeerFlow harness.",
+        description="WitAI terminal workbench — a TUI over the embedded WitAI harness.",
         epilog="Extension management: deerflow extensions --help",
         add_help=True,
     )
@@ -194,7 +194,7 @@ def plan_launch(
 # --------------------------------------------------------------------------- #
 
 _HEADLESS_HELP = """\
-deerflow — DeerFlow terminal workbench
+deerflow — WitAI terminal workbench
 
   deerflow                      launch the terminal UI (TTY required)
   deerflow --tui                force the terminal UI

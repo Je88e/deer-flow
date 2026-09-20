@@ -82,6 +82,14 @@ The frontend is a stateful chat application. Users create **threads** (conversat
 
 More specific `AGENTS.md` files under `src/` contain the frontend sections split from this file.
 
+`WorkspaceContent` owns `EmbedWorkspaceBoundary`: the live `?embed=true`
+context and `EmbedAuthGate` wrap preferences, sidebar, global UI and pages.
+Keep API consumers inside that boundary so first entry waits for the Shell
+token exchange and authenticated server refresh. A page-only gate leaves
+sidebar features/providers requests racing the session cookie. A refresh
+that still has no user returns to login while consumers remain blocked.
+The composition regression lives in `tests/unit/app/workspace/embed-bootstrap.dom.test.tsx`.
+
 ## Code Style
 
 Custom Agent `display_name` is an optional Unicode UI label, edited in

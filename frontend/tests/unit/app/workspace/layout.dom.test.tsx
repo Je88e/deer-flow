@@ -104,10 +104,10 @@ describe("WorkspaceLayout EMBED bootstrap", () => {
       requestHeaders: { "x-deerflow-embed": "1" },
     });
 
-    // The page tree must mount (so EmbedAuthGate can run the bridge
-    // handshake) under a null-user AuthProvider, and WorkspaceContent must
-    // stay in the tree: the page SSRs through ChatPage, which requires its
-    // QueryClientProvider and SidebarProvider.
+    // WorkspaceContent must mount under a null-user AuthProvider so its
+    // workspace-wide EmbedAuthGate can run the bridge handshake. This test
+    // doubles WorkspaceContent; embed-bootstrap.dom.test.tsx exercises the
+    // real boundary and verifies its API consumers remain unmounted.
     expect(screen.getByTestId("layout-children")).not.toBeNull();
     expect(screen.getByTestId("auth-provider").dataset.initialUser).toBe(
       "null",

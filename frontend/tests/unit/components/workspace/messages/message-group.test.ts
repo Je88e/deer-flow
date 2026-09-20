@@ -540,7 +540,7 @@ describe("MessageGroup tool links", () => {
   it.each(unsafeUrls)("marks a web_search result at %s as omitted", (url) => {
     const html = renderToolCall(
       "web_search",
-      { query: "DeerFlow" },
+      { query: "WitAI" },
       JSON.stringify([
         { title: "Safe source", url: "https://safe.example" },
         { title: "Injected source", url },
@@ -558,7 +558,7 @@ describe("MessageGroup tool links", () => {
     (url) => {
       const html = renderToolCall(
         "image_search",
-        { query: "DeerFlow" },
+        { query: "WitAI" },
         JSON.stringify({
           results: [
             {
@@ -583,7 +583,7 @@ describe("MessageGroup tool links", () => {
     });
     const imageHtml = renderToolCall(
       "image_search",
-      { query: "DeerFlow" },
+      { query: "WitAI" },
       JSON.stringify({
         results: [
           {

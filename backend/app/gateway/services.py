@@ -679,7 +679,7 @@ def merge_run_context_overrides(config: dict[str, Any], context: Mapping[str, An
 
 
 async def resolve_trusted_internal_owner_for_attribution(request: Request, owner_user_id: str | None) -> Any | None:
-    """Resolve the DeerFlow user used only for trusted internal attribution."""
+    """Resolve the WitAI user used only for trusted internal attribution."""
 
     if not owner_user_id:
         return None
@@ -1692,7 +1692,7 @@ async def start_run(
     # via check_access; only a thread already owned by another user is rejected
     # with 404, matching thread_runs.py's anti-enumeration behaviour. Internal
     # channel runs act on behalf of the connection owner carried in
-    # X-DeerFlow-Owner-User-Id, so they are scoped to that owner instead of
+    # X-WitAI-Owner-User-Id, so they are scoped to that owner instead of
     # bypassing the check -- a leaked internal token must not grant cross-user
     # thread access.
     user = getattr(request.state, "user", None)
@@ -1792,7 +1792,7 @@ async def start_run(
             )
         run_record_input = _canonical_run_record_input(body.input, graph_input)
 
-        # Merge DeerFlow-specific context overrides into both ``configurable`` and ``context``.
+        # Merge WitAI-specific context overrides into both ``configurable`` and ``context``.
         # The ``context`` field is a custom extension for the langgraph-compat layer
         # that carries agent configuration (model_name, thinking_enabled, etc.).
         # Only agent-relevant keys are forwarded; unknown keys (e.g. thread_id) are ignored.
@@ -2088,7 +2088,7 @@ def _mcp_task_notification_prompt(event: dict[str, Any]) -> str:
         "Explain the update clearly and concisely. Do not expose or ask for a remote task ID. "
         "When status is input_required, show the question but explain that this MCP integration "
         "cannot resume the remote task with user input yet. When tracking_degraded is true, explain "
-        "that DeerFlow will continue retrying at a lower frequency."
+        "that WitAI will continue retrying at a lower frequency."
     )
     return f"{instruction}\n\n{payload}"
 

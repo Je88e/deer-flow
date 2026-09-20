@@ -98,7 +98,7 @@ type ProbeLocation = Location & {
  *    strips it). A referrer pointing at the frame itself (in-frame reload)
  *    is navigation noise and skipped.
  * 3. `?shellOrigin=` — the Shell appends it to the iframe URL (see the
- *    Shell-side `appendShellOrigin()` host helper) and DeerFlow's embedHref
+ *    Shell-side `appendShellOrigin()` host helper) and WitAI's embedHref
  *    re-propagates it across internal navigation. It is URL text that any
  *    URL-passing intermediary could rewrite, so it only outranks the env
  *    fallback, never a browser-computed signal.

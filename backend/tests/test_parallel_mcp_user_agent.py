@@ -1,4 +1,4 @@
-"""Capture real HTTP requests through DeerFlow's MCP discovery and tool calls."""
+"""Capture real HTTP requests through WitAI's MCP discovery and tool calls."""
 
 import asyncio
 import json

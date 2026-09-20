@@ -82,7 +82,7 @@ export function reduceThreadStateUpdates(
       }
     }
 
-    // DeerFlow's merge_todos treats null as "this node did not touch todos"
+    // WitAI's merge_todos treats null as "this node did not touch todos"
     // and an empty list as an explicit clear.
     if (
       Object.hasOwn(update, "todos") &&

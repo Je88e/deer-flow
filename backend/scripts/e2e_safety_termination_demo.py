@@ -1,4 +1,4 @@
-"""End-to-end demo: SafetyFinishReasonMiddleware on the real DeerFlow lead-agent.
+"""End-to-end demo: SafetyFinishReasonMiddleware on the real WitAI lead-agent.
 
 What it proves
 --------------

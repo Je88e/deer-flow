@@ -715,7 +715,7 @@ class TestChannelManager:
         csrf_token = headers["X-CSRF-Token"]
         assert csrf_token
         assert headers["Cookie"] == f"csrf_token={csrf_token}"
-        assert headers["X-DeerFlow-Internal-Token"]
+        assert headers["X-WitAI-Internal-Token"]
 
     def test_concurrent_inbound_for_same_chat_reuses_single_thread(self):
         # Each inbound message is dispatched on its own task, so two messages
@@ -904,7 +904,7 @@ class TestChannelManager:
             assert reply == "Available models:\n• default"
             assert calls[0]["url"] == "http://gateway:8001/api/models"
             assert calls[0]["timeout"] == 10
-            assert calls[0]["headers"]["X-DeerFlow-Internal-Token"]
+            assert calls[0]["headers"]["X-WitAI-Internal-Token"]
 
         _run(go())
 
@@ -3484,7 +3484,7 @@ class TestChannelManager:
         _run(go())
 
     def test_each_topic_creates_new_thread(self):
-        """Messages with distinct topic_ids should each create a new DeerFlow thread."""
+        """Messages with distinct topic_ids should each create a new WitAI thread."""
         from app.channels.manager import ChannelManager
 
         async def go():
@@ -3536,7 +3536,7 @@ class TestChannelManager:
         _run(go())
 
     def test_same_topic_reuses_thread(self, monkeypatch):
-        """Messages with the same topic_id should reuse the same DeerFlow thread."""
+        """Messages with the same topic_id should reuse the same WitAI thread."""
         from app.channels.manager import ChannelManager
 
         monkeypatch.delenv("DEER_FLOW_AUTH_DISABLED", raising=False)
@@ -5532,7 +5532,7 @@ class TestChannelManagerBoundIdentityPolicy:
         is exempt from the per-sender bound-identity gate, even when
         ``require_bound_identity=True`` is on for interactive IM channels in the
         same deployment. This is what lets GitHub webhook deliveries reach the
-        agent: they are HMAC-authenticated at the route, and the sender→DeerFlow
+        agent: they are HMAC-authenticated at the route, and the sender→WitAI
         binding lives in the agent's config.yaml ownership, not in the
         channel-connections table.
         """
@@ -10024,8 +10024,8 @@ class TestSlackTextEscaping:
         # syntax for a real markdown link must survive untouched -- if
         # escaping ran after conversion instead, this would corrupt into
         # `&lt;url|label&gt;` and Slack would render a dead link.
-        sent = self._sent_text("See [DeerFlow docs](https://example.com/docs) for more.")
-        assert "<https://example.com/docs|DeerFlow docs>" in sent
+        sent = self._sent_text("See [WitAI docs](https://example.com/docs) for more.")
+        assert "<https://example.com/docs|WitAI docs>" in sent
         assert "&lt;" not in sent
         assert "&gt;" not in sent
 
@@ -10919,7 +10919,7 @@ def test_merge_stream_text_normal_append():
 # ---------------------------------------------------------------------------
 # LIVE-TEST FINDING 1 (critical, data disclosure): _accumulate_stream_text
 # decided what streamed payloads become displayable assistant text by REJECTING
-# only payloads whose ``type`` contained "tool".  DeerFlow injects hidden
+# only payloads whose ``type`` contained "tool".  WitAI injects hidden
 # context -- memory facts (DynamicContextMiddleware) and durable context
 # (DurableContextMiddleware) -- as hidden HumanMessages whose ``type`` is
 # "human", and DynamicContextMiddleware also rewrites the user's own turn into
@@ -10942,7 +10942,7 @@ def _get_accumulate_stream_text():
     return _accumulate_stream_text
 
 
-_MEMORY_LEAK_TEXT = "<memory>\nFacts:\n- [context | 0.70] User interacts with the assistant through the DeerFlow chat channel.\n</memory>"
+_MEMORY_LEAK_TEXT = "<memory>\nFacts:\n- [context | 0.70] User interacts with the assistant through the WitAI chat channel.\n</memory>"
 
 
 def test_accumulate_stream_text_rejects_hidden_memory_human_message():
