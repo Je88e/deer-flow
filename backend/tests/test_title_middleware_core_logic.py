@@ -893,7 +893,7 @@ class TestTitleMiddlewareCoreLogic:
         assert result == {"title": "批31772-COA.pdf"}
 
     def test_build_title_prompt_keeps_500_char_body_and_appends_full_attachment_list(self):
-        """The body keeps the original 500-char cut; the attachment suffix is appended whole."""
+        """The prompt body keeps the original 500-char cut with the attachment suffix appended whole; the returned user_msg stays the untruncated original."""
         _set_test_title_config(enabled=True)
         middleware = TitleMiddleware()
         long_body = "审" * 600
@@ -907,13 +907,18 @@ class TestTitleMiddlewareCoreLogic:
 
         prompt, user_msg = middleware._build_title_prompt(state)
 
+        assert "审" * 500 in prompt
+        assert "审" * 501 not in prompt
+        for i in range(10):
+            assert f"附件{i:02d}-质检报告.pdf" in prompt
+        assert "<current_uploads>" not in prompt
+        assert "Path:" not in prompt
+
         body_part, sep, suffix = user_msg.partition("\n(Attachments: ")
-        assert body_part == "审" * 500
+        assert body_part == "审" * 600
         assert sep, "attachment suffix must be present"
         for i in range(10):
             assert f"附件{i:02d}-质检报告.pdf" in suffix
-        assert "<current_uploads>" not in prompt
-        assert "Path:" not in prompt
 
     def test_generate_title_async_strips_think_tags_in_response(self, monkeypatch):
         """Async title generation strips <think> blocks from the model response."""

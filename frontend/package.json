@@ -1,9 +1,10 @@
 {
   "name": "deer-flow-frontend",
-  "version": "2.1.0",
+  "version": "2.1.0-rc0",
   "private": true,
   "type": "module",
   "scripts": {
+    "catalog:sync": "node scripts/sync-capability-catalog.mjs",
     "demo:save": "node scripts/save-demo.js",
     "build": "next build",
     "check": "eslint . --ext .ts,.tsx && tsc --noEmit",

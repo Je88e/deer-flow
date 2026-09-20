@@ -14,6 +14,7 @@ from langgraph.constants import TAG_NOSTREAM
 from langgraph.runtime import Runtime
 
 from deerflow.agents.middlewares.dynamic_context_middleware import is_dynamic_context_reminder
+from deerflow.agents.middlewares.pii_redaction_middleware import redact_texts
 from deerflow.config.title_config import get_title_config
 from deerflow.models import create_chat_model
 from deerflow.utils.messages import ORIGINAL_USER_CONTENT_KEY, get_original_user_content_text
@@ -252,17 +253,20 @@ class TitleMiddleware(AgentMiddleware[TitleMiddlewareState]):
         assistant_msg_content = next((self._message_content(m) for m in messages if self._message_type(m) == "ai"), "")
 
         body, attachment_names = self._get_title_user_parts(state)
-        user_msg = self._compose_title_user_msg(body[:500], attachment_names)
         assistant_msg = self._strip_think_tags(self._normalize_content(assistant_msg_content))
 
+        # This model is invoked directly, outside the main model wrappers.
+        # Redact complete fields before truncation can split an identifier.
+        redacted_body, redacted_assistant, *redacted_names = redact_texts([body, assistant_msg, *attachment_names], getattr(self._app_config, "pii_redaction", None))
         prompt = config.prompt_template.format(
             max_words=config.max_words,
-            # Body was already cut to 500 chars before the attachment suffix was
-            # appended, so the composed value goes in whole.
-            user_msg=user_msg,
-            assistant_msg=assistant_msg[:500],
+            # The redacted body was already cut to 500 chars before the attachment
+            # suffix was appended, so the composed value goes in whole.
+            user_msg=self._compose_title_user_msg(redacted_body[:500], redacted_names),
+            assistant_msg=redacted_assistant[:500],
         )
-        return prompt, user_msg
+        # The fallback is local display text; keep the unredacted original parts.
+        return prompt, self._compose_title_user_msg(body, attachment_names)
 
     def _strip_think_tags(self, text: str) -> str:
         """Remove <think>...</think> blocks emitted by reasoning models (e.g. minimax, DeepSeek-R1)."""
