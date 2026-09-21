@@ -32,9 +32,9 @@ export function WorkspaceNavChatList() {
   const { enabled: agentsEnabled } = useAgentsApiEnabled();
   // EMBED (WIT Shell iframe) hides the workspace-only destinations (agents,
   // audits): the Shell owns those flows, and those links never carry the
-  // ?embed=true parameter. Scheduled tasks stay reachable from the Shell
-  // iframe and navigate through embedHref so they never fall out of EMBED
-  // mode.
+  // ?embed=true parameter. Scheduled tasks and the capability center stay
+  // reachable from the Shell iframe and navigate through embedHref so
+  // they never fall out of EMBED mode.
   const isEmbedRoute = useIsEmbedRoute();
 
   return (
@@ -122,8 +122,8 @@ export function WorkspaceNavChatList() {
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
-        {/* EMBED (WIT Shell iframe) hides workspace-only destinations;
-            capabilities management is not part of the Shell flows either. */}
+        {/* EMBED (WIT Shell iframe) hides the workspace-only audits
+          destination; the Shell owns that flow. */}
         {!isEmbedRoute && (
           <>
             <SidebarMenuItem>
@@ -140,22 +140,26 @@ export function WorkspaceNavChatList() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={pathname.startsWith("/workspace/capabilities")}
-                asChild
-              >
-                <Link
-                  className="text-muted-foreground"
-                  href="/workspace/capabilities"
-                >
-                  <BlocksIcon />
-                  <span>{t.capabilities.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
           </>
         )}
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            isActive={pathname.startsWith("/workspace/capabilities")}
+            asChild
+          >
+            <Link
+              className="text-muted-foreground"
+              href={
+                isEmbedRoute
+                  ? embedHref("/workspace/capabilities")
+                  : "/workspace/capabilities"
+              }
+            >
+              <BlocksIcon />
+              <span>{t.capabilities.title}</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
   );

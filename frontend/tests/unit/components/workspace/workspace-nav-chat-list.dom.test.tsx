@@ -110,22 +110,26 @@ describe("WorkspaceNavChatList embed mode", () => {
     );
   });
 
-  it("keeps scheduled tasks but hides agents, audits, and capabilities when ?embed=true", () => {
+  it("keeps scheduled tasks and capabilities but hides agents and audits when ?embed=true", () => {
     setEmbedParam("true");
     render(<WorkspaceNavChatList />);
     expect(screen.getByText("Chats")).not.toBeNull();
     expect(screen.getByText("Scheduled Tasks")).not.toBeNull();
-    for (const label of ["Agents", "Audits", "Capability Center"]) {
+    expect(screen.getByText("Capability Center")).not.toBeNull();
+    for (const label of ["Agents", "Audits"]) {
       expect(screen.queryByText(label)).toBeNull();
     }
   });
 
-  it("keeps the embed parameter on the chats and scheduled-tasks links when embedded", () => {
+  it("keeps the embed parameter on the chats, scheduled-tasks, and capabilities links when embedded", () => {
     setEmbedParam("true");
     render(<WorkspaceNavChatList />);
     expect(linkDestination("Chats")).toBe("/workspace/chats?embed=true");
     expect(linkDestination("Scheduled Tasks")).toBe(
       "/workspace/scheduled-tasks?embed=true",
+    );
+    expect(linkDestination("Capability Center")).toBe(
+      "/workspace/capabilities?embed=true",
     );
   });
 
