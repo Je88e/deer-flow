@@ -1099,10 +1099,10 @@ export const enUS: Translations = {
         "WeChat says this bot is already linked. Close this dialog and check its connection, or choose a different bot on your phone.",
       saved: "Token saved securely",
       savedDescription:
-        "DeerFlow has saved your token on the server and started the WeChat channel.",
+        "WitAI has saved your token on the server and started the WeChat channel.",
       bindTitle: "One more step: link your account",
       bindDescription:
-        "Send this command to the bot in WeChat to link it to your DeerFlow account.",
+        "Send this command to the bot in WeChat to link it to your WitAI account.",
       bindWaiting: "Waiting for your message in WeChat…",
       bindLoading: "Preparing your account connection…",
       bindFailed:
@@ -1119,7 +1119,7 @@ export const enUS: Translations = {
 
       login: "Scan QR code",
       manual: "Use token",
-      description: "Connect WeChat to your DeerFlow workspace.",
+      description: "Connect WeChat to your WitAI workspace.",
       loading: "Generating QR code…",
       imageTitle: "WeChat login QR code",
       scan: "Scan this code with WeChat, then confirm on your phone.",

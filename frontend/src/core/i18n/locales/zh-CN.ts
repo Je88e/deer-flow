@@ -1029,10 +1029,10 @@ export const zhCN: Translations = {
       already_bound:
         "微信提示此机器人已连接。请关闭弹窗检查连接状态，或在手机上选择其他机器人。",
       saved: "Token 已安全保存",
-      savedDescription: "DeerFlow 已在服务器保存 Token 并启动微信渠道。",
+      savedDescription: "WitAI 已在服务器保存 Token 并启动微信渠道。",
       bindTitle: "最后一步：绑定你的账号",
       bindDescription:
-        "将下方指令发送给微信中的机器人，即可绑定到你的 DeerFlow 账号。",
+        "将下方指令发送给微信中的机器人，即可绑定到你的 WitAI 账号。",
       bindWaiting: "正在等待微信中的绑定消息…",
       bindLoading: "正在准备账号绑定…",
       bindFailed: "Token 已保存，但账号绑定暂时不可用，请重试。",
@@ -1047,7 +1047,7 @@ export const zhCN: Translations = {
 
       login: "扫码连接",
       manual: "使用 Token",
-      description: "将微信连接到你的 DeerFlow 工作空间。",
+      description: "将微信连接到你的 WitAI 工作空间。",
       loading: "正在生成二维码…",
       imageTitle: "微信登录二维码",
       scan: "请使用微信扫描二维码，并在手机上确认登录。",

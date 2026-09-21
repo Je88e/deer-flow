@@ -752,8 +752,7 @@ for (const entry of ["sidebar", "settings"] as const) {
             provider: "wechat",
             mode: "binding_code",
             code: "recovery-demo",
-            instruction:
-              "Send /connect recovery-demo to the DeerFlow WeChat bot.",
+            instruction: "Send /connect recovery-demo to the WitAI WeChat bot.",
             expires_in: 600,
           },
         });
