@@ -114,6 +114,7 @@ function ChatPageInner() {
   const { t } = useI18n();
   const { user } = useAuth();
   const canStopStreaming = hasPermission(user, PERMISSIONS.RUNS_CANCEL);
+  const canCreateRuns = hasPermission(user, PERMISSIONS.RUNS_CREATE);
   const router = useRouter();
   const { embedded } = useEmbedMode();
   const searchParams = useSearchParams();
@@ -736,6 +737,7 @@ function ChatPageInner() {
                       onSubmit={handleSubmit}
                       onStop={handleStop}
                       canStopStreaming={canStopStreaming}
+                      canCreateRuns={canCreateRuns}
                     />
                   ) : (
                     <div

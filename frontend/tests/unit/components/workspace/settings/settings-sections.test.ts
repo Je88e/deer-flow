@@ -8,6 +8,7 @@ import {
 
 // Mirror of the dialog's section order (labels are irrelevant here).
 const ALL_SECTION_IDS: SettingsSection[] = [
+  "models",
   "account",
   "appearance",
   "notification",
@@ -48,10 +49,10 @@ describe("resolveInitialSettingsSection", () => {
     // call site's argument — under EMBED the dialog must open on the first
     // visible section instead.
     expect(resolveInitialSettingsSection("appearance", EMBED_SECTION_IDS)).toBe(
-      "notification",
+      "models",
     );
     expect(resolveInitialSettingsSection("account", EMBED_SECTION_IDS)).toBe(
-      "notification",
+      "models",
     );
   });
 
