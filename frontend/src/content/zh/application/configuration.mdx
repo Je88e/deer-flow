@@ -125,10 +125,10 @@ models:
 
 `llama-server` 提供 OpenAI 兼容的 `/v1/chat/completions` 接口，因此 `base_url` 应指向它的 `/v1` 根路径。`ChatOpenAI` 需要一个非空 API key；当 llama.cpp 未启用鉴权时，`no-key` 只是占位值。如果启动服务时使用了 `--api-key`，请改为对应的真实密钥。
 
-Docker 部署时，`localhost` 指向 DeerFlow 容器本身。请改用容器能够访问的宿主机地址；例如 Docker Desktop 通常可使用 `http://host.docker.internal:8080/v1`。
+Docker 部署时，`localhost` 指向 WitAI 容器本身。请改用容器能够访问的宿主机地址；例如 Docker Desktop 通常可使用 `http://host.docker.internal:8080/v1`。
 
 <Callout type="warning">
-  DeerFlow 依赖工具调用。请确认 GGUF 模型的 chat template 支持 function/tool calls。
+  WitAI 依赖工具调用。请确认 GGUF 模型的 chat template 支持 function/tool calls。
   当前 llama.cpp 默认启用 Jinja chat-template 引擎；如果自定义模板，也必须保留工具调用支持。
 </Callout>
   </Tabs.Tab>

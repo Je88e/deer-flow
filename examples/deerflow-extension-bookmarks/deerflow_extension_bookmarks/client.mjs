@@ -1,4 +1,4 @@
-// Original web adaptation of Pi's bookmark concept. No React/DeerFlow imports.
+// Original web adaptation of Pi's bookmark concept. No React/WitAI imports.
 function mountBookmarks(root, context) {
   const zh = context.locale.startsWith("zh");
   const words = zh
