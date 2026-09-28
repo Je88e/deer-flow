@@ -32,7 +32,7 @@ superstep 上限的作用，是让停止接收写入的通道重放深度也有�
 | 常量 | 键与位置 | 写入时机 | 含义 |
 | --- | --- | --- | --- |
 | `CHECKPOINT_MODE_METADATA_KEY` | `config["metadata"]` 中的 `deerflow_checkpoint_channel_mode` | 仅 `delta`，取值 `"delta"` | 持久化的模式标记。`full` 模式会移除该键，因此**缺失即 `full`**，功能上线前的检查点无需迁移 |
-| `counters_since_delta_snapshot` | LangGraph 自己的检查点元数据键，一个含 `"messages"` 的字典 | 由 LangGraph 写入 | 兜底识别：即使没有 DeerFlow 标记，只要它存在也按增量处理 |
+| `counters_since_delta_snapshot` | LangGraph 自己的检查点元数据键，一个含 `"messages"` 的字典 | 由 LangGraph 写入 | 兜底识别：即使没有 WitAI 标记，只要它存在也按增量处理 |
 | `INTERNAL_CHECKPOINT_MODE_KEY` | `config["configurable"]` 中的 `__deerflow_checkpoint_channel_mode` | 每个请求，两种模式都写 | 仅供内部分流，由 `inject_checkpoint_mode` 写入。它永远不是持久化的元数据键，也不会出现在线上报文里；调用方传入的取值会被 Gateway 的 run-config 构建器丢弃，首次冻结时被忽略，冻结之后再传不同取值则被拒绝 |
 
 快照节奏刻意**不**写入检查点元数据，这也是标记契约不受节奏取值影响的原因：

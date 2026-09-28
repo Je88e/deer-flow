@@ -57,7 +57,7 @@ def _deep_merge_dicts(base: dict | None, override: dict) -> dict:
 
 
 # The two spellings of the vLLM/Qwen chat-template thinking switch: the legacy
-# ``thinking`` alias DeerFlow documented first and ``enable_thinking``, which
+# ``thinking`` alias WitAI documented first and ``enable_thinking``, which
 # vLLM's Qwen reasoning parser reads. ``VllmChatModel`` maps the alias onto
 # ``enable_thinking`` just before sending; other OpenAI-compatible classes
 # forward both keys as written.

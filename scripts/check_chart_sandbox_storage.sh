@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Assert the Helm chart keeps the Gateway and provisioner on the same logical
-# DeerFlow state root when the shared home PVC backs sandbox projection mounts.
+# WitAI state root when the shared home PVC backs sandbox projection mounts.
 #
 # The Gateway sends provisioner extra_mount host paths rooted at
 # DEER_FLOW_HOST_BASE_DIR. In USERDATA_PVC mode the provisioner validates those

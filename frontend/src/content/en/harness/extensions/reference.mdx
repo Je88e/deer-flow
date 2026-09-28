@@ -13,7 +13,7 @@ This page lists every name in `deerflow_extension_api.__all__` for contract vers
 from deerflow_extension_api import ExtensionRegistry, MiddlewarePlacement, Placement
 ```
 
-The package has no dependencies and never imports DeerFlow. Types written as `Any` below, such as a middleware or a router, are validated by the host at runtime rather than by the contract.
+The package has no dependencies and never imports WitAI. Types written as `Any` below, such as a middleware or a router, are validated by the host at runtime rather than by the contract.
 
 ## Entry point and registry
 
@@ -42,7 +42,7 @@ A `runtime_checkable` Protocol: the write-only surface passed to `install()`. Ev
 | ---------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
 | `middlewares(contributor: MiddlewareContributor)`          | `None`  | A middleware contributor                                                                 |
 | `task_lifecycle(contributor: TaskLifecycleContributor)`    | `None`  | Start and stop hooks for lead runs and subagents                                        |
-| `system_model_observer(observer: SystemModelCallObserver)` | `None`  | An observer of DeerFlow-owned model calls                                                |
+| `system_model_observer(observer: SystemModelCallObserver)` | `None`  | An observer of WitAI-owned model calls                                                |
 | `agent_assembly_observer(observer: AgentAssemblyObserver)` | `None`  | An observer of assembled agents                                                          |
 | `context_compaction_observer(observer: ContextCompactionObserver)` | `None` | An observer of summarization                                                       |
 | `service(service: ExtensionService)`                       | `None`  | A Gateway-lifetime service                                                               |
@@ -94,7 +94,7 @@ Frozen dataclass passed to `contribute_middlewares()`.
 
 ### `HostPolicySnapshot`
 
-Frozen dataclass: the limits the host enforces, projected so extensions do not depend on DeerFlow's config types. Every field has a default.
+Frozen dataclass: the limits the host enforces, projected so extensions do not depend on WitAI's config types. Every field has a default.
 
 | Field                   | Type            | Default |
 | ----------------------- | --------------- | ------- |

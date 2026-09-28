@@ -13,7 +13,7 @@ import { Callout } from "nextra/components";
 from deerflow_extension_api import ExtensionRegistry, MiddlewarePlacement, Placement
 ```
 
-这个包没有任何依赖，也从不导入 DeerFlow。下文写成 `Any` 的类型（例如中间件或路由器）由宿主在运行时校验，而不是由契约校验。
+这个包没有任何依赖，也从不导入 WitAI。下文写成 `Any` 的类型（例如中间件或路由器）由宿主在运行时校验，而不是由契约校验。
 
 ## 入口点与注册表
 
@@ -42,7 +42,7 @@ def install(registry: ExtensionRegistry, config: Mapping[str, Any]) -> None: ...
 | ---------------------------------------------------------- | ------- | ---------------------------------------------------------------------------- |
 | `middlewares(contributor: MiddlewareContributor)`          | `None`  | 一个中间件贡献者                                                             |
 | `task_lifecycle(contributor: TaskLifecycleContributor)`    | `None`  | Lead 运行和子 Agent 的开始、结束钩子                                         |
-| `system_model_observer(observer: SystemModelCallObserver)` | `None`  | DeerFlow 自有模型调用的观察者                                                |
+| `system_model_observer(observer: SystemModelCallObserver)` | `None`  | WitAI 自有模型调用的观察者                                                |
 | `agent_assembly_observer(observer: AgentAssemblyObserver)` | `None`  | 已组装 Agent 的观察者                                                        |
 | `context_compaction_observer(observer: ContextCompactionObserver)` | `None` | 摘要压缩的观察者                                                     |
 | `service(service: ExtensionService)`                       | `None`  | 与 Gateway 同寿的服务                                                        |
@@ -94,7 +94,7 @@ class MiddlewareContributor(Protocol):
 
 ### `HostPolicySnapshot`
 
-冻结的 dataclass：宿主实际执行的限制，以投影的形式提供，使扩展不依赖 DeerFlow 的配置类型。每个字段都有默认值。
+冻结的 dataclass：宿主实际执行的限制，以投影的形式提供，使扩展不依赖 WitAI 的配置类型。每个字段都有默认值。
 
 | 字段                    | 类型            | 默认值  |
 | ----------------------- | --------------- | ------- |

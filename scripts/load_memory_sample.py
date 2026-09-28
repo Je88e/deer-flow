@@ -21,7 +21,7 @@ def default_source(repo_root: Path) -> Path:
 
 def parse_args(repo_root: Path, argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Load Memory Settings sample data into DeerFlow runtime memory.",
+        description="Load Memory Settings sample data into WitAI runtime memory.",
     )
     parser.add_argument(
         "--source",

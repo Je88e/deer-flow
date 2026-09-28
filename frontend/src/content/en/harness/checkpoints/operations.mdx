@@ -94,18 +94,18 @@ There is also a history fast-path interaction to sequence around: the trailing d
 
 ### There is no production trigger yet
 
-The retention service (`backend/app/gateway/checkpoint_retention.py`) ships **without a production trigger**: where retention is invoked from — post-run hook, scheduler, or explicit admin action — is a maintainer decision that lands with the contract itself. Nothing in DeerFlow calls it, and there is no production caller of `prune` or `aprune` either: in the pinned environment only the base implementation defines them, and it raises `NotImplementedError`.
+The retention service (`backend/app/gateway/checkpoint_retention.py`) ships **without a production trigger**: where retention is invoked from — post-run hook, scheduler, or explicit admin action — is a maintainer decision that lands with the contract itself. Nothing in WitAI calls it, and there is no production caller of `prune` or `aprune` either: in the pinned environment only the base implementation defines them, and it raises `NotImplementedError`.
 
 Treat this as unfinished work rather than a safe default. The executable contract proves the branch-ancestor, explicit-resume-target, pending-writes, leaf-duration, and leaf-sibling scenarios against the **full-mode** state schema; only the growth baseline is delta-shaped. Delta-specific prune safety is neither proved by the suite nor implemented.
 
 ## The one remaining patch
 
-One compatibility patch remains, and it is applied at import time of the module itself. The module lives at the package root so it can be imported from `deerflow.agents.thread_state` without pulling in the heavier `deerflow.runtime` package, and it is anchored there so every process that builds a DeerFlow graph — Gateway, workers, in-process LangGraph runtime, tests — runs with it in place.
+One compatibility patch remains, and it is applied at import time of the module itself. The module lives at the package root so it can be imported from `deerflow.agents.thread_state` without pulling in the heavier `deerflow.runtime` package, and it is anchored there so every process that builds a WitAI graph — Gateway, workers, in-process LangGraph runtime, tests — runs with it in place.
 
 | Aspect | Detail |
 | --- | --- |
 | Subject | `BinaryOperatorAggregate` unwrapping an `Overwrite` first write into an empty (MISSING) channel |
-| Tracking issue | DeerFlow **#4380** |
+| Tracking issue | WitAI **#4380** |
 | Symptom it prevents | Channels whose type is a Union (`SandboxState \| None`, `GoalState \| None`, and similar) have no constructible default, so they start MISSING. A replace-style write into a fresh thread (thread branching) or a never-written channel (state update) then persists the `Overwrite` wrapper itself into the checkpoint, and the next consumer crashes with `TypeError: 'Overwrite' object is not subscriptable` |
 | Scope | Intercepts only the empty-channel plus leading-`Overwrite` case. Later plain values are ignored, and a second `Overwrite` in the same super-step raises `InvalidUpdateError` with `Can receive only one Overwrite value per super-step.`. Everything else delegates to the upstream implementation |
 | Consistency side effect | `DeltaChannel.update` already unwraps in the same situation, so the patch also removes a behavioural inconsistency between the two reducer channel types |

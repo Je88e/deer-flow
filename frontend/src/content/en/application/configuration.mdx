@@ -151,7 +151,7 @@ models:
 
 #### Reasoning capabilities
 
-`supports_thinking` and `supports_reasoning_effort` only say whether a knob exists. When a provider's contract differs from DeerFlow's generic assumptions — thinking that cannot be turned off, or an effort vocabulary other than `minimal/low/medium/high` — declare a mapping-valued `reasoning` block instead. The two booleans are then derived from it, the chat UI offers only the values the model accepts, and every model call (chat, summarization, title generation, subagents) follows the same policy. Existing Ollama `reasoning: true` / `false` values, and the `low` / `medium` / `high` level strings gpt-oss style models take, remain native ChatOllama settings and do not opt into this contract.
+`supports_thinking` and `supports_reasoning_effort` only say whether a knob exists. When a provider's contract differs from WitAI's generic assumptions — thinking that cannot be turned off, or an effort vocabulary other than `minimal/low/medium/high` — declare a mapping-valued `reasoning` block instead. The two booleans are then derived from it, the chat UI offers only the values the model accepts, and every model call (chat, summarization, title generation, subagents) follows the same policy. Existing Ollama `reasoning: true` / `false` values, and the `low` / `medium` / `high` level strings gpt-oss style models take, remain native ChatOllama settings and do not opt into this contract.
 
 ```yaml
 models:
@@ -168,7 +168,7 @@ models:
       effort:
         values: [low, high, max]    # the provider's own vocabulary
         default: high               # used when the caller does not choose
-        aliases:                    # DeerFlow generic value -> provider value
+        aliases:                    # WitAI generic value -> provider value
           minimal: low
           medium: high
     extra_body:
@@ -356,7 +356,7 @@ make config-upgrade
 
 ## Runtime environment variables
 
-DeerFlow reads these from its own process environment — via a `.env` file, the
+WitAI reads these from its own process environment — via a `.env` file, the
 Docker environment, or the shell.
 
 Only `DEER_FLOW_SKILLS_PATH` resolves a relative value against
@@ -378,10 +378,10 @@ instead (`debug`, `info`, `warning`, or `error`; default `info`). See
 [Harness Configuration](/docs/harness/configuration) for the module reference.
 
 `DEER_FLOW_ROOT` is a host-side variable for the Docker Compose dev stack only;
-the DeerFlow process does not read it. See the
+the WitAI process does not read it. See the
 [Deployment Guide](/docs/application/deployment-guide).
 
-When `AUTH_JWT_SECRET` is unset, DeerFlow generates a secret on first start and
+When `AUTH_JWT_SECRET` is unset, WitAI generates a secret on first start and
 persists it to `.jwt_secret`, so sessions survive restarts. Set it explicitly in
 production to keep a stable, secret value.
 

@@ -36,7 +36,7 @@ ReasoningDialect = Literal["auto", "openai_extra_body", "anthropic", "vllm_chat_
 ReasoningHistory = Literal["preserve", "clear"]
 ContractSource = Literal["legacy", "contract"]
 
-#: The vocabulary DeerFlow's generic UI and per-agent defaults emit. Legacy
+#: The vocabulary WitAI's generic UI and per-agent defaults emit. Legacy
 #: profiles advertise exactly this set so the frontend keeps its old choices.
 GENERIC_EFFORT_VALUES: tuple[str, ...] = ("minimal", "low", "medium", "high")
 
