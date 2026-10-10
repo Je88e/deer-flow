@@ -35,7 +35,7 @@ SETUP / 使用说明
    and X-CSRF-Token header. Do not paste credentials into issues or PRs.
 3. From the repository's backend/tests directory, in macOS zsh:
 
-   read -rs "DEERFLOW_PAT?Paste DeerFlow PAT: "; export DEERFLOW_PAT; printf '\n'
+   read -rs "DEERFLOW_PAT?Paste WitAI PAT: "; export DEERFLOW_PAT; printf '\n'
    read "DEERFLOW_THREAD_ID?Paste NEW test chat ID: "; export DEERFLOW_THREAD_ID
    DEERFLOW_BASE_URL='http://localhost:2026' DEERFLOW_ASSISTANT_ID='lead_agent' \
    DEERFLOW_TIMEOUT_SECONDS='600' DEERFLOW_CONFIRM_APPEND='YES' \

@@ -80,7 +80,7 @@ LARK_CLI_BROKER_IMAGE = os.environ.get("LARK_CLI_BROKER_IMAGE", "")
 # responses (409/503) telling the Gateway to drop its cached broker
 # capability observation for this endpoint. Keep in sync with
 # deerflow.integrations.lark_cli.PROVISIONER_CAPABILITY_REFRESH_HEADER.
-CAPABILITY_REFRESH_HEADER = "X-DeerFlow-Capability-Refresh"
+CAPABILITY_REFRESH_HEADER = "X-WitAI-Capability-Refresh"
 # Marker value for lark broker capability changes. Keep in sync with
 # deerflow.integrations.lark_cli.PROVISIONER_CAPABILITY_REFRESH_LARK_BROKER.
 CAPABILITY_REFRESH_LARK_BROKER = "lark-broker"

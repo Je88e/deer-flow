@@ -14,7 +14,7 @@ import { activatePreferences } from "./store";
 
 const PREFIX = "deerflow.preferences.";
 
-// The UI language the user reads DeerFlow in, reported by the I18nProvider.
+// The UI language the user reads WitAI in, reported by the I18nProvider.
 // The Gateway words scheduled-task IM notices in the account's `locale`
 // preference, so a running preference session keeps that preference equal
 // to this value (see `startUserPreferences`).

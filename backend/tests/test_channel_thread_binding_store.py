@@ -1,7 +1,7 @@
 """Chat-to-thread binding store contract: the legacy JSON file and the shared SQL table.
 
 ``ChannelManager`` maps every unbound IM conversation (``channel_name:chat_id[:topic_id]``)
-to the DeerFlow thread it runs on. Both stores must implement the semantics the
+to the WitAI thread it runs on. Both stores must implement the semantics the
 manager relied on while the mapping was a JSON file: topic keys are independent of
 the base chat key, an overwrite keeps ``created_at`` and bumps ``updated_at``,
 ``remove`` without a topic clears the base mapping and every topic of that chat,

@@ -308,7 +308,7 @@ def resolve_config_path() -> tuple[Path, CheckResult | None]:
         return Path(config_env) if config_env else default_path, CheckResult(
             "config.yaml found",
             "fail",
-            f"cannot import the DeerFlow harness to resolve it ({type(exc).__name__}: {exc})",
+            f"cannot import the WitAI harness to resolve it ({type(exc).__name__}: {exc})",
             fix="Run 'make install'",
         )
 
@@ -329,7 +329,7 @@ def resolve_config_path() -> tuple[Path, CheckResult | None]:
             "config.yaml found",
             "fail",
             str(exc),
-            fix="Point DEER_FLOW_PROJECT_ROOT at the DeerFlow checkout, or unset it",
+            fix="Point DEER_FLOW_PROJECT_ROOT at the WitAI checkout, or unset it",
         )
 
 

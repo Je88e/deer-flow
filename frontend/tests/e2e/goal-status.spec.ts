@@ -636,7 +636,7 @@ for (const chatPage of CHAT_PAGES) {
       await textarea.press("Enter");
       await expect(bar).toContainText(objective);
       await expect(textarea).toHaveValue("");
-      await expect(page.getByText("Hello from DeerFlow!")).toBeVisible();
+      await expect(page.getByText("Hello from WitAI!")).toBeVisible();
       expect(runStreams).toBe(1);
 
       // Clearing it: the same. The set half's toast closes first, so the busy

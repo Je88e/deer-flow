@@ -1,4 +1,4 @@
-"""Migration 0038: the shared ``channel_thread_bindings`` table (IM chat -> DeerFlow thread)."""
+"""Migration 0038: the shared ``channel_thread_bindings`` table (IM chat -> WitAI thread)."""
 
 from __future__ import annotations
 

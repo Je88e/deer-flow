@@ -349,7 +349,7 @@ async def check_agent_name(name: str, request: Request) -> dict:
     response_model=AgentResponse,
     status_code=201,
     summary="Import Custom Agent",
-    description="Create a user-scoped custom agent from a versioned DeerFlow agent package without importing runtime state.",
+    description="Create a user-scoped custom agent from a versioned WitAI agent package without importing runtime state.",
 )
 @require_permission("agents", "write")
 async def import_agent_package(body: AgentPackage, request: Request, name: str | None = None) -> AgentResponse:

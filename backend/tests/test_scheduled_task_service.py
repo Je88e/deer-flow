@@ -1385,7 +1385,7 @@ async def test_auto_pause_sends_one_merged_notice(outbox):
         "Scheduled task “Check the release checklist”",
         "Paused after 3 runs in a row missed the goal: it needs your input.",
         "Result: Two items are still open",
-        "Open DeerFlow → Scheduled tasks for details.",
+        "Open WitAI → Scheduled tasks for details.",
     ]
 
 
@@ -1491,7 +1491,7 @@ async def test_locale_from_preference_then_config_fallback(outbox):
         await _complete(outbox, occurrence_id, run_id, task_id=task_id)
     assert [row["payload"]["locale"] for row in await _notices(outbox)] == ["zh-CN", None, None, None]
     texts = await _deliver_all(outbox, default_locale="en-US")
-    assert [text.splitlines()[-1] for text in texts] == ["在 DeerFlow 的定时任务页查看详情。"] + ["Open DeerFlow → Scheduled tasks for details."] * 3
+    assert [text.splitlines()[-1] for text in texts] == ["在 WitAI 的定时任务页查看详情。"] + ["Open WitAI → Scheduled tasks for details."] * 3
 
 
 @pytest.mark.asyncio
@@ -1501,7 +1501,7 @@ async def test_locale_without_preference_follows_notification_locale(outbox):
     occurrence_id, run_id = await _occurrence(outbox, reply="Done")
     await _complete(outbox, occurrence_id, run_id)
     (text,) = await _deliver_all(outbox, default_locale="zh-CN")
-    assert text.splitlines() == ["定时任务“Check the release checklist”", "完成了一次运行。", "结果：Done", "在 DeerFlow 的定时任务页查看详情。"]
+    assert text.splitlines() == ["定时任务“Check the release checklist”", "完成了一次运行。", "结果：Done", "在 WitAI 的定时任务页查看详情。"]
 
 
 @pytest.mark.asyncio

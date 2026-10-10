@@ -1,4 +1,4 @@
-"""ORM model for the shared IM chat -> DeerFlow thread binding table (``channel_thread_bindings``).
+"""ORM model for the shared IM chat -> WitAI thread binding table (``channel_thread_bindings``).
 
 One row per unbound IM conversation the ``ChannelManager`` has routed to a
 thread, keyed by the legacy composite ``channel_name:chat_id[:topic_id]`` string

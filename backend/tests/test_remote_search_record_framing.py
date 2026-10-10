@@ -127,7 +127,7 @@ class _TenkiSandbox:
         self.id = "tenki-remote"
 
 
-# Tenki rewrites the DeerFlow virtual prefix into its writable home dir, so its
+# Tenki rewrites the WitAI virtual prefix into its writable home dir, so its
 # search output (and the paths it reports back through ``_virtual_path``) carry
 # the home-dir form rather than ``/mnt/user-data``.
 _TENKI_HOME = "/home/tenki"
@@ -153,7 +153,7 @@ _PROVIDER_FACTORIES = [
 def _search_root(factory) -> str:
     """The sandbox-side root each provider actually searches.
 
-    Tenki rewrites the DeerFlow virtual prefix into its writable home dir, so a
+    Tenki rewrites the WitAI virtual prefix into its writable home dir, so a
     search for ``/mnt/user-data/workspace`` reaches ``/home/tenki/workspace``.
     """
     return f"{_TENKI_HOME}/workspace" if factory is _tenki else _ROOT
@@ -163,7 +163,7 @@ def _reported_path(name: str) -> str:
     """The path every provider reports back for ``name``.
 
     Tenki reverses its home-dir rewrite through ``_virtual_path``, and the other
-    two report the DeerFlow path verbatim, so all three answer under the prefix.
+    two report the WitAI path verbatim, so all three answer under the prefix.
     """
     return f"{_ROOT}/{name}"
 

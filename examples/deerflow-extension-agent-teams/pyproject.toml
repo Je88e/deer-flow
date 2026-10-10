@@ -1,7 +1,7 @@
 [project]
 name = "deerflow-extension-agent-teams"
 version = "0.1.0"
-description = "Peer collaboration between full DeerFlow Custom Agents"
+description = "Peer collaboration between full WitAI Custom Agents"
 requires-python = ">=3.12"
 license = "MIT"
 dependencies = ["deerflow-extension-api>=0.2.5,<0.3", "langchain>=1.2,<2"]

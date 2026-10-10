@@ -1,4 +1,4 @@
-"""Shared IM chat -> DeerFlow thread bindings for multi-replica channel routing.
+"""Shared IM chat -> WitAI thread bindings for multi-replica channel routing.
 
 Revision ID: 0038_channel_thread_bindings
 Revises: 0037_project_document_summaries

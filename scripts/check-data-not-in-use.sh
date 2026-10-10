@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# check-data-not-in-use.sh - Refuse while a DeerFlow Gateway container is running
+# check-data-not-in-use.sh - Refuse while a WitAI Gateway container is running
 #
 # `make clean` deletes backend/.deer-flow, the runtime data directory (database,
 # users, threads, uploads, secrets). Both Docker stacks mount it into the
@@ -32,7 +32,7 @@ if ! names=$(docker ps --format '{{.Names}}' 2>/dev/null); then
     exit 0
 fi
 if printf '%s\n' "$names" | tr -d '\r' | grep -qx "$GATEWAY_CONTAINER"; then
-    echo "Refusing to delete DeerFlow runtime data: the $GATEWAY_CONTAINER container is running, and both Docker stacks mount backend/.deer-flow into it." >&2
+    echo "Refusing to delete WitAI runtime data: the $GATEWAY_CONTAINER container is running, and both Docker stacks mount backend/.deer-flow into it." >&2
     echo "Stop the Docker stack first (make down, or make docker-stop for the dev stack), then run make clean again." >&2
     exit 1
 fi

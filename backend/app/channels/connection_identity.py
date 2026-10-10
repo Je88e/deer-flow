@@ -45,7 +45,7 @@ async def attach_connection_identity(
 
 
 async def lookup_thread_id(msg: InboundMessage, *, repo: Any, store: Any) -> str | None:
-    """Return the DeerFlow thread mapped to *msg*'s conversation/topic, if any.
+    """Return the WitAI thread mapped to *msg*'s conversation/topic, if any.
 
     A message carrying a resolved connection is mapped in the connection repository
     and nowhere else (``ChannelManager._store_thread_id`` writes only there); every

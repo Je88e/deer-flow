@@ -141,7 +141,7 @@ def test_render_run_failed_text_does_not_forward_raw_error():
 
     assert "A run failed." in text
     assert secret not in text
-    assert "Open DeerFlow → Scheduled tasks for details." in text
+    assert "Open WitAI → Scheduled tasks for details." in text
     assert "Error:" not in text
 
 
@@ -651,7 +651,7 @@ async def test_task_stopped_is_enriched_with_summary():
         "Scheduled task “Release check”",
         "Paused by agent: its stop condition was met (all items are ticked).",
         "Result: All 12 items are ticked",
-        "Open DeerFlow → Scheduled tasks for details.",
+        "Open WitAI → Scheduled tasks for details.",
     ]
 
 
@@ -694,7 +694,7 @@ async def test_worker_uses_default_locale_for_rows_without_locale():
 
     assert repo.sent == ["legacy", "no-preference", "english-owner"]
     texts = [text for _target, text in channel.sent]
-    assert texts[0].splitlines()[1:] == ["一次运行出错了。", "在 DeerFlow 的定时任务页查看详情。"]
+    assert texts[0].splitlines()[1:] == ["一次运行出错了。", "在 WitAI 的定时任务页查看详情。"]
     assert texts[1] == texts[0].replace("Untitled task", "未命名任务")
     # The owner's own UI language wins over the configured default.
     assert texts[2].splitlines()[1] == "A run failed."

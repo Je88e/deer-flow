@@ -441,7 +441,7 @@ for (const trailingReasoning of [false, true]) {
                 {
                   id: "search-duration",
                   name: "web_search",
-                  args: { query: "DeerFlow" },
+                  args: { query: "WitAI" },
                 },
               ],
               additional_kwargs: { turn_duration: 17 },

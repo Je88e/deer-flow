@@ -1,4 +1,4 @@
-"""Shared IM chat -> DeerFlow thread bindings (the database successor of ``channels/store.json``)."""
+"""Shared IM chat -> WitAI thread bindings (the database successor of ``channels/store.json``)."""
 
 from deerflow.persistence.channel_thread_bindings.model import (
     BINDING_KEY_LENGTH,

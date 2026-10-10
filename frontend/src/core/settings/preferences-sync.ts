@@ -12,7 +12,7 @@ const fields = {
     .regex(/^[A-Za-z0-9_.-]+$/)
     .nullable(),
   // The web UI language. Not a local setting: the Gateway reads it to word
-  // scheduled-task IM notices in the language the user reads DeerFlow in.
+  // scheduled-task IM notices in the language the user reads WitAI in.
   locale: z.enum(["en-US", "zh-CN"]).nullable(),
 };
 const schema = z.object(fields).partial();

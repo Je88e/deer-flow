@@ -6,7 +6,7 @@ Two halves:
 - Sandbox: ``bash_tool`` exposes both identities as fixed env vars via an
   ``export`` prefix on the command string — ``DEERFLOW_CHANNEL_USER_ID`` for the
   IM platform sender (#3914) and ``DEERFLOW_USER_ID`` for the authenticated
-  DeerFlow user (#3919). Neither must ride the ``env=`` parameter: on
+  WitAI user (#3919). Neither must ride the ``env=`` parameter: on
   ``AioSandbox`` a non-empty env switches execution to the ``bash.exec`` API,
   which requires image >= 1.9.3 and abandons the persistent shell session —
   that channel is reserved for request-scoped secrets.

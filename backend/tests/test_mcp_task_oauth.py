@@ -229,7 +229,7 @@ async def test_changed_task_credentials_still_require_restart(task_config, rotat
         changed.mcp_servers["reports"].url = "https://other.example.invalid/mcp"
     else:
         setattr(changed.mcp_servers["reports"].oauth, field, "changed")
-    with pytest.raises(McpTaskConfigurationError, match="restart DeerFlow"):
+    with pytest.raises(McpTaskConfigurationError, match="restart WitAI"):
         await get_mcp_tools(changed)
     assert rotating_server.refresh_requests == ["refresh-0"]
 

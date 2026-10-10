@@ -275,7 +275,7 @@ def test_list_models_internal_caller_with_bound_owner_uses_owner_role(monkeypatc
     app = _internal_caller_app(app_config, internal_user)
 
     with TestClient(app) as client:
-        response = client.get("/api/models", headers={"X-DeerFlow-Owner-User-Id": "admin-1"})
+        response = client.get("/api/models", headers={"X-WitAI-Owner-User-Id": "admin-1"})
 
     assert response.status_code == 200
     names = [m["name"] for m in response.json()["models"]]

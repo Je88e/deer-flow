@@ -1271,7 +1271,7 @@ async def _run_drained_mcp_apply[**P, T](action: str, apply: Callable[P, T], /, 
             await asyncio.to_thread(finish_mcp_reconciliation, exc.pending)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=("MCP configuration was saved, but local cache reconciliation failed; retry or restart DeerFlow before relying on the changed server."),
+                detail=("MCP configuration was saved, but local cache reconciliation failed; retry or restart WitAI before relying on the changed server."),
             ) from exc
 
     return await await_drained(_apply_and_finish())

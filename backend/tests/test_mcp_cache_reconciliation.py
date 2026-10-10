@@ -755,7 +755,7 @@ async def test_committed_reconciliation_failure_logs_once(reconciler, monkeypatc
         )
 
     assert exc_info.value.status_code == 500
-    assert exc_info.value.detail == "MCP configuration was saved, but local cache reconciliation failed; retry or restart DeerFlow before relying on the changed server."
+    assert exc_info.value.detail == "MCP configuration was saved, but local cache reconciliation failed; retry or restart WitAI before relying on the changed server."
     assert json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]["remote"]["enabled"] is True
     assert close_calls == [False]
     assert [(record.name, record.levelno, record.getMessage()) for record in caplog.records] == [

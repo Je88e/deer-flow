@@ -900,7 +900,7 @@ def test_feishu_sdk_loop_callback_still_consults_the_stored_parent_mapping(caplo
     """The production shape (#6558 review): the SDK calls ``_on_message`` from inside its own
     running loop. The bridge must still look the parent card up on the Gateway loop — otherwise
     a reply whose parent is mapped but whose root is not falls back to the unknown root (a
-    different DeerFlow conversation) and may consume an unrelated pending clarification."""
+    different WitAI conversation) and may consume an unrelated pending clarification."""
 
     async def go():
         bus = MessageBus()

@@ -28,7 +28,7 @@ async def _resolve_bound_owner_for_model_list(request: Request) -> object | None
     synthetic user whose role is popped to ``default_role`` when the
     authorization principal is built, so the filtered list reflects the
     default role — not the account the conversation actually belongs to.
-    When the call carries a trusted ``X-DeerFlow-Owner-User-Id`` header, the
+    When the call carries a trusted ``X-WitAI-Owner-User-Id`` header, the
     channel acts on behalf of that owner (same identity run admission
     stamps), and the list must be filtered with the owner's role so commands
     like ``/model`` gate on the same principal the run would.

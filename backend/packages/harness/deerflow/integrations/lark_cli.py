@@ -1682,7 +1682,7 @@ def _resolve_sandbox_runtime_readiness(
 # Machine-readable marker the provisioner attaches to a lark
 # provisioning-config conflict (409/503) so the Gateway drops its cached
 # broker capability observation. Keep in sync with docker/provisioner/app.py.
-PROVISIONER_CAPABILITY_REFRESH_HEADER = "X-DeerFlow-Capability-Refresh"
+PROVISIONER_CAPABILITY_REFRESH_HEADER = "X-WitAI-Capability-Refresh"
 PROVISIONER_CAPABILITY_REFRESH_LARK_BROKER = "lark-broker"
 LARK_BROKER_MODE_TTL_SECONDS = 60
 # Negative results (broker not active) are cached longer than positive ones: a

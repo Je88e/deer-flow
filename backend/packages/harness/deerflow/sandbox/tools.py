@@ -2205,7 +2205,7 @@ _CHANNEL_USER_ID_CONTEXT_KEY = "channel_user_id"
 # this is corrupt and must not bloat every sandbox command string.
 _CHANNEL_USER_ID_MAX_LEN = 256
 
-# Fixed env var exposing the authenticated DeerFlow user id to sandbox
+# Fixed env var exposing the authenticated WitAI user id to sandbox
 # commands, so skill scripts and the subprocesses they launch can scope their
 # work to the current user instead of guessing or hard-coding (#3919). An
 # identifier, not a secret.

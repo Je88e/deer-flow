@@ -1544,7 +1544,7 @@ def test_qq_provider_exposes_binding_flow_and_masks_secret(tmp_path):
             body = connected.json()
             assert body["mode"] == "binding_code"
             assert body["url"] is None
-            assert body["instruction"] == f"Send /connect {body['code']} to the DeerFlow QQ bot."
+            assert body["instruction"] == f"Send /connect {body['code']} to the WitAI QQ bot."
 
         async def consume():
             return await repo.consume_oauth_state(provider="qq", state=body["code"])
