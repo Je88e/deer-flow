@@ -5,7 +5,9 @@ import {
   BellIcon,
   CableIcon,
   BrainIcon,
+  InfoIcon,
   PaletteIcon,
+  UserCogIcon,
   UsersRoundIcon,
   UserIcon,
 } from "lucide-react";
@@ -20,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/core/auth/AuthProvider";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +86,11 @@ const ModelSettingsPage = dynamic(
     import("./model-settings-page").then((module) => module.ModelSettingsPage),
   { loading: SettingsPageLoading },
 );
+const UserSettingsPage = dynamic(
+  () =>
+    import("./user-settings-page").then((module) => module.UserSettingsPage),
+  { loading: SettingsPageLoading },
+);
 const AboutSettingsPage = dynamic(
   () =>
     import("./about-settings-page").then((module) => module.AboutSettingsPage),
@@ -91,6 +99,7 @@ const AboutSettingsPage = dynamic(
 
 export type SettingsSection =
   | "models"
+  | "users"
   | "account"
   | "appearance"
   | "channels"
@@ -106,15 +115,17 @@ type SettingsDialogProps = React.ComponentProps<typeof Dialog> & {
 export function SettingsDialog(props: SettingsDialogProps) {
   const { defaultSection = "appearance", ...dialogProps } = props;
   const { t } = useI18n();
+  const { user } = useAuth();
+  const isAdmin = user?.system_role === "admin";
   const isEmbedRoute = useIsEmbedRoute();
 
   const sections = useMemo(() => {
-    const all = [
-      {
-        id: "models",
-        label: t.settings.sections.models,
-        icon: BotIcon,
-      },
+    const items: {
+      id: SettingsSection;
+      label: string;
+      icon: typeof BotIcon;
+    }[] = [
+      { id: "models", label: t.settings.sections.models, icon: BotIcon },
       {
         id: "account",
         label: t.settings.sections.account,
@@ -145,22 +156,35 @@ export function SettingsDialog(props: SettingsDialogProps) {
         label: t.settings.sections.subagents,
         icon: UsersRoundIcon,
       },
-      // Skills/tools/integrations moved to the capability center (main #5468).
-      // { id: "about", label: t.settings.sections.about, icon: InfoIcon },
+      { id: "about", label: t.settings.sections.about, icon: InfoIcon },
     ];
+    // User management is meaningless (and confusing) for non-admins, so the
+    // entry point itself is hidden; the page still guards independently in
+    // case a stale dialog store ever activates the section.
+    if (isAdmin) {
+      items.splice(1, 0, {
+        id: "users",
+        label: t.settings.sections.users,
+        icon: UserCogIcon,
+      });
+    }
+    // EMBED mode: the Shell owns account management and visual theming of the
+    // embedded frame, so those sections drop out of the nav.
     return isEmbedRoute
-      ? all.filter((section) => !EMBED_HIDDEN_SECTIONS.has(section.id))
-      : all;
+      ? items.filter((section) => !EMBED_HIDDEN_SECTIONS.has(section.id))
+      : items;
   }, [
+    isAdmin,
     isEmbedRoute,
     t.settings.sections.models,
+    t.settings.sections.users,
     t.settings.sections.account,
     t.settings.sections.appearance,
     t.settings.sections.channels,
     t.settings.sections.memory,
     t.settings.sections.subagents,
     t.settings.sections.notification,
-    // t.settings.sections.about,
+    t.settings.sections.about,
   ]);
 
   // The default section (and the store default) is "appearance", which EMBED
@@ -177,6 +201,15 @@ export function SettingsDialog(props: SettingsDialogProps) {
       setActiveSection(resolveInitialSettingsSection(defaultSection, sections));
     }
   }, [defaultSection, dialogProps.open, sections]);
+
+  // A `?settings=<section>` deep link (or a stale dialog store) can activate
+  // a section this user's nav does not offer — e.g. user management for a
+  // non-admin — so fall back to the first available section instead of
+  // rendering a panel with no highlighted entry. The base list above is
+  // non-empty, so the fallback itself always resolves.
+  const activeId = sections.some((section) => section.id === activeSection)
+    ? activeSection
+    : sections[0]!.id;
   return (
     <Dialog
       {...dialogProps}
@@ -196,12 +229,12 @@ export function SettingsDialog(props: SettingsDialogProps) {
           <nav className="bg-sidebar min-h-0 overflow-y-auto rounded-lg border p-2">
             <ul className="space-y-1 pr-1">
               {sections.map(({ id, label, icon: Icon }) => {
-                const active = activeSection === id;
+                const active = activeId === id;
                 return (
                   <li key={id}>
                     <button
                       type="button"
-                      onClick={() => setActiveSection(id as SettingsSection)}
+                      onClick={() => setActiveSection(id)}
                       className={cn(
                         "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                         active
@@ -219,14 +252,15 @@ export function SettingsDialog(props: SettingsDialogProps) {
           </nav>
           <ScrollArea className="h-full min-h-0 rounded-lg border">
             <div className="space-y-8 p-6">
-              {activeSection === "models" && <ModelSettingsPage />}
-              {activeSection === "account" && <AccountSettingsPage />}
-              {activeSection === "appearance" && <AppearanceSettingsPage />}
-              {activeSection === "memory" && <MemorySettingsPage />}
-              {activeSection === "subagents" && <SubagentSettingsPage />}
-              {activeSection === "notification" && <NotificationSettingsPage />}
-              {activeSection === "channels" && <ChannelsSettingsPage />}
-              {activeSection === "about" && <AboutSettingsPage />}
+              {activeId === "models" && <ModelSettingsPage />}
+              {activeId === "users" && <UserSettingsPage />}
+              {activeId === "account" && <AccountSettingsPage />}
+              {activeId === "appearance" && <AppearanceSettingsPage />}
+              {activeId === "memory" && <MemorySettingsPage />}
+              {activeId === "subagents" && <SubagentSettingsPage />}
+              {activeId === "notification" && <NotificationSettingsPage />}
+              {activeId === "channels" && <ChannelsSettingsPage />}
+              {activeId === "about" && <AboutSettingsPage />}
             </div>
           </ScrollArea>
         </div>

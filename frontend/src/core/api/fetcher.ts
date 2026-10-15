@@ -1,5 +1,10 @@
 import { isEmbedAuthActive, renewEmbedSession } from "@/core/auth/embed-auth";
-import { buildLoginUrl } from "@/core/auth/types";
+import {
+  ACCOUNT_DISABLED_LOGIN_URL,
+  buildLoginUrl,
+  currentReturnPath,
+  parseAuthError,
+} from "@/core/auth/types";
 import { isStaticWebsiteOnly } from "@/core/static-mode";
 import { basePath, stripBasePath } from "@/env";
 
@@ -129,17 +134,30 @@ export async function fetch(
         return retried;
       }
     }
+    // An operator-disabled account (#4063 gap 3) gets a distinct code on the
+    // session surface; it cannot sign back in, so skip the `next` round-trip
+    // and land on a login page that states the reason.
+    // Body-consumption contract: the JSON body is consumed for the code and
+    // must never be read again below this line — every branch exits by
+    // throwing UnauthorizedError, so a future fall-through (e.g. telemetry)
+    // must not re-read `res`.
+    const code = await res
+      .json()
+      .then((data) => parseAuthError(data).code)
+      .catch(() => null);
+    if (code === "account_disabled") {
+      // Hard navigation (no Next router): apply the base path manually.
+      window.location.href = `${basePath()}${ACCOUNT_DISABLED_LOGIN_URL}`;
+      throw new UnauthorizedError();
+    }
     // Hard navigation (no Next router): apply the base path manually, and
     // strip it from the return path so the post-login redirect stays a
     // router-relative path (the router re-applies the base path itself).
     // Include the search string: routes that carry their target in the query
     // (e.g. the standalone artifact viewer) are otherwise unrecoverable after
     // login, which lands on the default workspace instead.
-    const base = basePath();
-    const returnPath = stripBasePath(
-      `${window.location.pathname}${window.location.search}`,
-    );
-    window.location.href = `${base}${buildLoginUrl(returnPath)}`;
+    const returnPath = stripBasePath(currentReturnPath());
+    window.location.href = `${basePath()}${buildLoginUrl(returnPath)}`;
     throw new UnauthorizedError();
   }
 
