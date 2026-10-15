@@ -19,6 +19,12 @@ rs.mock("@/core/auth/admin-users", () => ({
   loadAdminUsers: rs.fn(),
 }));
 rs.mock("@/core/static-mode", () => ({ isStaticWebsiteOnly: rs.fn() }));
+// The dialog consults the EMBED-mode hook (WIT Shell iframe), which needs a
+// Next router context these plain-DOM renders do not provide; these tests
+// exercise the standard browser form.
+rs.mock("@/components/embed/use-is-embed-route", () => ({
+  useIsEmbedRoute: () => false,
+}));
 
 const admin: AdminUser = {
   id: "u-admin",

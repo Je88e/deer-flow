@@ -2,7 +2,6 @@ import { isEmbedAuthActive, renewEmbedSession } from "@/core/auth/embed-auth";
 import {
   ACCOUNT_DISABLED_LOGIN_URL,
   buildLoginUrl,
-  currentReturnPath,
   parseAuthError,
 } from "@/core/auth/types";
 import { isStaticWebsiteOnly } from "@/core/static-mode";
@@ -156,7 +155,11 @@ export async function fetch(
     // Include the search string: routes that carry their target in the query
     // (e.g. the standalone artifact viewer) are otherwise unrecoverable after
     // login, which lands on the default workspace instead.
-    const returnPath = stripBasePath(currentReturnPath());
+    // Unlike the router-based callers of currentReturnPath(), this legacy
+    // contract is byte-stable: pathname + search only, no hash.
+    const returnPath = stripBasePath(
+      `${window.location.pathname}${window.location.search}`,
+    );
     window.location.href = `${basePath()}${buildLoginUrl(returnPath)}`;
     throw new UnauthorizedError();
   }

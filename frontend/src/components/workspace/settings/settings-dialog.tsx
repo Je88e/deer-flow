@@ -5,7 +5,6 @@ import {
   BellIcon,
   CableIcon,
   BrainIcon,
-  InfoIcon,
   PaletteIcon,
   UserCogIcon,
   UsersRoundIcon,
@@ -156,7 +155,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
         label: t.settings.sections.subagents,
         icon: UsersRoundIcon,
       },
-      { id: "about", label: t.settings.sections.about, icon: InfoIcon },
+      // Skills/tools/integrations moved to the capability center (main #5468).
+      // { id: "about", label: t.settings.sections.about, icon: InfoIcon },
     ];
     // User management is meaningless (and confusing) for non-admins, so the
     // entry point itself is hidden; the page still guards independently in
@@ -184,7 +184,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
     t.settings.sections.memory,
     t.settings.sections.subagents,
     t.settings.sections.notification,
-    t.settings.sections.about,
+    // t.settings.sections.about,
   ]);
 
   // The default section (and the store default) is "appearance", which EMBED
