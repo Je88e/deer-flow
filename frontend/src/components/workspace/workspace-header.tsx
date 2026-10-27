@@ -10,16 +10,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { useI18n } from "@/core/i18n/hooks";
 import { env } from "@/env";
 import { cn } from "@/lib/utils";
 
+import { useWorkspaceSidebarExpanded } from "./workspace-sidebar-frame";
+import { WorkspaceSidebarTrigger } from "./workspace-sidebar-trigger";
+
 export function WorkspaceHeader({ className }: { className?: string }) {
   const { t } = useI18n();
-  const { state } = useSidebar();
+  const isSidebarOpen = useWorkspaceSidebarExpanded();
   const pathname = usePathname();
   const isEmbedRoute = useIsEmbedRoute();
   return (
@@ -30,13 +31,11 @@ export function WorkspaceHeader({ className }: { className?: string }) {
           className,
         )}
       >
-        {state === "collapsed" ? (
+        {!isSidebarOpen ? (
           <div className="group-has-data-[collapsible=icon]/sidebar-wrapper:-translate-y flex w-full cursor-pointer items-center justify-center">
-            {/* <div className="text-primary block pt-1 font-serif group-hover/workspace-header:hidden">
-              WIT
-            </div>
-            <SidebarTrigger className="hidden pl-2 group-hover/workspace-header:block" /> */}
-            <SidebarTrigger className="display: block;" />
+            {/* WitAI (EMBED shell) hides the serif wordmark; with nothing to
+                swap against, the trigger stays visible without header hover. */}
+            <WorkspaceSidebarTrigger className="pl-2" />
           </div>
         ) : (
           <div className="flex items-center justify-between gap-2">
@@ -49,7 +48,7 @@ export function WorkspaceHeader({ className }: { className?: string }) {
                 WitAI
               </div>
             )}
-            <SidebarTrigger />
+            <WorkspaceSidebarTrigger />
           </div>
         )}
       </div>

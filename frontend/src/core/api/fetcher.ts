@@ -40,7 +40,16 @@ export function readCsrfCookie(): string | null {
   if (typeof document === "undefined") return null;
   for (const pair of document.cookie.split("; ")) {
     if (pair.startsWith(CSRF_COOKIE_PREFIX)) {
-      return decodeURIComponent(pair.slice(CSRF_COOKIE_PREFIX.length));
+      const value = pair.slice(CSRF_COOKIE_PREFIX.length);
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        // Cookies are shared by every app on the same host. A value set or
+        // truncated outside the gateway (or a stray `%` escape) is still a
+        // string, and throwing here would break every API call — fall back
+        // to the raw value, as `getLocaleFromCookie` does.
+        return value;
+      }
     }
   }
   return null;
@@ -93,23 +102,26 @@ export async function fetch(
   input: RequestInfo | string,
   init?: RequestInit,
 ): Promise<Response> {
+  const request = typeof input === "string" ? undefined : input;
   const url = typeof input === "string" ? input : input.url;
-  const method = init?.method ?? "GET";
+  const method = init?.method ?? request?.method ?? "GET";
+  let headers = init?.headers ?? request?.headers;
 
   // Static demos have no Gateway. Resolve REST calls before credentials,
   // CSRF, or redirects; demo assets and explicit mock routes still use HTTP.
   if (isStaticWebsiteOnly()) {
     const response = await staticApiResponse(url, {
       ...init,
-      method:
-        init?.method ?? (typeof input === "string" ? "GET" : input.method),
+      method,
+      headers,
+      signal: init?.signal === undefined ? request?.signal : init.signal,
     });
     if (response) return response;
   }
 
-  const headers = mergeCsrfHeaders(method, init?.headers);
+  headers = mergeCsrfHeaders(method, headers);
 
-  const res = await globalThis.fetch(url, {
+  const res = await globalThis.fetch(input, {
     ...init,
     headers,
     credentials: "include",
@@ -126,7 +138,7 @@ export async function fetch(
         // The renewal's token-exchange rotates the session/CSRF cookies, so
         // the replay rebuilds the CSRF header from the fresh cookie rather
         // than reusing the pre-renewal token (which would 403).
-        headers: mergeCsrfHeaders(method, init?.headers),
+        headers: mergeCsrfHeaders(method, init?.headers ?? request?.headers),
         credentials: "include",
       });
       if (retried.status !== 401) {

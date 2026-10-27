@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Literal, Protocol
+from dataclasses import dataclass
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, computed_field, field_validator
 
@@ -13,10 +14,15 @@ class KnowledgeCapabilities(BaseModel):
     """An operation is supported only when explicitly advertised.
 
     Search-only providers need no catalog, scope, or management implementation.
-    Scope admission and adapters for these optional operations belong to phase 2.
     """
 
-    operations: frozenset[Literal["search", "sources", "catalog", "documents", "dataset_filter", "document_filter"]] = frozenset({"search"})
+    operations: frozenset[
+        Literal[
+            "search", "sources", "catalog", "documents", "dataset_filter", "document_filter", "entries_search", "entries_dataset_filter", "entries_document_filter", "relations_search", "relations_dataset_filter", "relations_document_filter"
+        ]
+    ] = frozenset({"search"})
+
+    model_config = ConfigDict(frozen=True)
 
     def supports(self, operation: str) -> bool:
         return operation in self.operations
@@ -66,3 +72,68 @@ class RetrievalProvider(Protocol):
     capabilities: KnowledgeCapabilities
 
     async def search(self, query: str) -> RetrievalResult: ...
+
+
+@dataclass(frozen=True)
+class KnowledgeRequestContext:
+    """Host identity and execution constraints, never provider authorization.
+
+    Providers must enforce their own permissions on every operation. ``scope``
+    is a fresh execution-only snapshot; display labels never reach providers.
+    No tenant or credential is inferred from caller-supplied metadata.
+    ``agent_name`` identifies the current executor: the selected assistant
+    (``lead_agent`` by default), or the executing subagent's configured name.
+    It is not the parent assistant name. Direct provider callers may omit it.
+    """
+
+    user_id: str
+    agent_name: str | None = None
+    scope: dict[str, Any] | None = None
+
+
+class RetrievalCatalogItem(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    id: str = Field(min_length=1, max_length=256)
+    name: str = Field(min_length=1, max_length=500)
+    selectable: bool = False
+
+
+class RetrievalCatalogPage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[RetrievalCatalogItem] = Field(default_factory=list, max_length=100)
+    page: int = Field(ge=1, strict=True)
+    page_size: int = Field(ge=1, le=100, strict=True)
+    total: int = Field(ge=0, strict=True)
+
+
+class ScopedRetrievalProvider(Protocol):
+    """Optional contextual search; required for either filter capability.
+
+    A missing/inaccessible selection must fail as a whole. Never retry a
+    constrained request as an unconstrained search. Context is also supplied
+    for all-scope searches when this method is implemented.
+    """
+
+    async def search_scoped(self, query: str, *, context: KnowledgeRequestContext) -> RetrievalResult: ...
+
+
+class RetrievalCatalogProvider(Protocol):
+    async def catalog(self, *, context: KnowledgeRequestContext, page: int, page_size: int, search: str) -> RetrievalCatalogPage: ...
+
+
+class RetrievalDocumentsProvider(Protocol):
+    async def documents(self, dataset_id: str, *, context: KnowledgeRequestContext, page: int, page_size: int, search: str) -> RetrievalCatalogPage: ...
+
+
+class KnowledgeEntriesProvider(Protocol):
+    """Optional entry retrieval; filters are advertised independently of search."""
+
+    async def entries_search(self, query: str, *, context: KnowledgeRequestContext) -> RetrievalResult: ...
+
+
+class EntityRelationsProvider(Protocol):
+    """Return only upstream entities/edges/path evidence, never inferred edges."""
+
+    async def relations_search(self, query: str, *, context: KnowledgeRequestContext) -> RetrievalResult: ...

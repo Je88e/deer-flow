@@ -15,6 +15,7 @@ import { apiBase, basePath } from "@/env";
 
 import { isStaticWebsiteOnly } from "../static-mode";
 
+import { AuthQueryScopeContext } from "./query-scope";
 import {
   ACCOUNT_DISABLED_LOGIN_URL,
   type User,
@@ -71,8 +72,13 @@ export function AuthProvider({
 }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(initialUser);
   const [authKnown, setAuthKnown] = useState(!initialAuthUnknown);
-  useArtifactDraftOwner(authKnown ? (user?.id ?? null) : undefined);
+  const authQueryScope = authKnown ? (user?.id ?? null) : undefined;
+  useArtifactDraftOwner(authQueryScope);
   const [isLoading, setIsLoading] = useState(false);
+  // Logout and externally confirmed users supersede pending auth refreshes.
+  const authRequestRef = React.useRef(0);
+  const authRefreshInFlightRef = React.useRef(false);
+  const reconnectPendingRef = React.useRef(false);
   const router = useRouter();
   const pathname = usePathname();
   const staticMode = isStaticWebsiteOnly();
@@ -85,8 +91,12 @@ export function AuthProvider({
    * so consumers don't reach into React internals.
    */
   const applyUser = useCallback((next: User | null) => {
+    authRequestRef.current++;
+    authRefreshInFlightRef.current = false;
+    reconnectPendingRef.current = false;
     setUser(next);
     setAuthKnown(true);
+    setIsLoading(false);
   }, []);
 
   /**
@@ -95,15 +105,19 @@ export function AuthProvider({
    */
   const refreshUser = useCallback(async () => {
     if (staticMode) return;
+    const requestId = ++authRequestRef.current;
+    authRefreshInFlightRef.current = true;
 
     try {
       setIsLoading(true);
       const res = await fetch(`${apiBase()}/v1/auth/me`, {
         credentials: "include",
       });
+      if (requestId !== authRequestRef.current) return;
 
       if (res.ok) {
         const data = await res.json();
+        if (requestId !== authRequestRef.current) return;
         setUser(data);
         setAuthKnown(true);
       } else if (res.status === 401) {
@@ -113,6 +127,7 @@ export function AuthProvider({
           .json()
           .then((data) => parseAuthError(data).code)
           .catch(() => null);
+        if (requestId !== authRequestRef.current) return;
         if (code === "account_disabled") {
           // Operator-disabled account (#4063 gap 3): the login page states
           // the reason. Unlike an expired session there is nothing to come
@@ -125,11 +140,15 @@ export function AuthProvider({
         }
       }
     } catch (err) {
+      if (requestId !== authRequestRef.current) return;
       console.error("Failed to refresh user:", err);
       setUser(null);
       setAuthKnown(false);
     } finally {
-      setIsLoading(false);
+      if (requestId === authRequestRef.current) {
+        authRefreshInFlightRef.current = false;
+        setIsLoading(false);
+      }
     }
   }, [staticMode, pathname, router]);
 
@@ -146,8 +165,12 @@ export function AuthProvider({
    */
   const logout = useCallback(async () => {
     // Immediately clear local state to prevent UI flicker
+    authRequestRef.current++;
+    authRefreshInFlightRef.current = false;
+    reconnectPendingRef.current = false;
     setUser(null);
     setAuthKnown(true);
+    setIsLoading(false);
 
     if (staticMode) {
       router.push("/");
@@ -179,27 +202,54 @@ export function AuthProvider({
   }, [staticMode, router]);
 
   /**
-   * Handle visibility change - refresh user when tab becomes visible again.
-   * Throttled to at most once per 60 s to avoid spamming the backend on rapid tab switches.
+   * Revalidate visible tabs, including unknown auth after a transport failure.
+   * Tab switches are throttled to 60 s; reconnect wakes unknown auth immediately.
    */
   const lastCheckRef = React.useRef(0);
+
+  useEffect(
+    () => () => {
+      reconnectPendingRef.current = false;
+    },
+    [],
+  );
 
   useEffect(() => {
     if (staticMode) return;
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible" || user === null) return;
+    const checkUser = (reconnecting = false) => {
+      if (user === null && authKnown) return;
+      if (reconnecting) reconnectPendingRef.current = true;
+      if (
+        document.visibilityState !== "visible" ||
+        authRefreshInFlightRef.current
+      )
+        return;
       const now = Date.now();
-      if (now - lastCheckRef.current < 60_000) return;
+      if (!reconnectPendingRef.current && now - lastCheckRef.current < 60_000)
+        return;
+      reconnectPendingRef.current = false;
       lastCheckRef.current = now;
       void refreshUser();
     };
+    const handleVisibilityChange = () => checkUser();
+    const handleOnline = () => {
+      if (!authKnown || authRefreshInFlightRef.current) checkUser(true);
+    };
+
+    // isLoading re-runs this effect when a failed request leaves auth unchanged.
+    if (reconnectPendingRef.current && !authRefreshInFlightRef.current) {
+      if (authKnown) reconnectPendingRef.current = false;
+      else checkUser();
+    }
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnline);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnline);
     };
-  }, [staticMode, user, refreshUser]);
+  }, [staticMode, user, authKnown, isLoading, refreshUser]);
 
   const value: AuthContextType = {
     user,
@@ -210,7 +260,13 @@ export function AuthProvider({
     applyUser,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <AuthQueryScopeContext.Provider value={authQueryScope}>
+        {children}
+      </AuthQueryScopeContext.Provider>
+    </AuthContext.Provider>
+  );
 }
 
 /**
